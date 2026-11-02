@@ -507,9 +507,9 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
       {/* ======================================================== */}
       <div className="w-full bg-white dark:bg-stone-850 p-3.5 sm:p-4 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-3">
         {/* Strip Header */}
-        <div className="flex items-center justify-between gap-2 border-b border-stone-100 dark:border-stone-800 pb-2.5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 border-b border-stone-100 dark:border-stone-800 pb-2.5">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-xl bg-red-600 text-white font-japanese font-bold text-xs flex items-center justify-center shadow-xs">
+            <div className="w-7 h-7 rounded-xl bg-red-600 text-white font-japanese font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
               順
             </div>
             <div>
@@ -525,11 +525,11 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
             <button
               type="button"
               onClick={togglePlaySequence}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs ${
                 isPlayingDemo
                   ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
                   : 'bg-red-50 hover:bg-red-100 dark:bg-red-950/60 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60'
@@ -557,7 +557,7 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
         {/* Jisho Horizontal Scrollable Frame Strip */}
         <div 
           ref={stripContainerRef}
-          className="flex items-stretch gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-thin px-0.5"
+          className="flex items-stretch gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-none px-0.5 max-w-full"
         >
           {strokeItems.map((s, idx) => {
             const isPast = isPlayingDemo ? idx < demoStrokeIndex : idx < currentStrokeIndex;

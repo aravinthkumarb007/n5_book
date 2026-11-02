@@ -103,12 +103,12 @@ export function LibraryView({
             />
           </div>
 
-          {/* Level Filter */}
-          <div className="flex items-center gap-2">
+          {/* Filters Row */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
+              className="flex-1 sm:flex-none px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
             >
               <option value="all">All 12 Levels</option>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((lvl) => (
@@ -120,23 +120,23 @@ export function LibraryView({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
+              className="flex-1 sm:flex-none px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
             >
               <option value="all">All Status</option>
-              <option value="learned">Mastered (Learned)</option>
+              <option value="learned">Mastered</option>
               <option value="learning">In Progress</option>
-              <option value="weak">Needs Revision</option>
+              <option value="weak">Revision</option>
             </select>
 
             {/* Sort Filter */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
+              className="flex-1 sm:flex-none px-2.5 sm:px-3 py-2 text-xs font-semibold rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-200 focus:outline-none"
             >
               <option value="number">Sort by #</option>
-              <option value="strokes">Sort by Strokes</option>
-              <option value="meaning">Sort Alphabetical</option>
+              <option value="strokes">Strokes</option>
+              <option value="meaning">A-Z</option>
             </select>
           </div>
         </div>

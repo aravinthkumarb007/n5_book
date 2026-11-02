@@ -9,7 +9,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#d90429'
+  themeColor: '#d90429',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true
 };
 
 export default function RootLayout({

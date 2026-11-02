@@ -201,12 +201,12 @@ export function FlashcardsView({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Top Filter and Controls */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 max-w-full text-xs">
           <button
             onClick={() => { setFilterMode('due'); restartSession(); }}
-            className={`px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition shrink-0 ${
               filterMode === 'due' ? 'bg-red-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
             }`}
           >
@@ -214,7 +214,7 @@ export function FlashcardsView({
           </button>
           <button
             onClick={() => { setFilterMode('weak'); restartSession(); }}
-            className={`px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition shrink-0 ${
               filterMode === 'weak' ? 'bg-rose-600 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
             }`}
           >
@@ -222,7 +222,7 @@ export function FlashcardsView({
           </button>
           <button
             onClick={() => { setFilterMode('all'); restartSession(); }}
-            className={`px-3 py-1.5 rounded-lg font-bold transition ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition shrink-0 ${
               filterMode === 'all' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
             }`}
           >
@@ -231,7 +231,7 @@ export function FlashcardsView({
         </div>
 
         {/* Counter */}
-        <div className="text-xs font-mono font-semibold text-stone-500">
+        <div className="text-xs font-mono font-semibold text-stone-500 text-right">
           Card {currentIndex + 1} of {eligibleCards.length}
         </div>
       </div>
@@ -247,13 +247,13 @@ export function FlashcardsView({
       {/* 3D Flashcard Container */}
       <div 
         onClick={() => setIsFlipped(prev => !prev)}
-        className="cursor-pointer min-h-[360px] md:min-h-[420px] rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl transition-all duration-300 hover:shadow-2xl relative flex flex-col justify-between p-6 md:p-8 select-none"
+        className="cursor-pointer min-h-[340px] sm:min-h-[360px] md:min-h-[420px] rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl transition-all duration-300 hover:shadow-2xl relative flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none"
       >
         {/* Top Card Bar */}
         <div className="flex items-center justify-between text-xs text-stone-400">
           <div className="flex items-center gap-2">
             <span className="font-mono font-bold px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
-              Level {currentKanji.level} • #{currentKanji.kanji_number}
+              Lvl {currentKanji.level} • #{currentKanji.kanji_number}
             </span>
             <span className="text-[11px]">
               {currentKanji.stroke_count} strokes
@@ -276,8 +276,8 @@ export function FlashcardsView({
         {!isFlipped ? (
           /* FRONT SIDE */
           <div className="my-auto text-center space-y-4">
-            <div className="relative inline-block py-6">
-              <span className="font-japanese text-8xl md:text-9xl font-black text-stone-900 dark:text-white drop-shadow-sm">
+            <div className="relative inline-block py-4 sm:py-6">
+              <span className="font-japanese text-7xl sm:text-8xl md:text-9xl font-black text-stone-900 dark:text-white drop-shadow-sm">
                 {currentKanji.character}
               </span>
             </div>
@@ -287,19 +287,19 @@ export function FlashcardsView({
           </div>
         ) : (
           /* BACK SIDE */
-          <div className="my-auto space-y-5 animate-fadeIn">
+          <div className="my-auto space-y-4 sm:space-y-5 animate-fadeIn">
             {/* Meaning & Character */}
-            <div className="text-center pb-4 border-b border-stone-100 dark:border-stone-800">
-              <span className="font-japanese text-4xl font-black text-red-600 dark:text-red-400">
+            <div className="text-center pb-3 sm:pb-4 border-b border-stone-100 dark:border-stone-800">
+              <span className="font-japanese text-3xl sm:text-4xl font-black text-red-600 dark:text-red-400">
                 {currentKanji.character}
               </span>
-              <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white mt-1">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white mt-1">
                 {currentKanji.meaning}
               </h3>
             </div>
 
             {/* Readings Table */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4 text-xs">
               <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-800">
                 <span className="text-stone-400 font-medium block mb-1">Onyomi (音読み)</span>
                 <span className="font-japanese font-bold text-red-700 dark:text-red-400 text-base">

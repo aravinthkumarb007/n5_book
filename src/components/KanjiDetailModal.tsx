@@ -170,18 +170,18 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fadeIn">
-        <div className="relative w-full max-w-4xl max-h-[92vh] bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 flex flex-col overflow-hidden">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-1 sm:p-5 bg-black/60 backdrop-blur-sm animate-fadeIn">
+        <div className="relative w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 flex flex-col overflow-hidden">
           {/* Top Bar with Status & Navigation */}
-          <div className="flex items-center justify-between px-6 py-3.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/60 shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
-                Level {currentKanji.level} • #{currentKanji.kanji_number}
+          <div className="flex items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-3.5 border-b border-stone-100 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-900/60 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                Lvl {currentKanji.level} • #{currentKanji.kanji_number}
               </span>
               {getStatusBadge()}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Prev / Next buttons */}
               <button
                 type="button"
@@ -201,7 +201,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
               >
                 <ChevronRight size={16} />
               </button>
-              <div className="w-px h-5 bg-stone-200 dark:bg-stone-800 mx-1" />
+              <div className="w-px h-5 bg-stone-200 dark:bg-stone-800 mx-0.5 sm:mx-1" />
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-full hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-500 cursor-pointer transition-colors"
@@ -211,11 +211,11 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Subheader / Tabs */}
-          <div className="flex items-center gap-2 px-6 pt-3 border-b border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 shrink-0">
+          {/* Subheader / Tabs - Scrollable on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-6 pt-2 sm:pt-3 border-b border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 shrink-0 overflow-x-auto whitespace-nowrap scrollbar-none max-w-full">
             <button
               onClick={() => setActiveTab('study')}
-              className={`pb-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'study'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
@@ -226,7 +226,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('practice')}
-              className={`pb-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'practice'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
@@ -242,7 +242,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                   fetchAiEnrichment();
                 }
               }}
-              className={`pb-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'ai_insights'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
@@ -255,13 +255,13 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
           </div>
 
           {/* Scrollable Modal Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6">
             {activeTab === 'study' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Hero Kanji Header */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 rounded-2xl bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <div className="flex flex-col items-center justify-center w-36 h-36 rounded-2xl bg-white dark:bg-stone-900 border border-red-100 dark:border-stone-700 shadow-md relative shrink-0">
-                    <span className="font-japanese text-7xl font-bold text-stone-900 dark:text-stone-50">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 p-4 sm:p-6 rounded-2xl bg-stone-50/80 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
+                  <div className="flex flex-col items-center justify-center w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-white dark:bg-stone-900 border border-red-100 dark:border-stone-700 shadow-md relative shrink-0">
+                    <span className="font-japanese text-6xl sm:text-7xl font-bold text-stone-900 dark:text-stone-50">
                       {currentKanji.character}
                     </span>
                     <div className="absolute bottom-2 right-2">
@@ -581,7 +581,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
           </div>
 
           {/* Bottom Bar: Action & Assessment Gate */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 shrink-0">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 shrink-0">
             <div className="text-xs text-stone-500 text-center sm:text-left">
               {status === 'learned' ? (
                 <span className="text-green-600 dark:text-green-400 font-semibold">
@@ -592,11 +592,11 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setIsAssessmentOpen(true)}
-                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
               >
                 <Award size={15} />
                 <span>{status === 'learned' ? 'Retake Mastery Assessment' : 'Take Assessment to Master'}</span>

@@ -185,30 +185,30 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-lg bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/70">
-          <div className="flex items-center gap-3">
-            <span className="font-japanese text-3xl font-black text-red-600 dark:text-red-500">
+        <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/70">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="font-japanese text-2xl sm:text-3xl font-black text-red-600 dark:text-red-500">
               {kanji.character}
             </span>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
                   {isReTest ? 'Dynamic Mastery Re-Test' : 'Kanji Learning Assessment'}
                 </h3>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                <span className={`text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                   isReTest 
                     ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' 
                     : 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400'
                 }`}>
-                  {isReTest ? 'Re-Test Mode' : 'Pass 80%'}
+                  {isReTest ? 'Re-Test' : 'Pass 80%'}
                 </span>
               </div>
-              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                 {isReTest 
-                  ? `Testing 「${kanji.character}」 (${kanji.meaning}) against your learned pool`
+                  ? `Testing 「${kanji.character}」 against learned pool`
                   : '80% required to graduate and unlock next kanji'}
               </p>
             </div>
@@ -222,10 +222,10 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
         </div>
 
         {/* Strict Learned Pool Compliance Strip */}
-        <div className="bg-stone-100 dark:bg-stone-800/60 px-6 py-2 border-b border-stone-200 dark:border-stone-800 text-xs flex items-center justify-between gap-2 overflow-x-auto">
-          <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 shrink-0 font-medium">
+        <div className="bg-stone-100 dark:bg-stone-800/60 px-3.5 sm:px-6 py-2 border-b border-stone-200 dark:border-stone-800 text-xs flex items-center justify-between gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300 shrink-0 font-medium text-[11px] sm:text-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>Strict Pool: <strong>{learnedPool.length} Learned Kanji</strong> (0 unlearned kanji)</span>
+            <span>Strict Pool: <strong>{learnedPool.length} Learned</strong> (0 unlearned)</span>
           </div>
 
           {/* Quick Regenerate New Test button */}
@@ -245,7 +245,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-3.5 sm:p-6 overflow-y-auto">
           {!isCompleted ? (
             <div>
               {/* Progress Tracker */}
@@ -409,11 +409,11 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleRegenerateNewTest}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md cursor-pointer transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md cursor-pointer transition-all"
                 >
                   <RotateCcw size={14} />
                   <span>{passed ? 'Take Another Re-Test (New Questions)' : 'Retry with New Questions'}</span>
@@ -421,7 +421,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 cursor-pointer text-center"
                 >
                   Done & Return
                 </button>

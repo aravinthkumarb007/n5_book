@@ -58,3 +58,7 @@ class AudioService {
 }
 
 export const audioService = new AudioService();
+export const speakJapanese = (text: string, onEnd?: () => void, rate: number = 0.9): boolean => {
+  return audioService.speak(text, onEnd, rate);
+};
+
