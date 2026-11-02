@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #faf9f5;
+    --bg-card: #ffffff;
+    --bg-subtle: #f3f1ea;
+    --text-primary: #1c1917;
+    --text-secondary: #57534e;
+    --text-muted: #8c827a;
+    --border-color: #e7e5e0;
+    --japan-red: #d90429;
+    --japan-red-hover: #b80020;
+    --japan-red-light: rgba(217, 4, 41, 0.08);
+    --gold-accent: #d97706;
+    --gold-light: rgba(217, 119, 6, 0.1);
+    --green-accent: #059669;
+    --green-light: rgba(5, 150, 105, 0.1);
+  }
+
+  .dark {
+    --bg-main: #0c0d12;
+    --bg-card: #151722;
+    --bg-subtle: #1e2130;
+    --text-primary: #f5f5f4;
+    --text-secondary: #a8a29e;
+    --text-muted: #78716c;
+    --border-color: #272a3c;
+    --japan-red: #ef233c;
+    --japan-red-hover: #ff4d6d;
+    --japan-red-light: rgba(239, 35, 60, 0.15);
+    --gold-accent: #f59e0b;
+    --gold-light: rgba(245, 158, 11, 0.15);
+    --green-accent: #10b981;
+    --green-light: rgba(16, 185, 129, 0.15);
+  }
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Japanese typography font */
+.font-japanese {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5);
+}
+
+/* 3D Flip Card Styles */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Grid lines for kanji practice canvas */
+.rice-grid {
+  background-image: 
+    linear-gradient(to right, rgba(200, 150, 150, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(200, 150, 150, 0.2) 1px, transparent 1px);
+  background-size: 50% 50%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Touch manipulation optimization for mobile taps */
+button, a, input, select {
+  touch-action: manipulation;
+}
+
