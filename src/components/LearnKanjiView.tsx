@@ -118,30 +118,30 @@ export function LearnKanjiView({
   return (
     <div className="space-y-6">
       {/* Top Banner & Quick Office Study Trigger */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-rose-700 to-stone-900 p-6 md:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-rose-700 to-stone-900 p-4 sm:p-6 md:p-8 text-white shadow-xl">
         <div className="absolute right-0 top-0 -mt-6 -mr-6 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-medium tracking-wide uppercase mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] sm:text-xs font-medium tracking-wide uppercase mb-2 sm:mb-3">
               <Sparkles className="w-3.5 h-3.5" />
               Progressive Curriculum • 120 N5 Kanji
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
               12-Level Kanji Mastery Path
             </h1>
-            <p className="mt-2 text-stone-200 text-sm md:text-base max-w-2xl leading-relaxed">
+            <p className="mt-1.5 sm:mt-2 text-stone-200 text-xs sm:text-sm md:text-base max-w-2xl leading-relaxed">
               Step-by-step progressive unlock. Master Level N by passing the 80% learning assessment for all 10 kanji to unlock the next level! Test engine dynamically tests strictly learned kanji.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto shrink-0">
             {totalLearnedAllLevels > 0 && (
               <button
                 onClick={() => {
                   const firstLearned = kanjiList.find(k => progressMap[k.id]?.learning_status === 'learned' || progressMap[k.id]?.learning_status === 'needs_revision');
                   if (firstLearned) onStartAssessment(firstLearned, true);
                 }}
-                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition shadow-lg shrink-0 text-sm cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition shadow-lg shrink-0 text-xs sm:text-sm cursor-pointer w-full sm:w-auto"
                 title="Dynamic Re-Test of your entire learned kanji pool"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -152,7 +152,7 @@ export function LearnKanjiView({
             {onOpenQuickStudy && (
               <button
                 onClick={onOpenQuickStudy}
-                className="inline-flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white text-stone-900 font-bold hover:bg-stone-100 transition shadow-lg shrink-0 text-sm cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-white text-stone-900 font-bold hover:bg-stone-100 transition shadow-lg shrink-0 text-xs sm:text-sm cursor-pointer w-full sm:w-auto"
               >
                 <Clock className="w-4 h-4 text-red-600" />
                 10-Min Office Blitz
@@ -164,25 +164,25 @@ export function LearnKanjiView({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-4 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3 sm:p-4 shadow-sm space-y-3 sm:space-y-4">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch md:items-center justify-between">
           {/* Search Box */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
-              placeholder="Search kanji, meaning, Onyomi, Kunyomi (e.g. 日, sun, ニチ, ひ)..."
+              placeholder="Search kanji, meaning, Onyomi, Kunyomi..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
 
-          {/* Status Filter Buttons */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {/* Status Filter Buttons - Horizontal swipeable on mobile */}
+          <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 text-xs max-w-full">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
                 statusFilter === 'all'
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
@@ -192,17 +192,17 @@ export function LearnKanjiView({
             </button>
             <button
               onClick={() => setStatusFilter('unlocked')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
                 statusFilter === 'unlocked'
                   ? 'bg-blue-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
               }`}
             >
-              Unlocked Only
+              Unlocked
             </button>
             <button
               onClick={() => setStatusFilter('learned')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
                 statusFilter === 'learned'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
@@ -212,7 +212,7 @@ export function LearnKanjiView({
             </button>
             <button
               onClick={() => setStatusFilter('learning')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
                 statusFilter === 'learning'
                   ? 'bg-purple-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
@@ -222,7 +222,7 @@ export function LearnKanjiView({
             </button>
             <button
               onClick={() => setStatusFilter('weak')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
                 statusFilter === 'weak'
                   ? 'bg-rose-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
@@ -233,11 +233,11 @@ export function LearnKanjiView({
           </div>
         </div>
 
-        {/* Level Selector Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-2 border-t border-stone-100 dark:border-stone-800">
+        {/* Level Selector Pills - Horizontal swipeable on mobile */}
+        <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 pt-2 border-t border-stone-100 dark:border-stone-800 max-w-full">
           <button
             onClick={() => setSelectedLevel('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${
               selectedLevel === 'all'
                 ? 'bg-red-600 text-white shadow-sm'
                 : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
@@ -254,7 +254,7 @@ export function LearnKanjiView({
               <button
                 key={lvl.level}
                 onClick={() => setSelectedLevel(lvl.level)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${
                   isSelected
                     ? 'bg-red-600 text-white shadow-sm'
                     : isUnlocked
@@ -291,12 +291,12 @@ export function LearnKanjiView({
                 isUnlocked 
                   ? 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 shadow-sm' 
                   : 'bg-stone-50/70 dark:bg-stone-950/40 border-stone-200/60 dark:border-stone-900 opacity-90'
-              } p-5 md:p-6`}
+              } p-3.5 sm:p-5 md:p-6`}
             >
               {/* Level Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-100 dark:border-stone-800">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-stone-100 dark:border-stone-800">
                 <div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wider uppercase ${
                       isUnlocked ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'
                     }`}>
@@ -312,7 +312,7 @@ export function LearnKanjiView({
                       </span>
                     )}
                   </div>
-                  <h2 className="text-lg md:text-xl font-bold text-stone-900 dark:text-white mt-1">
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white mt-1">
                     {lvl.title}
                   </h2>
                   <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
@@ -321,7 +321,7 @@ export function LearnKanjiView({
                 </div>
 
                 {/* Progress Bar & Counter */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-[220px]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0 sm:min-w-[220px]">
                   <div className="flex-1 w-full sm:w-auto">
                     <div className="flex justify-between text-xs font-semibold mb-1">
                       <span className="text-stone-600 dark:text-stone-300">Mastery Progress</span>
@@ -341,7 +341,7 @@ export function LearnKanjiView({
                         const firstLevelLearned = kanjis.find(k => progressMap[k.id]?.learning_status === 'learned' || progressMap[k.id]?.learning_status === 'needs_revision');
                         if (firstLevelLearned) onStartAssessment(firstLevelLearned, true);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition shadow-xs shrink-0 cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition shadow-xs shrink-0 cursor-pointer w-full sm:w-auto"
                       title={`Re-test all ${stat.learned} learned kanji in Level ${lvl.level}`}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -357,7 +357,7 @@ export function LearnKanjiView({
                   No kanji match your current search and filter criteria for Level {lvl.level}.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-5">
                   {kanjis.map((k) => {
                     const prog = progressMap[k.id];
                     const isLearned = prog?.learning_status === 'learned';

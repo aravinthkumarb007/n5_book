@@ -14,13 +14,14 @@ export type MinnaPartOfSpeech =
   | 'phrase' 
   | 'pronoun' 
   | 'counter' 
+  | 'suffix'
   | 'conjunction';
 
 export interface MinnaSentenceExample {
   japanese: string;
   hiragana: string;
   romaji: string;
-  english: string;
+  english?: string;
   explanation?: string;
 }
 

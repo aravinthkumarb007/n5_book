@@ -28,6 +28,9 @@ export async function POST(request: Request) {
 CRITICAL CONSTRAINT: You must ONLY generate questions and options using the provided ELIGIBLE KANJI POOL.
 Do NOT introduce any kanji character or concept outside this pool!
 
+FURIGANA INSTRUCTION:
+When Japanese sentences or vocabulary appear in prompts or options, annotate Kanji with furigana using bracket notation 漢字[かんじ].
+
 Output JSON with an array named "questions":
 {
   "questions": [

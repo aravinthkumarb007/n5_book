@@ -125,33 +125,33 @@ Provide:
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-rose-900 via-stone-900 to-stone-800 text-white p-6 md:p-8 rounded-2xl shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-gradient-to-r from-rose-900 via-stone-900 to-stone-800 text-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2">
               <AlertTriangle className="w-3.5 h-3.5" />
               Mistake Notebook & Remediation Center
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
               Weak Kanji Drill Center
             </h1>
-            <p className="text-stone-300 text-sm mt-1 max-w-xl">
+            <p className="text-stone-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
               Targeted practice for kanji where mistakes occurred. Re-test and pass with 80%+ accuracy to restore mastered status.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto shrink-0">
             <button
               onClick={() => onLaunchDrill(weakKanjiList)}
-              className="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition shadow-lg flex items-center gap-2"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Play className="w-4 h-4 fill-current" />
-              Practice Weak Kanji Now ({weakKanjiList.length})
+              Practice Weak Kanji ({weakKanjiList.length})
             </button>
             <button
               onClick={handleAiAnalysis}
               disabled={isAiAnalyzing}
-              className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/20 flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2.5 sm:py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/20 flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
             >
               <Brain className="w-4 h-4 text-amber-300" />
               {isAiAnalyzing ? 'Analyzing...' : 'Sensei AI Diagnosis'}
@@ -197,20 +197,20 @@ Provide:
           return (
             <div
               key={k.id}
-              className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-5 shadow-sm transition hover:border-stone-300 dark:hover:border-stone-700"
+              className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3.5 sm:p-5 shadow-sm transition hover:border-stone-300 dark:hover:border-stone-700"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                 {/* Kanji Character & Details */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div className="relative">
-                    <span className="font-japanese text-5xl font-black text-stone-900 dark:text-white">
+                    <span className="font-japanese text-4xl sm:text-5xl font-black text-stone-900 dark:text-white">
                       {k.character}
                     </span>
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-base text-stone-900 dark:text-white">
+                      <h3 className="font-bold text-sm sm:text-base text-stone-900 dark:text-white">
                         {k.meaning}
                       </h3>
                       <AudioButton text={k.character} size="sm" />
@@ -219,7 +219,7 @@ Provide:
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500 dark:text-stone-400 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-stone-500 dark:text-stone-400 mt-1">
                       <span>On: <strong className="font-japanese text-red-600 dark:text-red-400">{k.onyomi_readings.join(', ')}</strong></span>
                       <span>•</span>
                       <span>Kun: <strong className="font-japanese text-stone-700 dark:text-stone-300">{k.kunyomi_readings.join(', ') || '—'}</strong></span>
@@ -230,7 +230,7 @@ Provide:
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-stone-800">
                   <button
                     onClick={() => onStartAssessment(k)}
                     className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"

@@ -266,3 +266,84 @@ BEGIN
   END IF;
 END $$;
 
+-- ====================================================================
+-- MINNA NO NIHONGO LESSONS, ASSESSMENTS & CUSTOM EXAMS EXTENSION
+-- ====================================================================
+
+-- 16. Minna User Lesson Progress Table
+CREATE TABLE IF NOT EXISTS minna_user_progress (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL,
+    lesson_number INTEGER NOT NULL CHECK (lesson_number BETWEEN 1 AND 50),
+    status VARCHAR(20) NOT NULL DEFAULT 'not_started' CHECK (status IN ('not_started', 'in_progress', 'completed', 'mastered')),
+    learned_vocab_ids JSONB DEFAULT '[]'::jsonb,
+    understood_grammar_ids JSONB DEFAULT '[]'::jsonb,
+    best_score NUMERIC(5, 2) DEFAULT 0.00,
+    total_attempts INTEGER DEFAULT 0,
+    weak_vocab_ids JSONB DEFAULT '[]'::jsonb,
+    weak_grammar_ids JSONB DEFAULT '[]'::jsonb,
+    last_studied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, lesson_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_minna_progress_user ON minna_user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_minna_progress_lesson ON minna_user_progress(lesson_number);
+
+-- 17. Custom Lessons Table (User-created lessons and topic mashups)
+CREATE TABLE IF NOT EXISTS custom_lessons (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    level VARCHAR(10) DEFAULT 'N5',
+    tags JSONB DEFAULT '[]'::jsonb,
+    vocabulary JSONB DEFAULT '[]'::jsonb,
+    grammar JSONB DEFAULT '[]'::jsonb,
+    is_user_created BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_lessons_user ON custom_lessons(user_id);
+
+-- 18. Minna Custom Exam History & Diagnostic Results
+CREATE TABLE IF NOT EXISTS minna_exam_results (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    exam_title VARCHAR(200) NOT NULL,
+    score_percent NUMERIC(5, 2) NOT NULL,
+    correct_count INTEGER NOT NULL,
+    total_questions INTEGER NOT NULL,
+    time_spent_seconds INTEGER DEFAULT 0,
+    lesson_numbers JSONB DEFAULT '[]'::jsonb,
+    answers JSONB DEFAULT '[]'::jsonb,
+    weak_lessons JSONB DEFAULT '[]'::jsonb,
+    weak_grammar_topics JSONB DEFAULT '[]'::jsonb,
+    weak_vocab JSONB DEFAULT '[]'::jsonb,
+    ai_diagnostic JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_minna_exam_user ON minna_exam_results(user_id);
+CREATE INDEX IF NOT EXISTS idx_minna_exam_date ON minna_exam_results(created_at DESC);
+
+-- Enable RLS on Minna tables
+ALTER TABLE minna_user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE custom_lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE minna_exam_results ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon minna_user_progress') THEN
+    CREATE POLICY "Allow anon minna_user_progress" ON minna_user_progress FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon custom_lessons') THEN
+    CREATE POLICY "Allow anon custom_lessons" ON custom_lessons FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon minna_exam_results') THEN
+    CREATE POLICY "Allow anon minna_exam_results" ON minna_exam_results FOR ALL USING (true);
+  END IF;
+END $$;
+
+

@@ -88,19 +88,19 @@ export const QuickStudyModal: React.FC<QuickStudyModalProps> = ({
   const timeFormatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-2xl max-h-[96vh] sm:max-h-[92vh] bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50">
+        <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50">
           <div className="flex items-center gap-2">
             <span className="p-2 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400">
               <Clock size={18} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+              <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
                 Office Quick Study Session
               </h3>
-              <p className="text-xs text-stone-500">
+              <p className="text-[11px] sm:text-xs text-stone-500">
                 Distraction-free learning tailored for working hours breaks
               </p>
             </div>
@@ -115,12 +115,12 @@ export const QuickStudyModal: React.FC<QuickStudyModalProps> = ({
 
         {/* Duration Selector */}
         {!sessionActive && !sessionCompleted && (
-          <div className="p-6 space-y-6">
+          <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto">
             <p className="text-xs text-stone-600 dark:text-stone-400">
               Select your break duration. The session automatically organizes new kanji discovery and quick memory revisions:
             </p>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               {[
                 { min: 5, label: '5-Minute Blitz', sub: 'Learn 2 new • Revise 3' },
                 { min: 10, label: '10-Minute Focus', sub: 'Learn 5 new • Revise 5' },
@@ -133,15 +133,15 @@ export const QuickStudyModal: React.FC<QuickStudyModalProps> = ({
                     setSelectedDuration(plan.min as any);
                     setupSession(plan.min as any);
                   }}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                     selectedDuration === plan.min
                       ? 'border-red-600 bg-red-50/60 dark:bg-red-950/30 text-red-900 dark:text-red-200 ring-2 ring-red-500/20'
                       : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 bg-white dark:bg-stone-800/40 text-stone-800 dark:text-stone-300'
                   }`}
                 >
-                  <span className="text-xl font-bold block mb-1">{plan.min} min</span>
+                  <span className="text-lg sm:text-xl font-bold block mb-0.5 sm:mb-1">{plan.min} min</span>
                   <span className="text-xs font-semibold block">{plan.label}</span>
-                  <span className="text-[11px] text-stone-500 block mt-1">{plan.sub}</span>
+                  <span className="text-[11px] text-stone-500 block mt-0.5">{plan.sub}</span>
                 </button>
               ))}
             </div>
@@ -208,7 +208,7 @@ export const QuickStudyModal: React.FC<QuickStudyModalProps> = ({
 
         {/* Active Session Mode */}
         {sessionActive && !sessionCompleted && (
-          <div className="p-6 space-y-6">
+          <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto">
             {/* Focus Clock Bar */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-stone-900 text-white shadow-md">
               <div className="flex items-center gap-3">

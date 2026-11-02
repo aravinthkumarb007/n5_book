@@ -109,11 +109,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={onStartQuickStudy}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-red-700 font-bold text-xs shadow-lg hover:bg-stone-50 transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white text-red-700 font-bold text-xs shadow-lg hover:bg-stone-50 active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
             >
               <Zap size={16} />
               <span>Quick Break (5-15m)</span>
@@ -121,7 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('learn')}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-red-700/60 hover:bg-red-700/80 border border-white/20 text-white font-bold text-xs transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-red-700/60 hover:bg-red-700/80 border border-white/20 text-white font-bold text-xs active:scale-95 transition-all cursor-pointer w-full sm:w-auto"
             >
               <span>Continue Level {currentLevel}</span>
               <ArrowRight size={15} />
@@ -135,8 +135,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </span>
       </div>
 
+      {/* Minna no Nihongo Feature Highlight Card */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-stone-900 via-stone-900 to-red-950 border border-stone-800 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-1 max-w-2xl">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white">
+              Feature Expansion
+            </span>
+            <span className="text-xs font-bold text-amber-300 font-japanese">
+              みんなの日本語 (Minna no Nihongo)
+            </span>
+          </div>
+          <h2 className="text-lg sm:text-xl font-black">
+            Complete Lesson-Wise Vocabulary, Grammar & AI Custom Exam Studio
+          </h2>
+          <p className="text-xs text-stone-300 leading-relaxed">
+            All 25 lessons of Shokyu I loaded with native audio pronunciation, structured grammar formulas, 
+            interactive sentence formation tiles, and configurable AI test generators.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('minna')}
+          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold text-xs sm:text-sm shadow-lg active:scale-95 transition flex items-center justify-center gap-2 w-full md:w-auto shrink-0 cursor-pointer"
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Open Minna Hub</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* Primary KPI Grid (6 metrics) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs">
           <p className="text-xs text-stone-500 font-medium">Target</p>
           <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-1">120</p>
@@ -259,7 +290,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <p className="text-xs font-bold text-stone-700 dark:text-stone-300 mb-2">
               Level Roadmap Preview:
             </p>
-            <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5">
               {LEVEL_METADATA.map(lvl => {
                 const lvlKanji = progressList.filter(p => lvl.kanjiIds.includes(p.kanji_id));
                 const passedCount = lvlKanji.filter(p => p.learning_status === 'learned' || p.learning_status === 'needs_revision').length;

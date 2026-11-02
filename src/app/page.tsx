@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, BookOpen, Zap, Layers, AlertTriangle, 
   Calendar, Search, BarChart3, Bot, Settings as SettingsIcon, 
-  Flame, Clock, Moon, Sun, Menu, X, Sparkles, CheckCircle2, Cloud
+  Flame, Clock, Moon, Sun, Menu, X, Sparkles, CheckCircle2, Cloud, GraduationCap
 } from 'lucide-react';
 import { KanjiRecord, UserKanjiProgress, UserSettings, QuizQuestionType } from '@/types/kanji';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
@@ -21,6 +21,7 @@ import { LibraryView } from '@/components/LibraryView';
 import { AnalyticsView } from '@/components/AnalyticsView';
 import { AiTutorView } from '@/components/AiTutorView';
 import { SettingsView } from '@/components/SettingsView';
+import { MinnaDashboardView } from '@/components/minna/MinnaDashboardView';
 
 // Modals
 import { KanjiDetailModal } from '@/components/KanjiDetailModal';
@@ -29,6 +30,7 @@ import { QuickStudyModal } from '@/components/QuickStudyModal';
 
 type NavView = 
   | 'dashboard' 
+  | 'minna'
   | 'learn' 
   | 'quiz' 
   | 'flashcards' 
@@ -158,6 +160,7 @@ export default function HomePage() {
 
   const navItems: { id: NavView; label: string; icon: React.FC<{ className?: string }>; badge?: string | number; badgeColor?: string }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'minna', label: 'Minna Curriculum', icon: GraduationCap, badge: '25 Lessons', badgeColor: 'bg-red-600 text-white' },
     { id: 'learn', label: 'Learn Kanji', icon: BookOpen, badge: `${learnedCount}/120`, badgeColor: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' },
     { id: 'quiz', label: 'Practice & Quiz', icon: Zap },
     { id: 'flashcards', label: 'Flashcards', icon: Layers, badge: dueCount > 0 ? dueCount : undefined, badgeColor: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' },
@@ -196,19 +199,19 @@ export default function HomePage() {
 
             <div 
               onClick={() => setCurrentView('dashboard')}
-              className="flex items-center gap-2.5 cursor-pointer group select-none"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none min-w-0"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center font-japanese font-black text-lg shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center font-japanese font-black text-base sm:text-lg shadow-md group-hover:scale-105 transition-transform shrink-0">
                 漢
               </div>
-              <div>
-                <span className="font-black text-base md:text-lg tracking-tight flex items-center gap-1.5">
+              <div className="min-w-0">
+                <span className="font-black text-sm sm:text-base md:text-lg tracking-tight flex items-center gap-1.5 truncate">
                   N5 漢字マスター
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 shrink-0">
                     Groq AI
                   </span>
                 </span>
-                <span className="text-[10px] text-stone-400 block font-medium -mt-0.5">
+                <span className="text-[10px] text-stone-400 hidden sm:block font-medium -mt-0.5 truncate">
                   120 Kanji Progressive Learning System
                 </span>
               </div>
@@ -216,11 +219,11 @@ export default function HomePage() {
           </div>
 
           {/* Quick Stats & Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Live Cloud DB Sync Indicator */}
             <div 
               onClick={() => setCurrentView('settings')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition shadow-xs bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-emerald-500"
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition shadow-xs bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-emerald-500"
               title={
                 cloudSyncStatus === 'saved'
                   ? 'All study progress is securely saved to Supabase cloud'
@@ -245,9 +248,13 @@ export default function HomePage() {
             </div>
 
             {/* Streak Counter */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 text-orange-700 dark:text-orange-400 text-xs font-bold shadow-sm">
-              <Flame className="w-4 h-4 fill-current text-orange-500 animate-pulse" />
-              <span>{settings.daily_streak || 1} Day Streak</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 text-orange-700 dark:text-orange-400 text-xs font-bold shadow-sm shrink-0">
+              <Flame className="w-3.5 sm:w-4 h-3.5 sm:h-4 fill-current text-orange-500 animate-pulse" />
+              <span>
+                {settings.daily_streak || 1}
+                <span className="hidden sm:inline"> Day Streak</span>
+                <span className="sm:hidden">d</span>
+              </span>
             </div>
 
             {/* Quick 10-Min Office Session Launcher */}
@@ -262,7 +269,7 @@ export default function HomePage() {
             {/* Theme Switcher Button */}
             <button
               onClick={() => handleUpdateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}
-              className="p-2 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+              className="p-1.5 sm:p-2 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
               title="Toggle Light / Dark Mode"
             >
               {settings.theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-stone-600" />}
@@ -272,7 +279,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Layout Body */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex gap-6">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 flex gap-6">
         {/* Desktop Sidebar Navigation */}
         <aside className="hidden lg:block w-64 shrink-0 space-y-1 select-none">
           <div className="sticky top-24 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3 shadow-sm space-y-1">
@@ -384,6 +391,12 @@ export default function HomePage() {
             />
           </div>
 
+          <div className={currentView === 'minna' ? 'block' : 'hidden'}>
+            <MinnaDashboardView
+              onNavigateHome={() => setCurrentView('dashboard')}
+            />
+          </div>
+
           <div className={currentView === 'learn' ? 'block' : 'hidden'}>
             <LearnKanjiView
               kanjiList={ALL_120_KANJI}
@@ -474,6 +487,79 @@ export default function HomePage() {
           </div>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Persistent 1-Thumb Mobile App Experience) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 px-2 py-1.5 flex items-center justify-around shadow-lg">
+        <button
+          onClick={() => setCurrentView('dashboard')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
+            currentView === 'dashboard'
+              ? 'text-red-600 dark:text-red-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <LayoutDashboard className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Home</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('minna')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition relative ${
+            currentView === 'minna'
+              ? 'text-red-600 dark:text-red-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <div className="relative">
+            <GraduationCap className="w-5 h-5 mb-0.5" />
+            <span className="absolute -top-1 -right-2 text-[8px] px-1 rounded-full bg-red-600 text-white font-mono font-bold leading-tight">
+              25
+            </span>
+          </div>
+          <span className="text-[10px]">Minna</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('learn')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition relative ${
+            currentView === 'learn'
+              ? 'text-red-600 dark:text-red-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <div className="relative">
+            <BookOpen className="w-5 h-5 mb-0.5" />
+            <span className="absolute -top-1 -right-2 text-[8px] px-1 rounded-full bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 font-mono font-bold leading-tight">
+              {learnedCount}
+            </span>
+          </div>
+          <span className="text-[10px]">Kanji</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('quiz')}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
+            currentView === 'quiz'
+              ? 'text-red-600 dark:text-red-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <Zap className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Quiz</span>
+        </button>
+
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
+            mobileMenuOpen
+              ? 'text-red-600 dark:text-red-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <Menu className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">More</span>
+        </button>
+      </nav>
 
       {/* Global Modals */}
       {selectedKanji && (

@@ -16,6 +16,8 @@ import { quizEngine } from '@/services/quizEngine';
 import { storage } from '@/services/storage';
 import { srsEngine } from '@/services/srs';
 import { AudioButton } from './AudioButton';
+import { FuriganaText } from './FuriganaText';
+import { AiQuizLoadingOverlay } from './common/AiQuizLoadingOverlay';
 
 interface QuizViewProps {
   progressMap: Record<number, UserKanjiProgress>;
@@ -68,7 +70,15 @@ export function QuizView({
   // Timed challenge state
   const [timeLeft, setTimeLeft] = useState<number>(15);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoNextTimerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTimeRef = useRef<number>(Date.now());
+
+  // Cleanup auto-advance timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    };
+  }, []);
 
   // Learned Kanji Pool strictly checked
   const eligiblePool = storage.getLearnedKanjiPool();
@@ -234,9 +244,16 @@ export function QuizView({
       is_correct: isCorrect,
       time_taken_seconds: timeSpent
     });
+
+    // Auto-advance to next question smoothly after 850ms
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    autoNextTimerRef.current = setTimeout(() => {
+      handleNextQuestion();
+    }, 850);
   };
 
   const handleNextQuestion = () => {
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
@@ -344,29 +361,31 @@ export function QuizView({
             <h2 className="text-base font-bold text-stone-900 dark:text-white mb-3">
               1. Select Test Mode (9 Formats)
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
               {QUIZ_MODES.map((m) => {
                 const isSelected = selectedMode === m.type;
                 return (
                   <button
                     key={m.type}
                     onClick={() => setSelectedMode(m.type)}
-                    className={`p-4 rounded-xl border text-left transition relative ${
+                    className={`p-3 sm:p-4 rounded-xl border text-left transition relative flex flex-col justify-between min-h-[115px] sm:min-h-[130px] ${
                       isSelected
                         ? 'border-red-600 bg-red-50/60 dark:bg-red-950/30 text-stone-900 dark:text-white ring-2 ring-red-500/20 shadow-sm'
                         : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 bg-white dark:bg-stone-850 text-stone-700 dark:text-stone-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold flex items-center justify-center text-xs">
-                        {m.icon}
-                      </span>
-                      {isSelected && (
-                        <span className="w-2 h-2 rounded-full bg-red-600" />
-                      )}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white font-bold flex items-center justify-center text-xs">
+                          {m.icon}
+                        </span>
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-red-600" />
+                        )}
+                      </div>
+                      <h3 className="font-bold text-xs sm:text-sm line-clamp-1">{m.title}</h3>
                     </div>
-                    <h3 className="font-bold text-sm">{m.title}</h3>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">
+                    <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 mt-1 line-clamp-2 leading-relaxed">
                       {m.desc}
                     </p>
                   </button>
@@ -497,20 +516,20 @@ export function QuizView({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-japanese text-xl font-bold text-stone-900 dark:text-white">
-                      {m.question.kanjiCharacter || m.question.prompt}
+                      <FuriganaText text={m.question.kanjiCharacter || m.question.prompt} />
                     </span>
                     <AudioButton text={m.question.kanjiCharacter || m.question.prompt} size="sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
                     <div className="text-rose-700 dark:text-rose-400 font-medium">
-                      Your answer: <span className="line-through">{m.selected === '__TIME_UP__' ? 'Time Expired' : m.selected}</span>
+                      Your answer: <span className="line-through">{m.selected === '__TIME_UP__' ? 'Time Expired' : <FuriganaText text={m.selected} />}</span>
                     </div>
                     <div className="text-emerald-700 dark:text-emerald-400 font-bold">
-                      Correct: {m.question.correctAnswer}
+                      Correct: <FuriganaText text={m.question.correctAnswer} />
                     </div>
                   </div>
                   <p className="text-stone-500 dark:text-stone-400 text-[10px] pt-1 border-t border-rose-100 dark:border-rose-900/40">
-                    {m.question.explanation}
+                    <FuriganaText text={m.question.explanation} />
                   </p>
                 </div>
               ))}
@@ -599,23 +618,22 @@ export function QuizView({
           </p>
         )}
 
-        {/* Big Japanese Display */}
-        <div className="relative py-4 flex items-center justify-center">
-          <span className="font-japanese text-6xl md:text-7xl font-black text-stone-900 dark:text-white select-none">
-            {currentQ.prompt}
-          </span>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <AudioButton text={currentQ.kanjiCharacter || currentQ.prompt} size="md" />
-          </div>
+        {/* Big Japanese Display with Furigana */}
+        <div className="py-2 sm:py-4 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+          <FuriganaText 
+            text={currentQ.prompt}
+            className="font-japanese text-3xl sm:text-5xl md:text-6xl font-black text-stone-900 dark:text-white select-none text-center"
+          />
+          <AudioButton text={currentQ.kanjiCharacter || currentQ.prompt} size="md" />
         </div>
 
         {currentQ.contextSentence && (
           <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 text-stone-600 dark:text-stone-300 text-sm font-japanese">
-            {currentQ.contextSentence}
+            <FuriganaText text={currentQ.contextSentence} />
           </div>
         )}
 
-        {/* 4 Choices Grid */}
+        {/* 4 Choices Grid with Furigana */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           {currentQ.options.map((opt, idx) => {
             const isSelected = selectedOption === opt;
@@ -640,7 +658,7 @@ export function QuizView({
                 onClick={() => handleAnswerSubmit(opt)}
                 className={`p-4 rounded-xl border text-sm md:text-base font-medium transition text-center flex items-center justify-center gap-2 ${btnStyle}`}
               >
-                <span>{opt}</span>
+                <FuriganaText text={opt} />
                 {isAnswerSubmitted && isCorrect && (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 )}
@@ -670,8 +688,11 @@ export function QuizView({
                   {selectedOption === currentQ.correctAnswer ? 'Correct! 正解です' : 'Incorrect. 復習しましょう'}
                 </p>
                 <p className="text-xs mt-1 leading-relaxed opacity-90">
-                  {currentQ.explanation}
+                  <FuriganaText text={currentQ.explanation} />
                 </p>
+                <span className="text-[11px] text-stone-500 dark:text-stone-400 font-normal block mt-1 animate-pulse">
+                  ⚡ Auto-advancing to next question...
+                </span>
               </div>
             </div>
 
@@ -685,6 +706,13 @@ export function QuizView({
           </div>
         )}
       </div>
+
+      {/* AI Quiz Loading Animation Overlay */}
+      <AiQuizLoadingOverlay 
+        isOpen={isAiLoading}
+        title="Generating AI Kanji Quiz"
+        subtitle="Synthesizing personalized JLPT N5 questions with complete furigana..."
+      />
     </div>
   );
 }

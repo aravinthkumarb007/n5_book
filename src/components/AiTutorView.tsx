@@ -251,13 +251,13 @@ How can I assist your Japanese study today?`,
       </div>
 
       {/* Quick Suggestion Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 text-xs max-w-full">
         {QUICK_PROMPTS.map((prompt, idx) => (
           <button
             key={idx}
             disabled={isLoading}
             onClick={() => handleSend(prompt)}
-            className="px-3 py-1.5 rounded-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:border-red-500 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white whitespace-nowrap transition disabled:opacity-50 text-[11px]"
+            className="px-3 py-1.5 rounded-full border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:border-red-500 text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white whitespace-nowrap transition disabled:opacity-50 text-[11px] shrink-0 cursor-pointer"
           >
             {prompt}
           </button>
