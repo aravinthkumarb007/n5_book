@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { 
-  BookOpen, Lock, CheckCircle2, AlertTriangle, Sparkles, 
+import {
+  BookOpen, Lock, CheckCircle2, AlertTriangle, Sparkles,
   Search, Award, Clock, ArrowRight, Play, Eye, RotateCcw, ShieldCheck
 } from 'lucide-react';
 import { KanjiRecord, UserKanjiProgress } from '@/types/kanji';
@@ -182,51 +182,46 @@ export function LearnKanjiView({
           <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 text-xs max-w-full">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
-                statusFilter === 'all'
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${statusFilter === 'all'
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
+                }`}
             >
               All Status
             </button>
             <button
               onClick={() => setStatusFilter('unlocked')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
-                statusFilter === 'unlocked'
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${statusFilter === 'unlocked'
                   ? 'bg-blue-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
+                }`}
             >
               Unlocked
             </button>
             <button
               onClick={() => setStatusFilter('learned')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
-                statusFilter === 'learned'
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${statusFilter === 'learned'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
+                }`}
             >
               Mastered (80%+)
             </button>
             <button
               onClick={() => setStatusFilter('learning')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
-                statusFilter === 'learning'
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${statusFilter === 'learning'
                   ? 'bg-purple-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
+                }`}
             >
               In Progress
             </button>
             <button
               onClick={() => setStatusFilter('weak')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${
-                statusFilter === 'weak'
+              className={`px-3 py-1.5 rounded-lg font-medium transition shrink-0 ${statusFilter === 'weak'
                   ? 'bg-rose-600 text-white'
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
-              }`}
+                }`}
             >
               Needs Revision
             </button>
@@ -237,11 +232,10 @@ export function LearnKanjiView({
         <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 pt-2 border-t border-stone-100 dark:border-stone-800 max-w-full">
           <button
             onClick={() => setSelectedLevel('all')}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${
-              selectedLevel === 'all'
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${selectedLevel === 'all'
                 ? 'bg-red-600 text-white shadow-sm'
                 : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
-            }`}
+              }`}
           >
             All 12 Levels
           </button>
@@ -254,20 +248,18 @@ export function LearnKanjiView({
               <button
                 key={lvl.level}
                 onClick={() => setSelectedLevel(lvl.level)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${
-                  isSelected
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0 ${isSelected
                     ? 'bg-red-600 text-white shadow-sm'
                     : isUnlocked
-                    ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200'
-                    : 'bg-stone-100/60 dark:bg-stone-900/60 text-stone-400 dark:text-stone-600'
-                }`}
+                      ? 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-200'
+                      : 'bg-stone-100/60 dark:bg-stone-900/60 text-stone-400 dark:text-stone-600'
+                  }`}
               >
                 {!isUnlocked && <Lock className="w-3 h-3" />}
                 <span>Lvl {lvl.level}</span>
                 {stat && (
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    isSelected ? 'bg-white/30 text-white' : 'bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300'
-                  }`}>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/30 text-white' : 'bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300'
+                    }`}>
                     {stat.learned}/10
                   </span>
                 )}
@@ -285,213 +277,209 @@ export function LearnKanjiView({
           const kanjis = getFilteredKanjiForLevel(lvl);
 
           return (
-            <div 
+            <div
               key={lvl.level}
-              className={`rounded-2xl border transition-all ${
-                isUnlocked 
-                  ? 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 shadow-sm' 
+              className={`rounded-2xl border transition-all ${isUnlocked
+                  ? 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 shadow-sm'
                   : 'bg-stone-50/70 dark:bg-stone-950/40 border-stone-200/60 dark:border-stone-900 opacity-90'
-              } p-3.5 sm:p-5 md:p-6`}
+                } p-3.5 sm:p-5 md:p-6`}
             >
               {/* Level Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-stone-100 dark:border-stone-800">
-                <div>
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wider uppercase ${
-                      isUnlocked ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'
-                    }`}>
-                      Level {lvl.level}
-                    </span>
-                    <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">
-                      {lvl.kanjiRange}
-                    </span>
-                    {!isUnlocked && (
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
-                        <Lock className="w-3 h-3" />
-                        Locked (Pass Level {lvl.level - 1} 100% to unlock)
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white mt-1">
-                    {lvl.title}
-                  </h2>
-                  <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-                    {lvl.subtitle} • Key Characters: <span className="font-japanese font-semibold text-stone-700 dark:text-stone-200">{lvl.theme}</span>
-                  </p>
-                </div>
-
-                {/* Progress Bar & Counter */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0 sm:min-w-[220px]">
-                  <div className="flex-1 w-full sm:w-auto">
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-stone-600 dark:text-stone-300">Mastery Progress</span>
-                      <span className="text-red-600 dark:text-red-400">{stat?.learned || 0}/10 ({stat?.pct || 0}%)</span>
-                    </div>
-                    <div className="h-2 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-red-600 to-rose-500 transition-all duration-500 rounded-full"
-                        style={{ width: `${stat?.pct || 0}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {stat && stat.learned > 0 && (
-                    <button
-                      onClick={() => {
-                        const firstLevelLearned = kanjis.find(k => progressMap[k.id]?.learning_status === 'learned' || progressMap[k.id]?.learning_status === 'needs_revision');
-                        if (firstLevelLearned) onStartAssessment(firstLevelLearned, true);
-                      }}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition shadow-xs shrink-0 cursor-pointer w-full sm:w-auto"
-                      title={`Re-test all ${stat.learned} learned kanji in Level ${lvl.level}`}
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Re-Test Level ({stat.learned})</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Kanji Cards Grid */}
-              {kanjis.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 text-sm">
-                  No kanji match your current search and filter criteria for Level {lvl.level}.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-5">
-                  {kanjis.map((k) => {
-                    const prog = progressMap[k.id];
-                    const isLearned = prog?.learning_status === 'learned';
-                    const isLearning = prog?.learning_status === 'learning';
-                    const isWeak = prog?.learning_status === 'needs_revision';
-                    const cardLocked = !isUnlocked;
-
-                    // Compute overall score
-                    const avgScore = prog && isLearned
-                      ? Math.round((prog.meaning_accuracy + prog.onyomi_accuracy + prog.kunyomi_accuracy + prog.vocabulary_accuracy) / 4)
-                      : null;
-
-                    return (
-                      <div
-                        key={k.id}
-                        className={`group relative rounded-xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${
-                          cardLocked 
-                            ? 'bg-stone-100/50 dark:bg-stone-900/30 border-stone-200/60 dark:border-stone-800/50 opacity-60'
-                            : isLearned
-                            ? 'bg-white dark:bg-stone-850 border-emerald-200 dark:border-emerald-900/50 hover:shadow-md hover:border-emerald-400'
-                            : isWeak
-                            ? 'bg-white dark:bg-stone-850 border-rose-200 dark:border-rose-900/50 hover:shadow-md hover:border-rose-400'
-                            : isLearning
-                            ? 'bg-white dark:bg-stone-850 border-purple-200 dark:border-purple-900/50 hover:shadow-md hover:border-purple-400'
-                            : 'bg-white dark:bg-stone-850 border-stone-200 dark:border-stone-800 hover:shadow-md hover:border-stone-300'
-                        }`}
-                      >
-                        {/* Top Badge & Number */}
-                        <div className="p-4 pb-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono text-stone-400 font-semibold">
-                              #{k.kanji_number}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-stone-100 dark:border-stone-800 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-wider uppercase ${isUnlocked ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'
+                            }`}>
+                            Level {lvl.level}
+                          </span>
+                          <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">
+                            {lvl.kanjiRange}
+                          </span>
+                          {!isUnlocked && (
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
+                              <Lock className="w-3 h-3" />
+                              Locked (Pass Level {lvl.level - 1} 100% to unlock)
                             </span>
-                            
-                            {cardLocked ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded">
-                                <Lock className="w-2.5 h-2.5" />
-                                Locked
-                              </span>
-                            ) : isLearned ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                {avgScore ? `${avgScore}%` : 'Learned'}
-                              </span>
-                            ) : isWeak ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded">
-                                <AlertTriangle className="w-3 h-3 text-rose-500" />
-                                Revision ({prog?.mistake_count}x)
-                              </span>
-                            ) : isLearning ? (
-                              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded">
-                                In Progress
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded">
-                                Available
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Kanji Character with Audio */}
-                          <div className="mt-2 text-center relative py-2">
-                            <span className="font-japanese text-5xl font-black text-stone-900 dark:text-stone-50 select-none group-hover:scale-105 transition-transform inline-block">
-                              {k.character}
-                            </span>
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                              <AudioButton 
-                                text={k.character} 
-                                size="sm" 
-                                className="opacity-60 hover:opacity-100" 
-                              />
-                            </div>
-                          </div>
-
-                          {/* Meaning */}
-                          <div className="text-center mt-1">
-                            <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">
-                              {k.meaning}
+                          )}
+                        </div>
+                          <h2 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white mt-1 break-words">
+                            {lvl.title}
+                          </h2>
+                            <p className="text-xs md:text-sm text-stone-500 dark:text-stone-400 mt-0.5 break-words">
+                              {lvl.subtitle} • Key Characters: <span className="font-japanese font-semibold text-stone-700 dark:text-stone-200 break-words">{lvl.theme}</span>
                             </p>
                           </div>
 
-                          {/* Readings Box */}
-                          <div className="mt-3 pt-2.5 border-t border-stone-100 dark:border-stone-800 space-y-1 text-xs">
-                            <div className="flex justify-between items-center text-[11px]">
-                              <span className="text-stone-400 font-medium">On:</span>
-                              <span className="font-japanese font-semibold text-red-700 dark:text-red-400 truncate max-w-[120px]">
-                                {k.onyomi_readings.join(', ')}
-                              </span>
+                          {/* Progress Bar & Counter */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0 sm:min-w-[220px]">
+                            <div className="flex-1 w-full sm:w-auto">
+                              <div className="flex justify-between text-xs font-semibold mb-1">
+                                <span className="text-stone-600 dark:text-stone-300">Mastery Progress</span>
+                                <span className="text-red-600 dark:text-red-400">{stat?.learned || 0}/10 ({stat?.pct || 0}%)</span>
+                              </div>
+                              <div className="h-2 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-red-600 to-rose-500 transition-all duration-500 rounded-full"
+                                  style={{ width: `${stat?.pct || 0}%` }}
+                                />
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center text-[11px]">
-                              <span className="text-stone-400 font-medium">Kun:</span>
-                              <span className="font-japanese font-semibold text-stone-700 dark:text-stone-200 truncate max-w-[120px]">
-                                {k.kunyomi_readings.length > 0 ? k.kunyomi_readings.join(', ') : '—'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Action Footer */}
-                        <div className="p-3 bg-stone-50/80 dark:bg-stone-800/40 border-t border-stone-100 dark:border-stone-800/80 flex items-center gap-2">
-                          <button
-                            disabled={cardLocked}
-                            onClick={() => onSelectKanji(k)}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white dark:bg-stone-700 hover:bg-stone-100 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-600 text-xs font-semibold transition disabled:opacity-50"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            Study
-                          </button>
-                          
-                          <button
-                            disabled={cardLocked}
-                            onClick={() => onStartAssessment(k, isLearned || isWeak)}
-                            className={`inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer ${
-                              isLearned
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                : isWeak
-                                ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                                : 'bg-red-600 hover:bg-red-700 text-white'
-                            }`}
-                            title={isLearned || isWeak ? "Dynamic re-test strictly using your learned kanji pool" : "Take 4-step assessment to earn Learned status"}
-                          >
-                            {isLearned || isWeak ? <RotateCcw className="w-3.5 h-3.5" /> : <Award className="w-3.5 h-3.5" />}
-                            {isLearned || isWeak ? 'Re-Test' : 'Pass 80%'}
-                          </button>
-                        </div>
+                            {stat && stat.learned > 0 && (
+                              <button
+                                onClick={() => {
+                                  const firstLevelLearned = kanjis.find(k => progressMap[k.id]?.learning_status === 'learned' || progressMap[k.id]?.learning_status === 'needs_revision');
+                                  if (firstLevelLearned) onStartAssessment(firstLevelLearned, true);
+                                }}
+                                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition shadow-xs shrink-0 cursor-pointer w-full sm:w-auto"
+                                title={`Re-test all ${stat.learned} learned kanji in Level ${lvl.level}`}
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Re-Test Level ({stat.learned})</span>
+                              </button>
+                            )}
+                          </div>
                       </div>
+
+                      {/* Kanji Cards Grid */}
+                      {kanjis.length === 0 ? (
+                        <div className="py-12 text-center text-stone-400 text-sm">
+                          No kanji match your current search and filter criteria for Level {lvl.level}.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-5">
+                          {kanjis.map((k) => {
+                            const prog = progressMap[k.id];
+                            const isLearned = prog?.learning_status === 'learned';
+                            const isLearning = prog?.learning_status === 'learning';
+                            const isWeak = prog?.learning_status === 'needs_revision';
+                            const cardLocked = !isUnlocked;
+
+                            // Compute overall score
+                            const avgScore = prog && isLearned
+                              ? Math.round((prog.meaning_accuracy + prog.onyomi_accuracy + prog.kunyomi_accuracy + prog.vocabulary_accuracy) / 4)
+                              : null;
+
+                            return (
+                              <div
+                                key={k.id}
+                                className={`group relative rounded-xl border transition-all duration-200 flex flex-col justify-between overflow-hidden ${cardLocked
+                                    ? 'bg-stone-100/50 dark:bg-stone-900/30 border-stone-200/60 dark:border-stone-800/50 opacity-60'
+                                    : isLearned
+                                      ? 'bg-white dark:bg-stone-850 border-emerald-200 dark:border-emerald-900/50 hover:shadow-md hover:border-emerald-400'
+                                      : isWeak
+                                        ? 'bg-white dark:bg-stone-850 border-rose-200 dark:border-rose-900/50 hover:shadow-md hover:border-rose-400'
+                                        : isLearning
+                                          ? 'bg-white dark:bg-stone-850 border-purple-200 dark:border-purple-900/50 hover:shadow-md hover:border-purple-400'
+                                          : 'bg-white dark:bg-stone-850 border-stone-200 dark:border-stone-800 hover:shadow-md hover:border-stone-300'
+                                  }`}
+                              >
+                                {/* Top Badge & Number */}
+                                <div className="p-4 pb-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-mono text-stone-400 font-semibold">
+                                      #{k.kanji_number}
+                                    </span>
+
+                                    {cardLocked ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded">
+                                        <Lock className="w-2.5 h-2.5" />
+                                        Locked
+                                      </span>
+                                    ) : isLearned ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                        {avgScore ? `${avgScore}%` : 'Learned'}
+                                      </span>
+                                    ) : isWeak ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded">
+                                        <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                        Revision ({prog?.mistake_count}x)
+                                      </span>
+                                    ) : isLearning ? (
+                                      <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded">
+                                        In Progress
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded">
+                                        Available
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Kanji Character with Audio */}
+                                  <div className="mt-2 text-center relative py-2">
+                                    <span className="font-japanese text-5xl font-black text-stone-900 dark:text-stone-50 select-none group-hover:scale-105 transition-transform inline-block">
+                                      {k.character}
+                                    </span>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                      <AudioButton
+                                        text={k.character}
+                                        size="sm"
+                                        className="opacity-60 hover:opacity-100"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Meaning */}
+                                  <div className="text-center mt-1">
+                                    <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate">
+                                      {k.meaning}
+                                    </p>
+                                  </div>
+
+                                  {/* Readings Box */}
+                                  <div className="mt-3 pt-2.5 border-t border-stone-100 dark:border-stone-800 space-y-1 text-xs">
+                                    <div className="flex justify-between items-center text-[11px]">
+                                      <span className="text-stone-400 font-medium">On:</span>
+                                      <span className="font-japanese font-semibold text-red-700 dark:text-red-400 truncate max-w-[120px]">
+                                        {k.onyomi_readings.join(', ')}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[11px]">
+                                      <span className="text-stone-400 font-medium">Kun:</span>
+                                      <span className="font-japanese font-semibold text-stone-700 dark:text-stone-200 truncate max-w-[120px]">
+                                        {k.kunyomi_readings.length > 0 ? k.kunyomi_readings.join(', ') : '—'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action Footer */}
+                                <div className="p-3 bg-stone-50/80 dark:bg-stone-800/40 border-t border-stone-100 dark:border-stone-800/80 flex items-center gap-2">
+                                  <button
+                                    disabled={cardLocked}
+                                    onClick={() => onSelectKanji(k)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-white dark:bg-stone-700 hover:bg-stone-100 dark:hover:bg-stone-600 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-600 text-xs font-semibold transition disabled:opacity-50"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    Study
+                                  </button>
+
+                                  <button
+                                    disabled={cardLocked}
+                                    onClick={() => onStartAssessment(k, isLearned || isWeak)}
+                                    className={`inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer ${isLearned
+                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                        : isWeak
+                                          ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                                          : 'bg-red-600 hover:bg-red-700 text-white'
+                                      }`}
+                                    title={isLearned || isWeak ? "Dynamic re-test strictly using your learned kanji pool" : "Take 4-step assessment to earn Learned status"}
+                                  >
+                                    {isLearned || isWeak ? <RotateCcw className="w-3.5 h-3.5" /> : <Award className="w-3.5 h-3.5" />}
+                                    {isLearned || isWeak ? 'Re-Test' : 'Pass 80%'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                     );
-                  })}
-                </div>
-              )}
-            </div>
-          );
         })}
-      </div>
-    </div>
-  );
+                  </div>
+                </div>
+                );
 }

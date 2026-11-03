@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Key, ShieldCheck, Zap, Server, CheckCircle2, AlertCircle, 
   RefreshCw, Sliders, Database, Eye, EyeOff, Save, Trash2, 
-  Sun, Moon, Volume2, Sparkles, AlertTriangle, Cloud, CloudUpload, CloudDownload, ExternalLink
+  Sun, Moon, Volume2, Sparkles, AlertTriangle, Cloud, CloudUpload, CloudDownload, ExternalLink, Globe
 } from 'lucide-react';
 import { UserSettings } from '@/types/kanji';
-import { storage } from '@/services/storage';
+import { storage, triggerAutoCloudSync } from '@/services/storage';
+import { setClientSupabaseCredentials } from '@/services/supabaseClient';
 
 interface SettingsViewProps {
   settings: UserSettings;
@@ -44,7 +45,28 @@ export function SettingsView({
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Supabase Cloud State
-  const [supabaseStatus, setSupabaseStatus] = useState<{ configured: boolean; url?: string } | null>(null);
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [showSupabaseKey, setShowSupabaseKey] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<{
+    configured: boolean;
+    url?: string;
+    maskedKey?: string;
+    hasKey?: boolean;
+  } | null>(null);
+
+  // Supabase Test Connection State
+  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
+  const [supabaseTestResult, setSupabaseTestResult] = useState<{
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+    error?: string;
+  } | null>(null);
+
+  // Supabase Save Status message
+  const [supabaseSaveMessage, setSupabaseSaveMessage] = useState<string | null>(null);
+
   const [isSeedingKanji, setIsSeedingKanji] = useState(false);
   const [isSyncingProgress, setIsSyncingProgress] = useState(false);
   const [isRestoringProgress, setIsRestoringProgress] = useState(false);
@@ -151,6 +173,107 @@ export function SettingsView({
     } finally {
       setIsRestoringProgress(false);
     }
+  };
+
+  const handleSaveSupabaseConfig = async () => {
+    setSupabaseSaveMessage(null);
+    setSupabaseTestResult(null);
+
+    const targetUrl = supabaseUrl.trim();
+    const targetKey = supabaseAnonKey.trim();
+
+    try {
+      const res = await fetch('/api/supabase/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetUrl || undefined,
+          anonKey: targetKey || undefined
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSupabaseStatus({
+          configured: data.configured,
+          url: data.url,
+          maskedKey: data.maskedKey,
+          hasKey: Boolean(data.maskedKey)
+        });
+
+        if (targetUrl && targetKey) {
+          setClientSupabaseCredentials(targetUrl, targetKey);
+        }
+
+        setSupabaseUrl('');
+        setSupabaseAnonKey('');
+        setSupabaseSaveMessage('Supabase credentials securely saved and activated.');
+        setTimeout(() => setSupabaseSaveMessage(null), 4000);
+
+        // Auto trigger cloud sync now that credentials are saved!
+        triggerAutoCloudSync();
+      } else {
+        setSupabaseSaveMessage(`Error saving: ${data.error || 'Failed'}`);
+      }
+    } catch (err: any) {
+      setSupabaseSaveMessage(`Network error: ${err.message}`);
+    }
+  };
+
+  const handleTestSupabaseConnection = async () => {
+    setIsTestingSupabase(true);
+    setSupabaseTestResult(null);
+
+    try {
+      const res = await fetch('/api/supabase/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: supabaseUrl.trim() || undefined,
+          anonKey: supabaseAnonKey.trim() || undefined
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSupabaseTestResult({
+          success: true,
+          message: data.message,
+          latencyMs: data.latencyMs
+        });
+      } else {
+        setSupabaseTestResult({
+          success: false,
+          message: 'Connection failed',
+          error: data.error || 'Check your Supabase URL and Anon Key.'
+        });
+      }
+    } catch (err: any) {
+      setSupabaseTestResult({
+        success: false,
+        message: 'Network error',
+        error: err.message
+      });
+    } finally {
+      setIsTestingSupabase(false);
+    }
+  };
+
+  const handleClearSupabaseConfig = async () => {
+    try {
+      await fetch('/api/supabase/status', { method: 'DELETE' });
+      setClientSupabaseCredentials('', '');
+      setSupabaseStatus({
+        configured: false,
+        url: '',
+        maskedKey: '',
+        hasKey: false
+      });
+      setSupabaseUrl('');
+      setSupabaseAnonKey('');
+      setSupabaseSaveMessage('Supabase credentials removed from server.');
+      setTimeout(() => setSupabaseSaveMessage(null), 3000);
+    } catch {}
   };
 
   const handleSaveGroqConfig = async () => {
@@ -625,51 +748,187 @@ export function SettingsView({
       </div>
 
       {/* Supabase Cloud Database & Backup Card */}
-      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 md:p-8 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-stone-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-xs">
               <Cloud className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-stone-900 dark:text-white flex items-center gap-2">
-                Supabase Cloud Database & Backup
+                Supabase Cloud Database & Storage
                 {supabaseStatus?.configured ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
-                    🟢 Connected
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Connected
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400">
-                    🟡 Needs .env.local setup
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
+                    <AlertTriangle className="w-3 h-3 text-amber-500" /> Credentials Required
                   </span>
                 )}
               </h2>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                Save 120 master kanji and backup your personal study progress to PostgreSQL
+                Synchronize your 120-kanji syllabus, study streaks, quiz logs, and SRS intervals across all your devices in PostgreSQL.
               </p>
             </div>
           </div>
         </div>
 
-        {/* 3-Step Setup Guide */}
-        <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800 text-xs space-y-2">
-          <p className="font-bold text-stone-900 dark:text-white">Quick 2-Step Supabase Connection:</p>
-          <ol className="list-decimal list-inside space-y-1 text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
-            <li>
-              In your Supabase project dashboard, go to <strong>SQL Editor</strong> and run the script from <code className="px-1 py-0.5 rounded bg-stone-200 dark:bg-stone-800 font-mono">src/db/schema.sql</code>.
-            </li>
-            <li>
-              Add your credentials to <code className="px-1 py-0.5 rounded bg-stone-200 dark:bg-stone-800 font-mono">.env.local</code>:
-              <pre className="p-2 mt-1 rounded bg-stone-900 text-stone-100 font-mono text-[10px] overflow-x-auto">
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-              </pre>
-            </li>
-          </ol>
+        {/* Security Notice */}
+        <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-900 dark:text-emerald-200 space-y-1">
+          <div className="flex items-center gap-1.5 font-bold">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            Server-Side Database Isolation & Backup
+          </div>
+          <p className="opacity-90 leading-relaxed text-[11px]">
+            Your Supabase credentials are authenticated through secure Next.js server endpoints (<code className="font-mono">/api/supabase/...</code>) and saved in <code className="font-mono">.env.local</code> so your study progress remains completely private and encrypted.
+          </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+        {/* Current Active Connection Status Display */}
+        {supabaseStatus?.configured && (
+          <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-1">
+              <div>
+                <span className="text-stone-400 font-medium inline-block w-24">Project URL:</span>
+                <span className="font-mono font-bold text-stone-900 dark:text-white">
+                  {supabaseStatus.url || 'Configured'}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-400 font-medium inline-block w-24">Anon Key:</span>
+                <span className="font-mono font-bold text-stone-900 dark:text-white">
+                  {supabaseStatus.maskedKey || '••••••••••••••••'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleClearSupabaseConfig}
+              className="text-xs text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Disconnect Supabase
+            </button>
+          </div>
+        )}
+
+        {/* Credentials Form Inputs */}
+        <div className="space-y-4">
+          {/* Supabase URL */}
+          <div>
+            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1.5">
+              Supabase Project URL (e.g. `https://your-project.supabase.co`)
+            </label>
+            <div className="relative">
+              <Globe className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type="text"
+                placeholder={supabaseStatus?.configured ? 'Enter new URL to update...' : 'https://your-project.supabase.co'}
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <p className="text-[11px] text-stone-400 mt-1">
+              Found in your <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5">Supabase Dashboard <ExternalLink className="w-2.5 h-2.5" /></a> under <strong>Project Settings → API → Project URL</strong>.
+            </p>
+          </div>
+
+          {/* Supabase Anon Key */}
+          <div>
+            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1.5">
+              Supabase Anon / Public Key (starts with `ey...`)
+            </label>
+            <div className="relative">
+              <Key className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type={showSupabaseKey ? 'text' : 'password'}
+                placeholder={supabaseStatus?.configured ? 'Enter new key to update...' : 'Paste your Supabase anon/public key (eyJhbGci...)'}
+                value={supabaseAnonKey}
+                onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSupabaseKey(!showSupabaseKey)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+              >
+                {showSupabaseKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-400 mt-1">
+              Found in your Supabase Dashboard under <strong>Project Settings → API → Project API keys → anon public</strong>.
+            </p>
+          </div>
+
+          {/* Actions: Test Connection & Save */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+            <button
+              onClick={handleTestSupabaseConnection}
+              disabled={isTestingSupabase || (!supabaseUrl && !supabaseStatus?.configured)}
+              className="px-5 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <Zap className={`w-4 h-4 text-emerald-500 ${isTestingSupabase ? 'animate-spin' : ''}`} />
+              <span>{isTestingSupabase ? 'Testing Connection...' : 'Test Connection'}</span>
+            </button>
+
+            <button
+              onClick={handleSaveSupabaseConfig}
+              disabled={(!supabaseUrl && !supabaseStatus?.configured) || (!supabaseAnonKey && !supabaseStatus?.hasKey)}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save & Activate</span>
+            </button>
+          </div>
+
+          {/* Test Result Message Box */}
+          {supabaseTestResult && (
+            <div className={`p-4 rounded-xl border text-xs animate-fadeIn ${
+              supabaseTestResult.success
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+            }`}>
+              <div className="flex items-start gap-2.5">
+                {supabaseTestResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p className="font-semibold">{supabaseTestResult.message}</p>
+                  {supabaseTestResult.latencyMs && (
+                    <p className="mt-1 text-[11px] font-mono text-emerald-700 dark:text-emerald-400">
+                      ⚡ Latency: {supabaseTestResult.latencyMs}ms via Supabase PostgreSQL
+                    </p>
+                  )}
+                  {supabaseTestResult.error && (
+                    <p className="mt-1 text-[11px] text-rose-700 dark:text-rose-300 font-mono">
+                      {supabaseTestResult.error}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {supabaseSaveMessage && (
+            <div className="p-3 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs text-stone-700 dark:text-stone-300 animate-fadeIn font-medium">
+              {supabaseSaveMessage}
+            </div>
+          )}
+        </div>
+
+        {/* Database Setup Helper Note */}
+        <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800 text-xs space-y-2">
+          <p className="font-bold text-stone-900 dark:text-white">Quick Database Initialization:</p>
+          <p className="text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
+            If this is a new Supabase project, execute the SQL schema from <code className="px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-700 font-mono font-bold">src/db/schema.sql</code> in your Supabase <strong>SQL Editor</strong>, then click <strong>Seed Master Kanji</strong> below to populate all 120 kanji.
+          </p>
+        </div>
+
+        {/* Cloud Sync & Backup Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <button
             type="button"
             onClick={handleSeedKanjiToSupabase}

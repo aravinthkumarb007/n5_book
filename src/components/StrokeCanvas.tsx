@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { 
-  RotateCcw, Eye, EyeOff, Sparkles, Undo2, 
-  Play, Pause, AlertTriangle, CheckCircle2, ChevronRight, 
+import {
+  RotateCcw, Eye, EyeOff, Sparkles, Undo2,
+  Play, Pause, AlertTriangle, CheckCircle2, ChevronRight,
   HelpCircle, Info, RefreshCw, Zap, ArrowRight, PlayCircle, StopCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -311,7 +311,8 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 12;
-    ctx.strokeStyle = '#1c1917'; // Sumi black ink
+    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    ctx.strokeStyle = isDark ? '#f5f5f4' : '#1c1917'; // Light ink in dark mode, Sumi black in light mode
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -529,11 +530,10 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
             <button
               type="button"
               onClick={togglePlaySequence}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs ${
-                isPlayingDemo
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs ${isPlayingDemo
                   ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
                   : 'bg-red-50 hover:bg-red-100 dark:bg-red-950/60 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60'
-              }`}
+                }`}
               title={isPlayingDemo ? 'Stop Live Demonstration' : 'Auto-Draw Live Demonstration'}
             >
               {isPlayingDemo ? <Pause size={12} className="fill-current" /> : <Play size={12} className="fill-current" />}
@@ -555,7 +555,7 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
         </div>
 
         {/* Jisho Horizontal Scrollable Frame Strip */}
-        <div 
+        <div
           ref={stripContainerRef}
           className="flex items-stretch gap-2.5 overflow-x-auto pb-2 pt-1 scrollbar-none px-0.5 max-w-full"
         >
@@ -571,23 +571,21 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
                 onClick={() => {
                   stopLiveDemo();
                 }}
-                className={`shrink-0 w-22 sm:w-24 p-2 rounded-2xl border transition-all flex flex-col items-center justify-between text-center select-none cursor-pointer ${
-                  isHighlighted
+                className={`shrink-0 w-22 sm:w-24 p-2 rounded-2xl border transition-all flex flex-col items-center justify-between text-center select-none cursor-pointer ${isHighlighted
                     ? 'bg-red-50/90 dark:bg-red-950/40 border-red-500 shadow-md ring-2 ring-red-500/30 scale-[1.02]'
                     : isPast
-                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/70'
-                    : 'bg-stone-50/60 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 hover:border-stone-300'
-                }`}
+                      ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/70'
+                      : 'bg-stone-50/60 dark:bg-stone-900/60 border-stone-200 dark:border-stone-800 hover:border-stone-300'
+                  }`}
               >
                 {/* Step Badge */}
                 <div className="w-full flex items-center justify-between text-[10px] font-bold mb-1">
-                  <span className={`px-1.5 py-0.5 rounded-md ${
-                    isHighlighted
+                  <span className={`px-1.5 py-0.5 rounded-md ${isHighlighted
                       ? 'bg-red-600 text-white'
                       : isPast
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                  }`}>
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                    }`}>
                     Step {idx + 1}
                   </span>
 
@@ -616,7 +614,8 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
                           key={pIdx}
                           d={p}
                           fill="none"
-                          stroke="#52525b"
+                          stroke="currentColor"
+                          className="text-stone-500 dark:text-stone-400"
                           strokeWidth="4"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -681,13 +680,12 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
       {/* ======================================================== */}
       {feedbackBanner && (
         <div
-          className={`w-full p-3.5 rounded-2xl border text-xs flex items-start gap-3 transition-all shadow-sm ${
-            feedbackBanner.type === 'error'
+          className={`w-full p-3.5 rounded-2xl border text-xs flex items-start gap-3 transition-all shadow-sm ${feedbackBanner.type === 'error'
               ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 animate-fadeIn'
               : feedbackBanner.type === 'complete'
-              ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
-              : 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-900 text-blue-800 dark:text-blue-200'
-          }`}
+                ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
+                : 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-900 text-blue-800 dark:text-blue-200'
+            }`}
         >
           {feedbackBanner.type === 'error' ? (
             <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5 animate-pulse" />
@@ -761,15 +759,14 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
       {/* 4. RICE GRID (田字格) INTERACTIVE DRAWING CANVAS        */}
       {/* ======================================================== */}
       <div
-        className={`relative w-72 h-72 rounded-3xl overflow-hidden bg-amber-50/40 dark:bg-stone-900/40 shadow-inner border-2 transition-all ${
-          isCanvasShaking
+        className={`relative w-72 h-72 rounded-3xl overflow-hidden bg-amber-50/40 dark:bg-stone-900/40 shadow-inner border-2 transition-all ${isCanvasShaking
             ? 'border-rose-500 ring-4 ring-rose-500/20 scale-[0.98]'
             : isPlayingDemo
-            ? 'border-red-500 ring-2 ring-red-500/20'
-            : currentStrokeIndex >= strokeCount
-            ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-            : 'border-dashed border-red-300 dark:border-red-900/60'
-        }`}
+              ? 'border-red-500 ring-2 ring-red-500/20'
+              : currentStrokeIndex >= strokeCount
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-dashed border-red-300 dark:border-red-900/60'
+          }`}
       >
         {/* Japanese Rice Grid (田字格) Guidelines */}
         <div className="absolute inset-0 pointer-events-none">
@@ -841,8 +838,8 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
                   key={idx}
                   d={p}
                   fill="none"
-                  stroke="#1c1917"
-                  className="dark:stroke-stone-100"
+                  stroke="currentColor"
+                  className="text-stone-900 dark:text-stone-100"
                   strokeWidth="5.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

@@ -146,6 +146,7 @@ export interface ExamQuestion {
   prompt: string;
   secondaryPrompt?: string;
   contextText?: string;
+  englishMeaning?: string;
   options?: string[];
   wordTiles?: string[]; // For sentence formation
   matchingPairs?: { left: string; right: string }[];

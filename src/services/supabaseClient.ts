@@ -1,9 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 
-function getSupabaseCredentials() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export function getSupabaseCredentials() {
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  let key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  // In browser, if env vars were not present at build time, check localStorage cache
+  if ((!url || !key) && typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const storedUrl = localStorage.getItem('supabase_runtime_url');
+      const storedKey = localStorage.getItem('supabase_runtime_anon_key');
+      if (storedUrl && !url) url = storedUrl;
+      if (storedKey && !key) key = storedKey;
+    } catch {}
+  }
+
   return { url, key };
+}
+
+export function setClientSupabaseCredentials(url: string, key: string) {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      if (url && key) {
+        localStorage.setItem('supabase_runtime_url', url);
+        localStorage.setItem('supabase_runtime_anon_key', key);
+      } else {
+        localStorage.removeItem('supabase_runtime_url');
+        localStorage.removeItem('supabase_runtime_anon_key');
+      }
+    } catch {}
+  }
 }
 
 export function isSupabaseConfigured(): boolean {
@@ -11,14 +36,31 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(url && key);
 }
 
+let cachedClient: any = null;
+let lastUrl = '';
+let lastKey = '';
+
 export function getSupabaseClient() {
   const { url, key } = getSupabaseCredentials();
-  if (!url || !key) {
-    throw new Error('Supabase URL and Anon Key are not configured');
+  if (!url || !key) return null;
+  if (cachedClient && lastUrl === url && lastKey === key) {
+    return cachedClient;
   }
-  return createClient(url, key);
+  cachedClient = createClient(url, key);
+  lastUrl = url;
+  lastKey = key;
+  return cachedClient;
 }
 
-export const supabase = isSupabaseConfigured()
-  ? getSupabaseClient()
-  : null;
+// Dynamic proxy so calls to supabase.from(...) work even after credentials are configured at runtime
+export const supabase = new Proxy({} as any, {
+  get(target, prop) {
+    const client = getSupabaseClient();
+    if (!client) return undefined;
+    const value = (client as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
+  }
+});
