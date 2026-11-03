@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2 } from 'lucide-react';
 import { audioService } from '@/services/audio';
 
 interface AudioButtonProps {
@@ -20,19 +20,50 @@ export const AudioButton: React.FC<AudioButtonProps> = ({
   className = ''
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleStop = () => {
+    audioService.stop();
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsPlaying(false);
+  };
 
   const handleSpeak = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isPlaying) {
-      audioService.stop();
-      setIsPlaying(false);
+      handleStop();
       return;
     }
 
     setIsPlaying(true);
-    const ok = audioService.speak(text, () => setIsPlaying(false), rate);
-    if (!ok) {
+
+    const onFinish = () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       setIsPlaying(false);
+    };
+
+    // Safety timeout in case browser TTS event is lost
+    const estimatedDuration = Math.max(2500, (text || '').length * 600);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(onFinish, estimatedDuration);
+
+    const ok = audioService.speak(text, onFinish, rate);
+    if (!ok) {
+      onFinish();
     }
   };
 
@@ -44,13 +75,13 @@ export const AudioButton: React.FC<AudioButtonProps> = ({
       type="button"
       onClick={handleSpeak}
       title={`Listen to Japanese pronunciation of: ${text}`}
-      className={`inline-flex items-center gap-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-        isPlaying
+      aria-label={`Listen to Japanese pronunciation of: ${text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full transition-all duration-200 cursor-pointer ${isPlaying
           ? 'bg-red-600 text-white shadow-md scale-105 animate-pulse'
           : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300'
-      } ${padding} ${className}`}
+        } ${padding} ${className}`}
     >
-      {isPlaying ? <Volume2 size={iconSize} className="animate-bounce" /> : <Volume2 size={iconSize} />}
+      <Volume2 size={iconSize} className={isPlaying ? 'animate-bounce' : ''} />
       {label && <span className="text-xs font-medium pr-1">{label}</span>}
     </button>
   );

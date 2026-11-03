@@ -1,6 +1,6 @@
 import { CustomLesson, ExamResultRecord, MinnaUserLessonProgress } from '@/types/minna';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const MINNA_STORAGE_KEYS = {
   PROGRESS: 'minna_user_progress_v1',
@@ -65,7 +65,7 @@ export function saveMinnaProgress(progress: MinnaUserLessonProgress[]): void {
   }
 
   // Asynchronous background sync to Supabase if configured
-  if (supabase) {
+  if (isSupabaseConfigured()) {
     syncMinnaProgressToSupabase(progress).catch(err => {
       console.warn('Supabase minna progress sync background error:', err);
     });
@@ -73,7 +73,7 @@ export function saveMinnaProgress(progress: MinnaUserLessonProgress[]): void {
 }
 
 async function syncMinnaProgressToSupabase(progress: MinnaUserLessonProgress[]): Promise<void> {
-  if (!supabase) return;
+  if (!isSupabaseConfigured()) return;
   try {
     const rows = progress.map(p => ({
       user_id: DEFAULT_USER_ID,
@@ -194,7 +194,7 @@ export function saveCustomLesson(lesson: CustomLesson): CustomLesson[] {
   }
 
   // Sync to Supabase
-  if (supabase) {
+  if (isSupabaseConfigured()) {
     Promise.resolve(
       supabase.from('custom_lessons').upsert({
         id: lesson.id,
@@ -220,7 +220,7 @@ export function deleteCustomLesson(id: string): CustomLesson[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(MINNA_STORAGE_KEYS.CUSTOM_LESSONS, JSON.stringify(next));
   }
-  if (supabase) {
+  if (isSupabaseConfigured()) {
     Promise.resolve(
       supabase.from('custom_lessons').delete().eq('id', id)
     ).catch(e => console.warn(e));
@@ -267,7 +267,7 @@ export function saveExamResult(result: ExamResultRecord): ExamResultRecord[] {
   }
 
   // Sync to Supabase
-  if (supabase) {
+  if (isSupabaseConfigured()) {
     Promise.resolve(
       supabase.from('minna_exam_results').insert({
         id: result.id,

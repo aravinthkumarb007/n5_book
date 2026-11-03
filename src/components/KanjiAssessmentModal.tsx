@@ -1,14 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  X, CheckCircle2, AlertCircle, Award, ArrowRight, RotateCcw, 
-  Sparkles, ShieldCheck, Loader2, RefreshCw 
+import {
+  X, CheckCircle2, AlertCircle, Award, ArrowRight, RotateCcw,
+  Sparkles, ShieldCheck, Loader2, RefreshCw, Eye, EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { KanjiRecord, QuizQuestion } from '@/types/kanji';
 import { quizEngine } from '@/services/quizEngine';
 import { storage } from '@/services/storage';
+import { FuriganaText } from './FuriganaText';
 
 interface KanjiAssessmentModalProps {
   kanji: KanjiRecord;
@@ -33,6 +34,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showEnglishMeaning, setShowEnglishMeaning] = useState(false);
 
   // Dynamic test controls
   const [isAiMode, setIsAiMode] = useState(false);
@@ -86,7 +88,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
       resetTestState();
     } catch {
       // Fallback
-      const fallbackQs = isReTest 
+      const fallbackQs = isReTest
         ? quizEngine.generateKanjiReTest(kanji, learnedPool, 5)
         : quizEngine.generateKanjiAssessment(kanji, learnedPool);
       setQuestions(fallbackQs);
@@ -102,6 +104,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
     setIsAnswerSubmitted(false);
     setCorrectAnswersCount(0);
     setIsCompleted(false);
+    setShowEnglishMeaning(false);
   };
 
   useEffect(() => {
@@ -149,6 +152,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
+      setShowEnglishMeaning(false);
     } else {
       // Completed all questions
       const finalScore = Math.round(((correctAnswersCount + (selectedOption === currentQ.correctAnswer ? 0 : 0)) / totalCount) * 100);
@@ -161,7 +165,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
             spread: 70,
             origin: { y: 0.6 }
           });
-        } catch {}
+        } catch { }
 
         // Officially mark as Learned in the persistent database!
         storage.updateSingleKanjiProgress(kanji.id, {
@@ -198,16 +202,15 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                 <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
                   {isReTest ? 'Dynamic Mastery Re-Test' : 'Kanji Learning Assessment'}
                 </h3>
-                <span className={`text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  isReTest 
-                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300' 
+                <span className={`text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${isReTest
+                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                     : 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400'
-                }`}>
+                  }`}>
                   {isReTest ? 'Re-Test' : 'Pass 80%'}
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                {isReTest 
+                {isReTest
                   ? `Testing 「${kanji.character}」 against learned pool`
                   : '80% required to graduate and unlock next kanji'}
               </p>
@@ -263,23 +266,49 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
               {/* Question Prompts */}
               <div className="text-center mb-6">
                 <span className="inline-block text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 font-semibold mb-2">
-                  {currentQ.secondaryPrompt || 'Select the correct answer'}
+                  <FuriganaText text={currentQ.secondaryPrompt || 'Select the correct answer'} />
                 </span>
-                <h4 className="text-2xl font-japanese font-bold text-stone-900 dark:text-stone-100 mb-1">
-                  {currentQ.prompt}
-                </h4>
-                {currentQ.contextSentence && (
-                  <p className="text-xs text-stone-500 italic mt-1">
-                    Context: &quot;{currentQ.contextSentence}&quot;
-                  </p>
-                )}
+                  <h4 className="text-2xl sm:text-3xl font-japanese font-bold text-stone-900 dark:text-stone-100 mb-1">
+                    <FuriganaText text={currentQ.prompt} />
+                  </h4>
+
+                {/* Show/Hide English Meaning Toggle */}
+                  {(currentQ.englishMeaning || currentQ.contextSentence) && (
+                    <div className="flex flex-col items-center gap-1.5 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEnglishMeaning(prev => !prev)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white"
+                        title={showEnglishMeaning ? "Hide English Meaning" : "Show English Meaning"}
+                      >
+                        {showEnglishMeaning ? (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-red-500" />
+                            <span>Hide English Meaning</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                            <span>Show English Meaning</span>
+                          </>
+                        )}
+                      </button>
+
+                      {showEnglishMeaning && (
+                        <div className="p-2.5 px-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs font-medium text-amber-900 dark:text-amber-200 animate-fadeIn max-w-sm mx-auto">
+                          <span className="font-bold text-amber-800 dark:text-amber-300 mr-1.5">Meaning:</span>
+                          <span>{currentQ.englishMeaning || currentQ.contextSentence}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {/* Multiple Choice Options */}
               <div className="space-y-2.5 mb-6">
                 {currentQ.options.map((option, idx) => {
                   let btnStyle = 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 bg-white dark:bg-stone-800/60 text-stone-800 dark:text-stone-200';
-                  
+
                   if (selectedOption === option && !isAnswerSubmitted) {
                     btnStyle = 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-2 ring-red-500/20';
                   }
@@ -302,7 +331,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                       onClick={() => handleSelectOption(option)}
                       className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-150 flex items-center justify-between cursor-pointer ${btnStyle}`}
                     >
-                      <span className="font-medium">{option}</span>
+                      <span className="font-medium"><FuriganaText text={option} /></span>
                       {isAnswerSubmitted && option === currentQ.correctAnswer && (
                         <CheckCircle2 size={16} className="text-green-600 dark:text-green-400 shrink-0" />
                       )}
@@ -350,11 +379,10 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                       type="button"
                       disabled={!selectedOption}
                       onClick={handleSubmitAnswer}
-                      className={`px-5 py-2.5 rounded-xl font-semibold text-xs transition-all ${
-                        selectedOption
+                      className={`px-5 py-2.5 rounded-xl font-semibold text-xs transition-all ${selectedOption
                           ? 'bg-red-600 hover:bg-red-700 text-white shadow-md cursor-pointer'
                           : 'bg-stone-200 dark:bg-stone-800 text-stone-400 cursor-not-allowed'
-                      }`}
+                        }`}
                     >
                       Submit Answer
                     </button>
@@ -374,17 +402,16 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
           ) : (
             /* Results Screen */
             <div className="text-center py-4">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-sm ${
-                passed 
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-sm ${passed
                   ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
                   : 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400'
-              }`}>
+                }`}>
                 <Award size={32} />
               </div>
 
               <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-1">
-                {passed 
-                  ? (isReTest ? 'Re-Test Passed with Mastery!' : 'Assessment Passed!') 
+                {passed
+                  ? (isReTest ? 'Re-Test Passed with Mastery!' : 'Assessment Passed!')
                   : 'Needs Further Practice'}
               </h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">

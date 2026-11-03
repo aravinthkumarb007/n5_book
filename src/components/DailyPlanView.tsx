@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar, CheckCircle2, Circle, ArrowRight, Sparkles, 
+import {
+  Calendar, CheckCircle2, Circle, ArrowRight, Sparkles,
   Flame, Clock, BookOpen, Trophy, Compass
 } from 'lucide-react';
 import { KanjiRecord, UserKanjiProgress } from '@/types/kanji';
@@ -73,17 +73,17 @@ export function DailyPlanView({
       if (stored) {
         setCompletedDays(JSON.parse(stored));
       }
-    } catch {}
+    } catch { }
   }, []);
 
   const toggleDayCompletion = (dayNum: number) => {
     setCompletedDays(prev => {
-      const updated = prev.includes(dayNum) 
-        ? prev.filter(d => d !== dayNum) 
+      const updated = prev.includes(dayNum)
+        ? prev.filter(d => d !== dayNum)
         : [...prev, dayNum];
       try {
         localStorage.setItem('n5_kanji_completed_days', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
   };
@@ -161,11 +161,10 @@ export function DailyPlanView({
             </button>
             <button
               onClick={() => toggleDayCompletion(currentDayPlan.day)}
-              className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-center ${
-                completedDays.includes(currentDayPlan.day)
+              className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-center ${completedDays.includes(currentDayPlan.day)
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-600'
                   : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100'
-              }`}
+                }`}
               title="Mark Day as Done"
             >
               {completedDays.includes(currentDayPlan.day) ? (
@@ -192,23 +191,21 @@ export function DailyPlanView({
             return (
               <div
                 key={plan.day}
-                className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
-                  isDone
+                className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${isDone
                     ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/60'
                     : isCurrent
-                    ? 'bg-white dark:bg-stone-850 border-red-500 shadow-md ring-2 ring-red-500/20'
-                    : 'bg-white dark:bg-stone-850 border-stone-200 dark:border-stone-800 hover:border-stone-300'
-                }`}
+                        ? 'bg-white dark:bg-stone-900 border-red-500 shadow-md ring-2 ring-red-500/20'
+                        : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-stone-300'
+                  }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                      isDone 
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${isDone
                         ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300'
                         : isCurrent
-                        ? 'bg-red-600 text-white'
-                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                    }`}>
+                          ? 'bg-red-600 text-white'
+                          : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      }`}>
                       Day {plan.day}
                     </span>
 

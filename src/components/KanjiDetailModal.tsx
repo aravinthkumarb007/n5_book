@@ -215,22 +215,20 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
           <div className="flex items-center gap-1 sm:gap-2 px-3 sm:px-6 pt-2 sm:pt-3 border-b border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 shrink-0 overflow-x-auto whitespace-nowrap scrollbar-none max-w-full">
             <button
               onClick={() => setActiveTab('study')}
-              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                activeTab === 'study'
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'study'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-              }`}
+                }`}
             >
               <BookOpen size={14} />
               <span>Study Kanji</span>
             </button>
             <button
               onClick={() => setActiveTab('practice')}
-              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                activeTab === 'practice'
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'practice'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-              }`}
+                }`}
             >
               <PenTool size={14} />
               <span>Stroke Order & Writing</span>
@@ -242,11 +240,10 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                   fetchAiEnrichment();
                 }
               }}
-              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                activeTab === 'ai_insights'
+              className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'ai_insights'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-              }`}
+                }`}
             >
               <BrainCircuit size={14} />
               <span>AI Insights (Groq)</span>
@@ -279,344 +276,343 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-stone-600 dark:text-stone-400 pt-1">
-                      <span><strong>Strokes:</strong> {currentKanji.stroke_count}</span>
-                      <span>•</span>
-                      <span><strong>Radical:</strong> {currentKanji.radicals}</span>
-                      <span>•</span>
-                      <span><strong>Reading Guide:</strong> {currentKanji.hiragana_reading}</span>
-                    </div>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-stone-700 dark:text-stone-300 pt-1">
+                        <span><strong className="text-stone-900 dark:text-stone-100">Strokes:</strong> {currentKanji.stroke_count}</span>
+                        <span>•</span>
+                        <span><strong className="text-stone-900 dark:text-stone-100">Radical:</strong> {currentKanji.radicals}</span>
+                        <span>•</span>
+                        <span><strong className="text-stone-900 dark:text-stone-100">Reading Guide:</strong> {currentKanji.hiragana_reading}</span>
+                      </div>
 
-                    {/* Mnemonic Pill */}
-                    <div className="mt-3 p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 text-left">
-                      <p className="font-semibold flex items-center gap-1.5 mb-0.5 text-amber-800 dark:text-amber-300">
-                        <Sparkles size={13} /> Memory Mnemonic:
-                      </p>
-                      <p className="leading-relaxed">{currentKanji.mnemonic}</p>
+                      {/* Mnemonic Pill */}
+                      <div className="mt-3 p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 text-left">
+                        <p className="font-semibold flex items-center gap-1.5 mb-0.5 text-amber-800 dark:text-amber-300">
+                          <Sparkles size={13} /> Memory Mnemonic:
+                        </p>
+                        <p className="leading-relaxed">{currentKanji.mnemonic}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Readings Grid (Onyomi & Kunyomi) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Onyomi Card */}
-                  <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                          Onyomi (音読み) • Katakana
-                        </h4>
+                  {/* Readings Grid (Onyomi & Kunyomi) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Onyomi Card */}
+                    <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                            Onyomi (音読み) • Katakana
+                          </h4>
+                        </div>
+                        {currentKanji.onyomi_readings[0] && (
+                          <AudioButton text={currentKanji.onyomi_readings[0]} size="sm" />
+                        )}
                       </div>
-                      {currentKanji.onyomi_readings[0] && (
-                        <AudioButton text={currentKanji.onyomi_readings[0]} size="sm" />
-                      )}
-                    </div>
-                    {currentKanji.onyomi_readings.length > 0 ? (
-                      <div>
-                        <p className="text-2xl font-japanese font-bold text-blue-600 dark:text-blue-400">
-                          {currentKanji.onyomi_readings.join('、 ')}
-                        </p>
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          Romaji: {currentKanji.onyomi_romaji.join(', ')}
-                        </p>
-                        <p className="text-[11px] text-stone-400 mt-2">
-                          Chinese-derived reading, commonly used in compound kanji words (熟語).
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-stone-400 italic">No standard Onyomi reading.</p>
+                      {currentKanji.onyomi_readings.length > 0 ? (
+                        <div>
+                          <p className="text-2xl font-japanese font-bold text-blue-600 dark:text-blue-400">
+                            {currentKanji.onyomi_readings.join('、 ')}
+                          </p>
+                            <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
+                              Romaji: {currentKanji.onyomi_romaji.join(', ')}
+                            </p>
+                              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-2">
+                                Chinese-derived reading, commonly used in compound kanji words (熟語).
+                              </p>
+                            </div>
+                            ) : (
+                            <p className="text-xs text-stone-400 dark:text-stone-500 italic">No standard Onyomi reading.</p>
                     )}
-                  </div>
+                        </div>
 
                   {/* Kunyomi Card */}
-                  <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                          Kunyomi (訓読み) • Hiragana
-                        </h4>
+                      <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
+                              Kunyomi (訓読み) • Hiragana
+                            </h4>
+                          </div>
+                          {currentKanji.kunyomi_readings[0] && (
+                            <AudioButton text={currentKanji.kunyomi_readings[0]} size="sm" />
+                          )}
+                        </div>
+                        {currentKanji.kunyomi_readings.length > 0 ? (
+                          <div>
+                            <p className="text-2xl font-japanese font-bold text-red-600 dark:text-red-400">
+                              {currentKanji.kunyomi_readings.join('、 ')}
+                            </p>
+                              <p className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
+                                Romaji: {currentKanji.kunyomi_romaji.join(', ')}
+                              </p>
+                                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-2">
+                                  Native Japanese reading, often used when kanji stands alone or with okurigana.
+                                </p>
+                              </div>
+                              ) : (
+                              <p className="text-xs text-stone-400 dark:text-stone-500 italic">No standard Kunyomi reading.</p>
+                    )}
+                          </div>
+                </div>
+
+                      {/* Vocabulary Words */}
+                      <div className="space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                            Essential Vocabulary ({currentKanji.vocabulary.length} words)
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {currentKanji.vocabulary.map((vocab, idx) => (
+                              <div
+                                key={idx}
+                                className="p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 flex items-center justify-between gap-3"
+                              >
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-base font-japanese font-bold text-stone-900 dark:text-stone-100">
+                                      {vocab.word}
+                                    </span>
+                                      <span className="text-xs text-stone-500 dark:text-stone-400">
+                                        【{vocab.hiragana}】
+                                      </span>
+                                  </div>
+                                  <p className="text-xs text-stone-600 dark:text-stone-300 truncate">
+                                    {vocab.meaning}
+                                  </p>
+                                    <div className="flex items-center gap-2 text-[10px] text-stone-500 dark:text-stone-400">
+                                      <span>{vocab.romaji}</span>
+                                      <span>•</span>
+                                      <span className={`capitalize font-medium ${vocab.readingType === 'onyomi'
+                                          ? 'text-blue-600 dark:text-blue-400'
+                                          : vocab.readingType === 'kunyomi'
+                                            ? 'text-red-600 dark:text-red-400'
+                                            : 'text-stone-500'
+                                        }`}>
+                                        {vocab.readingType} reading
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <AudioButton text={vocab.word} size="sm" />
+                                </div>
+                    ))}
+                              </div>
+                </div>
+
+                          {/* Example Sentences */}
+                          <div className="space-y-3">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                                Japanese Example Sentences ({currentKanji.example_sentences.length})
+                              </h4>
+                              <div className="space-y-2.5">
+                                {currentKanji.example_sentences.map((sentence, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 flex items-start justify-between gap-3"
+                                  >
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-japanese font-medium text-stone-900 dark:text-stone-100">
+                                        {sentence.japanese}
+                                      </p>
+                                        <p className="text-xs text-stone-500 dark:text-stone-400 font-japanese">
+                                          {sentence.hiragana}
+                                        </p>
+                                        <p className="text-xs text-stone-700 dark:text-stone-300 font-medium pt-0.5">
+                                          {sentence.english}
+                                        </p>
+                                    </div>
+                                    <AudioButton text={sentence.japanese} size="sm" />
+                                  </div>
+                                ))}
+                              </div>
+                          </div>
                       </div>
-                      {currentKanji.kunyomi_readings[0] && (
-                        <AudioButton text={currentKanji.kunyomi_readings[0]} size="sm" />
+            )}
+
+                      {activeTab === 'practice' && (
+                        <div className="py-2">
+                          <div className="text-center max-w-md mx-auto mb-4">
+                            <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
+                              Kanji Stroke Order & Writing Canvas
+                            </h3>
+                              <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">
+                                Practice drawing 「{currentKanji.character}」 with your finger or mouse. Follow the stroke order guide to build muscle memory.
+                              </p>
+                          </div>
+                          <StrokeCanvas
+                            character={currentKanji.character}
+                            strokeCount={currentKanji.stroke_count}
+                            strokeDirections={currentKanji.stroke_order_data?.directions}
+                          />
+                        </div>
+                      )}
+
+                      {activeTab === 'ai_insights' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <BrainCircuit size={18} className="text-red-600 dark:text-red-400" />
+                              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                                Groq AI Pedagogical Enrichment
+                              </h3>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={isLoadingAi}
+                              onClick={() => fetchAiEnrichment(true)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors cursor-pointer"
+                            >
+                              <RefreshCw size={12} className={isLoadingAi ? 'animate-spin' : ''} />
+                              <span>Regenerate Insights</span>
+                            </button>
+                          </div>
+
+                          {isLoadingAi ? (
+                            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                              <Loader2 size={32} className="text-red-600 animate-spin" />
+                                <p className="text-xs text-stone-600 dark:text-stone-400">
+                                  Consulting Groq AI for deep etymology, office application, and reading tips...
+                                </p>
+                            </div>
+                          ) : aiError ? (
+                            <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
+                              <p className="font-bold mb-1">AI Connection Notice:</p>
+                              <p>{aiError}</p>
+                              <p className="mt-2 text-[11px] text-stone-500">
+                                You can configure your GROQ_API_KEY in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
+                              </p>
+                            </div>
+                          ) : aiContent ? (
+                            <div className="space-y-4">
+                              {/* Etymology */}
+                              {aiContent.etymology_and_origin && (
+                                <div className="p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
+                                  <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
+                                    📜 Historical Etymology & Kanji Shape Origin
+                                  </h4>
+                                  <MarkdownRenderer content={aiContent.etymology_and_origin} />
+                                </div>
+                              )}
+
+                              {/* Reading guidance */}
+                              {aiContent.reading_guidance && (
+                                <div className="p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
+                                  <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
+                                    🎯 Onyomi vs Kunyomi Practical Application
+                                  </h4>
+                                  <MarkdownRenderer content={aiContent.reading_guidance} />
+                                </div>
+                              )}
+
+                              {/* Office Context Tip */}
+                              {aiContent.office_context_tip && (
+                                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20">
+                                  <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-1.5">
+                                    💼 Office Worker & Real-world Usage Tip
+                                  </h4>
+                                  <MarkdownRenderer content={aiContent.office_context_tip} />
+                                </div>
+                              )}
+
+                              {/* Bonus Sentences */}
+                              {aiContent.bonus_sentences && Array.isArray(aiContent.bonus_sentences) && (
+                                <div className="space-y-3 pt-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                                        Additional AI-Generated Practice Sentences
+                                      </h4>
+                                      {sentenceSuccessToast && (
+                                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 animate-fadeIn">
+                                          ✨ New examples loaded!
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      disabled={isLoadingSentences}
+                                      onClick={refreshNewSentences}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 transition cursor-pointer disabled:opacity-50 shadow-xs shrink-0"
+                                      title="Generate brand new AI example sentences"
+                                    >
+                                      <RefreshCw size={12} className={isLoadingSentences ? 'animate-spin' : ''} />
+                                      <span>{isLoadingSentences ? 'Generating New...' : 'Get New Examples'}</span>
+                                    </button>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    {aiContent.bonus_sentences.map((bs: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 flex items-start justify-between gap-3 shadow-xs hover:border-red-300 transition-colors"
+                                      >
+                                        <div className="space-y-0.5 text-xs">
+                                          <p className="font-japanese text-sm font-bold text-stone-900 dark:text-stone-100">
+                                            {bs.japanese}
+                                          </p>
+                                          <p className="text-stone-500 dark:text-stone-400 text-[11px] font-japanese">{bs.hiragana} ({bs.romaji})</p>
+                                          <p className="text-stone-700 dark:text-stone-300 font-medium text-xs pt-0.5">{bs.english}</p>
+                                        </div>
+                                        <AudioButton text={bs.japanese} size="sm" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <button
+                                type="button"
+                                onClick={() => fetchAiEnrichment()}
+                                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                              >
+                                Generate AI Educational Insights
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {currentKanji.kunyomi_readings.length > 0 ? (
-                      <div>
-                        <p className="text-2xl font-japanese font-bold text-red-600 dark:text-red-400">
-                          {currentKanji.kunyomi_readings.join('、 ')}
-                        </p>
-                        <p className="text-xs text-stone-500 mt-0.5">
-                          Romaji: {currentKanji.kunyomi_romaji.join(', ')}
-                        </p>
-                        <p className="text-[11px] text-stone-400 mt-2">
-                          Native Japanese reading, often used when kanji stands alone or with okurigana.
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-stone-400 italic">No standard Kunyomi reading.</p>
-                    )}
-                  </div>
-                </div>
 
-                {/* Vocabulary Words */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                    Essential Vocabulary ({currentKanji.vocabulary.length} words)
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {currentKanji.vocabulary.map((vocab, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 flex items-center justify-between gap-3"
-                      >
-                        <div className="space-y-0.5 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base font-japanese font-bold text-stone-900 dark:text-stone-100">
-                              {vocab.word}
+                    {/* Bottom Bar: Action & Assessment Gate */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 shrink-0">
+                        <div className="text-xs text-stone-500 dark:text-stone-400 text-center sm:text-left">
+                          {status === 'learned' ? (
+                            <span className="text-green-600 dark:text-green-400 font-semibold">
+                              ✓ This kanji is in your learned test pool.
                             </span>
-                            <span className="text-xs text-stone-500">
-                              【{vocab.hiragana}】
-                            </span>
-                          </div>
-                          <p className="text-xs text-stone-600 dark:text-stone-300 truncate">
-                            {vocab.meaning}
-                          </p>
-                          <div className="flex items-center gap-2 text-[10px] text-stone-400">
-                            <span>{vocab.romaji}</span>
-                            <span>•</span>
-                            <span className={`capitalize font-medium ${
-                              vocab.readingType === 'onyomi'
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : vocab.readingType === 'kunyomi'
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-stone-500'
-                            }`}>
-                              {vocab.readingType} reading
-                            </span>
-                          </div>
+                          ) : (
+                            <span>Pass the 80% assessment gate to mark as Learned and unlock test mode.</span>
+                          )}
                         </div>
-                        <AudioButton text={vocab.word} size="sm" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Example Sentences */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                    Japanese Example Sentences ({currentKanji.example_sentences.length})
-                  </h4>
-                  <div className="space-y-2.5">
-                    {currentKanji.example_sentences.map((sentence, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 flex items-start justify-between gap-3"
-                      >
-                        <div className="space-y-1">
-                          <p className="text-sm font-japanese font-medium text-stone-900 dark:text-stone-100">
-                            {sentence.japanese}
-                          </p>
-                          <p className="text-xs text-stone-500 font-japanese">
-                            {sentence.hiragana}
-                          </p>
-                          <p className="text-xs text-stone-700 dark:text-stone-300 font-medium pt-0.5">
-                            {sentence.english}
-                          </p>
-                        </div>
-                        <AudioButton text={sentence.japanese} size="sm" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'practice' && (
-              <div className="py-2">
-                <div className="text-center max-w-md mx-auto mb-4">
-                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
-                    Kanji Stroke Order & Writing Canvas
-                  </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Practice drawing 「{currentKanji.character}」 with your finger or mouse. Follow the stroke order guide to build muscle memory.
-                  </p>
-                </div>
-                <StrokeCanvas
-                  character={currentKanji.character}
-                  strokeCount={currentKanji.stroke_count}
-                  strokeDirections={currentKanji.stroke_order_data?.directions}
-                />
-              </div>
-            )}
-
-            {activeTab === 'ai_insights' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BrainCircuit size={18} className="text-red-600 dark:text-red-400" />
-                    <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                      Groq AI Pedagogical Enrichment
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={isLoadingAi}
-                    onClick={() => fetchAiEnrichment(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors cursor-pointer"
-                  >
-                    <RefreshCw size={12} className={isLoadingAi ? 'animate-spin' : ''} />
-                    <span>Regenerate Insights</span>
-                  </button>
-                </div>
-
-                {isLoadingAi ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                    <Loader2 size={32} className="text-red-600 animate-spin" />
-                    <p className="text-xs text-stone-500">
-                      Consulting Groq AI for deep etymology, office application, and reading tips...
-                    </p>
-                  </div>
-                ) : aiError ? (
-                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
-                    <p className="font-bold mb-1">AI Connection Notice:</p>
-                    <p>{aiError}</p>
-                    <p className="mt-2 text-[11px] text-stone-500">
-                      You can configure your GROQ_API_KEY in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
-                    </p>
-                  </div>
-                ) : aiContent ? (
-                  <div className="space-y-4">
-                    {/* Etymology */}
-                    {aiContent.etymology_and_origin && (
-                      <div className="p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
-                        <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
-                          📜 Historical Etymology & Kanji Shape Origin
-                        </h4>
-                        <MarkdownRenderer content={aiContent.etymology_and_origin} />
-                      </div>
-                    )}
-
-                    {/* Reading guidance */}
-                    {aiContent.reading_guidance && (
-                      <div className="p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30">
-                        <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
-                          🎯 Onyomi vs Kunyomi Practical Application
-                        </h4>
-                        <MarkdownRenderer content={aiContent.reading_guidance} />
-                      </div>
-                    )}
-
-                    {/* Office Context Tip */}
-                    {aiContent.office_context_tip && (
-                      <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/20">
-                        <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider mb-1.5">
-                          💼 Office Worker & Real-world Usage Tip
-                        </h4>
-                        <MarkdownRenderer content={aiContent.office_context_tip} />
-                      </div>
-                    )}
-
-                    {/* Bonus Sentences */}
-                    {aiContent.bonus_sentences && Array.isArray(aiContent.bonus_sentences) && (
-                      <div className="space-y-3 pt-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                              Additional AI-Generated Practice Sentences
-                            </h4>
-                            {sentenceSuccessToast && (
-                              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 animate-fadeIn">
-                                ✨ New examples loaded!
-                              </span>
-                            )}
-                          </div>
-
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
                           <button
                             type="button"
-                            disabled={isLoadingSentences}
-                            onClick={refreshNewSentences}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 transition cursor-pointer disabled:opacity-50 shadow-xs shrink-0"
-                            title="Generate brand new AI example sentences"
+                            onClick={() => setIsAssessmentOpen(true)}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
                           >
-                            <RefreshCw size={12} className={isLoadingSentences ? 'animate-spin' : ''} />
-                            <span>{isLoadingSentences ? 'Generating New...' : 'Get New Examples'}</span>
+                            <Award size={15} />
+                            <span>{status === 'learned' ? 'Retake Mastery Assessment' : 'Take Assessment to Master'}</span>
                           </button>
                         </div>
-
-                        <div className="space-y-2">
-                          {aiContent.bonus_sentences.map((bs: any, idx: number) => (
-                            <div
-                              key={idx}
-                              className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/40 flex items-start justify-between gap-3 shadow-xs hover:border-red-300 transition-colors"
-                            >
-                              <div className="space-y-0.5 text-xs">
-                                <p className="font-japanese text-sm font-bold text-stone-900 dark:text-stone-100">
-                                  {bs.japanese}
-                                </p>
-                                <p className="text-stone-500 text-[11px] font-japanese">{bs.hiragana} ({bs.romaji})</p>
-                                <p className="text-stone-700 dark:text-stone-300 font-medium text-xs pt-0.5">{bs.english}</p>
-                              </div>
-                              <AudioButton text={bs.japanese} size="sm" />
-                            </div>
-                          ))}
-                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <button
-                      type="button"
-                      onClick={() => fetchAiEnrichment()}
-                      className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
-                    >
-                      Generate AI Educational Insights
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
 
-          {/* Bottom Bar: Action & Assessment Gate */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3.5 sm:px-6 py-3 sm:py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 shrink-0">
-            <div className="text-xs text-stone-500 text-center sm:text-left">
-              {status === 'learned' ? (
-                <span className="text-green-600 dark:text-green-400 font-semibold">
-                  ✓ This kanji is in your learned test pool.
-                </span>
-              ) : (
-                <span>Pass the 80% assessment gate to mark as Learned and unlock test mode.</span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setIsAssessmentOpen(true)}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
-              >
-                <Award size={15} />
-                <span>{status === 'learned' ? 'Retake Mastery Assessment' : 'Take Assessment to Master'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Assessment Modal */}
-      {isAssessmentOpen && (
-        <KanjiAssessmentModal
-          kanji={currentKanji}
-          isOpen={isAssessmentOpen}
-          onClose={() => setIsAssessmentOpen(false)}
-          onPassed={() => {
-            onProgressUpdated();
-          }}
-        />
-      )}
-    </>
-  );
+                  {/* Assessment Modal */}
+                  {isAssessmentOpen && (
+                    <KanjiAssessmentModal
+                      kanji={currentKanji}
+                      isOpen={isAssessmentOpen}
+                      onClose={() => setIsAssessmentOpen(false)}
+                      onPassed={() => {
+                        onProgressUpdated();
+                      }}
+                    />
+                  )}
+                </>
+                );
 };

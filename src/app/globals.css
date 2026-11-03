@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-stone-850: #211e1c;
+}
+
 @layer base {
   :root {
     --bg-main: #faf9f5;

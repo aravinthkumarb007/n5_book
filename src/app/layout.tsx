@@ -27,6 +27,22 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const s = localStorage.getItem('n5_kanji_settings_v2');
+                if (s) {
+                  const p = JSON.parse(s);
+                  if (p.theme === 'dark') document.documentElement.classList.add('dark');
+                  else if (p.theme === 'light') document.documentElement.classList.remove('dark');
+                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                  document.documentElement.classList.add('dark');
+                }
+              } catch (_) {}
+            `
+          }}
+        />
       </head>
       <body className="antialiased selection:bg-red-500 selection:text-white">
         {children}

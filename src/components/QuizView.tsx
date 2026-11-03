@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, CheckCircle2, XCircle, RotateCcw, AlertTriangle, 
-  Sparkles, Clock, BookOpen, ArrowRight, Zap, Trophy, ShieldCheck
+import {
+  Play, CheckCircle2, XCircle, RotateCcw, AlertTriangle,
+  Sparkles, Clock, BookOpen, ArrowRight, Zap, Trophy, ShieldCheck,
+  Eye, EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { 
-  KanjiRecord, 
-  QuizQuestion, 
-  QuizQuestionType, 
-  UserKanjiProgress 
+import {
+  KanjiRecord,
+  QuizQuestion,
+  QuizQuestionType,
+  UserKanjiProgress
 } from '@/types/kanji';
 import { quizEngine } from '@/services/quizEngine';
 import { storage } from '@/services/storage';
@@ -60,6 +61,7 @@ export function QuizView({
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [showEnglishMeaning, setShowEnglishMeaning] = useState(false);
   const [answersLog, setAnswersLog] = useState<{
     question: QuizQuestion;
     selected: string;
@@ -82,6 +84,11 @@ export function QuizView({
 
   // Learned Kanji Pool strictly checked
   const eligiblePool = storage.getLearnedKanjiPool();
+
+  // Reset English meaning toggle on question change
+  useEffect(() => {
+    setShowEnglishMeaning(false);
+  }, [currentIndex, phase]);
 
   // Reset timer on question change
   useEffect(() => {
@@ -190,8 +197,8 @@ export function QuizView({
     if (currentProg) {
       const newMistakes = isCorrect ? currentProg.mistake_count : currentProg.mistake_count + 1;
       const newStatus = !isCorrect ? 'needs_revision' : currentProg.learning_status;
-      const incorrectHistory = isCorrect 
-        ? currentProg.incorrect_history 
+      const incorrectHistory = isCorrect
+        ? currentProg.incorrect_history
         : Array.from(new Set([...currentProg.incorrect_history, `${currentQ.type}: answered "${option}" instead of "${currentQ.correctAnswer}"`]));
 
       // Update accuracy depending on question type
@@ -368,11 +375,10 @@ export function QuizView({
                   <button
                     key={m.type}
                     onClick={() => setSelectedMode(m.type)}
-                    className={`p-3 sm:p-4 rounded-xl border text-left transition relative flex flex-col justify-between min-h-[115px] sm:min-h-[130px] ${
-                      isSelected
+                    className={`p-3 sm:p-4 rounded-xl border text-left transition relative flex flex-col justify-between min-h-[115px] sm:min-h-[130px] ${isSelected
                         ? 'border-red-600 bg-red-50/60 dark:bg-red-950/30 text-stone-900 dark:text-white ring-2 ring-red-500/20 shadow-sm'
                         : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 bg-white dark:bg-stone-850 text-stone-700 dark:text-stone-300'
-                    }`}
+                      }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -405,11 +411,10 @@ export function QuizView({
                   <button
                     key={num}
                     onClick={() => setQuestionCount(num)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                      questionCount === num
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${questionCount === num
                         ? 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-sm'
                         : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
-                    }`}
+                      }`}
                   >
                     {num} Qs
                   </button>
@@ -482,11 +487,10 @@ export function QuizView({
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Results Banner */}
-        <div className={`p-8 rounded-2xl text-center text-white shadow-xl ${
-          passed 
-            ? 'bg-gradient-to-br from-emerald-600 via-teal-700 to-stone-900' 
+        <div className={`p-8 rounded-2xl text-center text-white shadow-xl ${passed
+            ? 'bg-gradient-to-br from-emerald-600 via-teal-700 to-stone-900'
             : 'bg-gradient-to-br from-amber-600 via-rose-700 to-stone-900'
-        }`}>
+          }`}>
           <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md mx-auto flex items-center justify-center mb-4">
             {passed ? <Trophy className="w-8 h-8 text-yellow-300" /> : <AlertTriangle className="w-8 h-8 text-amber-200" />}
           </div>
@@ -510,7 +514,7 @@ export function QuizView({
             </h3>
             <div className="space-y-3">
               {mistakes.map((m, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="p-3.5 rounded-xl border border-rose-100 dark:border-rose-950/60 bg-rose-50/50 dark:bg-rose-950/20 text-xs space-y-1.5"
                 >
@@ -587,11 +591,10 @@ export function QuizView({
         </div>
 
         {selectedMode === 'timed_challenge' && (
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold ${
-            timeLeft <= 5 
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold ${timeLeft <= 5
               ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400 animate-pulse'
               : 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-          }`}>
+            }`}>
             <Clock className="w-3.5 h-3.5" />
             {timeLeft}s
           </div>
@@ -604,7 +607,7 @@ export function QuizView({
 
       {/* Progress Bar */}
       <div className="h-1.5 w-full bg-stone-200 dark:bg-stone-800 rounded-full overflow-hidden">
-        <div 
+        <div
           className="h-full bg-red-600 transition-all duration-300 rounded-full"
           style={{ width: `${progressPct}%` }}
         />
@@ -614,105 +617,129 @@ export function QuizView({
       <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 md:p-8 shadow-sm space-y-6 text-center">
         {currentQ.secondaryPrompt && (
           <p className="text-xs uppercase tracking-wider font-semibold text-stone-400">
-            {currentQ.secondaryPrompt}
+            <FuriganaText text={currentQ.secondaryPrompt} />
           </p>
         )}
 
         {/* Big Japanese Display with Furigana */}
         <div className="py-2 sm:py-4 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-          <FuriganaText 
+          <FuriganaText
             text={currentQ.prompt}
             className="font-japanese text-3xl sm:text-5xl md:text-6xl font-black text-stone-900 dark:text-white select-none text-center"
           />
           <AudioButton text={currentQ.kanjiCharacter || currentQ.prompt} size="md" />
         </div>
 
-        {currentQ.contextSentence && (
-          <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 text-stone-600 dark:text-stone-300 text-sm font-japanese">
-            <FuriganaText text={currentQ.contextSentence} />
-          </div>
-        )}
+            {/* Show/Hide English Meaning Toggle (Hidden by default to keep interface clean & focused on Japanese) */}
+            {(currentQ.englishMeaning || currentQ.contextSentence) && (
+              <div className="flex flex-col items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowEnglishMeaning(prev => !prev)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white shadow-2xs"
+                  title={showEnglishMeaning ? "Hide English Meaning" : "Show English Meaning"}
+                >
+                  {showEnglishMeaning ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 text-red-500" />
+                      <span>Hide English Meaning</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                      <span>Show English Meaning</span>
+                    </>
+                  )}
+                </button>
 
-        {/* 4 Choices Grid with Furigana */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          {currentQ.options.map((opt, idx) => {
-            const isSelected = selectedOption === opt;
-            const isCorrect = opt === currentQ.correctAnswer;
-            
-            let btnStyle = 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-850 text-stone-800 dark:text-stone-200';
-
-            if (isAnswerSubmitted) {
-              if (isCorrect) {
-                btnStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 font-bold ring-2 ring-emerald-500/20';
-              } else if (isSelected && !isCorrect) {
-                btnStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 font-bold';
-              } else {
-                btnStyle = 'opacity-40 border-stone-200 dark:border-stone-800';
-              }
-            }
-
-            return (
-              <button
-                key={idx}
-                disabled={isAnswerSubmitted}
-                onClick={() => handleAnswerSubmit(opt)}
-                className={`p-4 rounded-xl border text-sm md:text-base font-medium transition text-center flex items-center justify-center gap-2 ${btnStyle}`}
-              >
-                <FuriganaText text={opt} />
-                {isAnswerSubmitted && isCorrect && (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                {showEnglishMeaning && (
+                  <div className="p-3 px-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs sm:text-sm font-medium text-amber-900 dark:text-amber-200 animate-fadeIn max-w-lg mx-auto shadow-xs">
+                    <span className="font-bold text-amber-800 dark:text-amber-300 mr-1.5">Meaning:</span>
+                    <span>{currentQ.englishMeaning || currentQ.contextSentence}</span>
+                  </div>
                 )}
-                {isAnswerSubmitted && isSelected && !isCorrect && (
-                  <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Feedback Card after Submission */}
-        {isAnswerSubmitted && (
-          <div className="mt-6 pt-6 border-t border-stone-100 dark:border-stone-800 text-left animate-fadeIn space-y-4">
-            <div className={`p-4 rounded-xl flex items-start gap-3 ${
-              selectedOption === currentQ.correctAnswer
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
-                : 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200'
-            }`}>
-              {selectedOption === currentQ.correctAnswer ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              )}
-              <div className="flex-1">
-                <p className="font-bold text-sm">
-                  {selectedOption === currentQ.correctAnswer ? 'Correct! 正解です' : 'Incorrect. 復習しましょう'}
-                </p>
-                <p className="text-xs mt-1 leading-relaxed opacity-90">
-                  <FuriganaText text={currentQ.explanation} />
-                </p>
-                <span className="text-[11px] text-stone-500 dark:text-stone-400 font-normal block mt-1 animate-pulse">
-                  ⚡ Auto-advancing to next question...
-                </span>
               </div>
+            )}
+
+            {/* 4 Choices Grid with Furigana */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {currentQ.options.map((opt, idx) => {
+                const isSelected = selectedOption === opt;
+                const isCorrect = opt === currentQ.correctAnswer;
+
+                let btnStyle = 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-850 text-stone-800 dark:text-stone-200';
+
+                if (isAnswerSubmitted) {
+                  if (isCorrect) {
+                    btnStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 font-bold ring-2 ring-emerald-500/20';
+                  } else if (isSelected && !isCorrect) {
+                    btnStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 font-bold';
+                  } else {
+                    btnStyle = 'opacity-40 border-stone-200 dark:border-stone-800';
+                  }
+                }
+
+                return (
+                  <button
+                    key={idx}
+                    disabled={isAnswerSubmitted}
+                    onClick={() => handleAnswerSubmit(opt)}
+                    className={`p-4 rounded-xl border text-sm md:text-base font-medium transition text-center flex items-center justify-center gap-2 ${btnStyle}`}
+                  >
+                    <FuriganaText text={opt} />
+                    {isAnswerSubmitted && isCorrect && (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    )}
+                    {isAnswerSubmitted && isSelected && !isCorrect && (
+                      <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            <button
-              onClick={handleNextQuestion}
-              className="w-full py-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-sm transition flex items-center justify-center gap-2 shadow-md"
-            >
-              <span>{currentIndex + 1 < questions.length ? 'Next Question' : 'View Test Results'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* Feedback Card after Submission */}
+            {isAnswerSubmitted && (
+              <div className="mt-6 pt-6 border-t border-stone-100 dark:border-stone-800 text-left animate-fadeIn space-y-4">
+                <div className={`p-4 rounded-xl flex items-start gap-3 ${selectedOption === currentQ.correctAnswer
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
+                    : 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-200'
+                  }`}>
+                  {selectedOption === currentQ.correctAnswer ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">
+                      {selectedOption === currentQ.correctAnswer ? 'Correct! 正解です' : 'Incorrect. 復習しましょう'}
+                    </p>
+                    <p className="text-xs mt-1 leading-relaxed opacity-90">
+                      <FuriganaText text={currentQ.explanation} />
+                    </p>
+                    <span className="text-[11px] text-stone-500 dark:text-stone-400 font-normal block mt-1 animate-pulse">
+                      ⚡ Auto-advancing to next question...
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleNextQuestion}
+                  className="w-full py-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-100 text-white dark:text-stone-900 font-bold text-sm transition flex items-center justify-center gap-2 shadow-md"
+                >
+                  <span>{currentIndex + 1 < questions.length ? 'Next Question' : 'View Test Results'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
       {/* AI Quiz Loading Animation Overlay */}
-      <AiQuizLoadingOverlay 
-        isOpen={isAiLoading}
-        title="Generating AI Kanji Quiz"
-        subtitle="Synthesizing personalized JLPT N5 questions with complete furigana..."
-      />
-    </div>
-  );
+        <AiQuizLoadingOverlay
+          isOpen={isAiLoading}
+          title="Generating AI Kanji Quiz"
+          subtitle="Synthesizing personalized JLPT N5 questions with complete furigana..."
+        />
+      </div>
+      );
 }
