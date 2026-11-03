@@ -206,7 +206,8 @@ function generateFillBlankQuestion(
         type: 'fill_blank',
         category: 'grammar',
         prompt: 'Choose the correct particle to complete the sentence:',
-        contextText: `${blanked}\nMeaning: "${eg.english}"`,
+        contextText: blanked,
+        englishMeaning: eg.english,
         options,
         correctAnswer: p,
         explanation: `Particle「${p}」is correct here according to the pattern: ${targetPoint.structure}.`,
@@ -471,8 +472,8 @@ export function evaluateExamResults(
   const summary = scorePercent >= 80
     ? `Outstanding performance! You achieved ${scorePercent}% on ${examTitle}.`
     : scorePercent >= 60
-    ? `Solid effort! You scored ${scorePercent}%. Focus on your weak points to reach 80%+ mastery.`
-    : `Keep practicing! You scored ${scorePercent}%. Review the recommended lessons and try again.`;
+      ? `Solid effort! You scored ${scorePercent}%. Focus on your weak points to reach 80%+ mastery.`
+      : `Keep practicing! You scored ${scorePercent}%. Review the recommended lessons and try again.`;
 
   return {
     id: `exam_res_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

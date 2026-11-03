@@ -92,6 +92,7 @@ export interface QuizQuestion {
   prompt: string;
   secondaryPrompt?: string;
   contextSentence?: string;
+  englishMeaning?: string;
   options: string[]; // 4 choices, dynamically drawn ONLY from learned kanji pool
   correctAnswer: string;
   explanation: string;

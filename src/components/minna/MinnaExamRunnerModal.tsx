@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Volume2, Clock, CheckCircle2, ChevronRight, AlertCircle,
-  HelpCircle, Sparkles, Loader2, RefreshCw
+  HelpCircle, Sparkles, Loader2, RefreshCw, Eye, EyeOff
 } from 'lucide-react';
 import { CustomExamConfig, ExamAnswerLog, ExamQuestion, ExamResultRecord } from '@/types/minna';
 import { speakJapanese } from '@/services/audio';
@@ -34,12 +34,14 @@ export function MinnaExamRunnerModal({
   );
   const [startTime] = useState<number>(Date.now());
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [showEnglishMeaning, setShowEnglishMeaning] = useState(false);
 
   // Auto-advance timer ref
   const autoNextTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clear auto-advance timer on question change or unmount
   useEffect(() => {
+    setShowEnglishMeaning(false);
     return () => {
       if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
     };
@@ -195,7 +197,7 @@ export function MinnaExamRunnerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-5 bg-stone-950/75 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-stone-800 flex flex-col max-h-[96vh] sm:max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
+
         {/* Exam Header */}
         <div className="px-3.5 sm:px-6 py-2.5 sm:py-4 bg-stone-900 dark:bg-stone-950 text-white flex items-center justify-between border-b border-stone-800 shrink-0">
           <div>
@@ -214,9 +216,8 @@ export function MinnaExamRunnerModal({
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {config.durationMinutes > 0 && (
-              <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-mono text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 ${
-                secondsRemaining < 60 ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-stone-800 text-stone-300'
-              }`}>
+              <div className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl font-mono text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 ${secondsRemaining < 60 ? 'bg-red-500/20 text-red-400 animate-pulse' : 'bg-stone-800 text-stone-300'
+                }`}>
                 <Clock className="w-3.5 h-3.5" />
                 <span>{formatTimer(secondsRemaining)}</span>
               </div>
@@ -242,7 +243,7 @@ export function MinnaExamRunnerModal({
 
         {/* Question Canvas */}
         <div className="flex-1 overflow-y-auto p-3.5 sm:p-7 space-y-4 sm:space-y-5">
-          
+
           {/* Prompt Header */}
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
@@ -264,6 +265,36 @@ export function MinnaExamRunnerModal({
             {currentQ.contextText && (
               <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-800 font-japanese text-sm sm:text-base leading-relaxed text-stone-900 dark:text-stone-100 whitespace-pre-line font-medium">
                 <FuriganaText text={currentQ.contextText} />
+              </div>
+            )}
+
+            {/* Show/Hide English Meaning Toggle */}
+            {currentQ.englishMeaning && (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowEnglishMeaning(prev => !prev)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-white"
+                >
+                  {showEnglishMeaning ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 text-red-500" />
+                      <span>Hide English Meaning</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+                      <span>Show English Meaning</span>
+                    </>
+                  )}
+                </button>
+
+                {showEnglishMeaning && (
+                  <div className="mt-2 p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs font-medium text-amber-900 dark:text-amber-200 animate-fadeIn">
+                    <span className="font-bold text-amber-800 dark:text-amber-300 mr-1.5">English Translation:</span>
+                    <span>{currentQ.englishMeaning}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -318,11 +349,10 @@ export function MinnaExamRunnerModal({
                       key={tIdx}
                       disabled={isExhausted}
                       onClick={() => handleTileClick(tile)}
-                      className={`px-4 py-2.5 rounded-xl border text-sm font-japanese font-bold transition shadow-sm ${
-                        isExhausted
+                      className={`px-4 py-2.5 rounded-xl border text-sm font-japanese font-bold transition shadow-sm ${isExhausted
                           ? 'opacity-30 border-stone-200 dark:border-stone-800 bg-stone-100 dark:bg-stone-800 cursor-not-allowed'
                           : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-white hover:border-red-500 active:scale-95'
-                      }`}
+                        }`}
                     >
                       <FuriganaText text={tile} />
                     </button>
@@ -341,18 +371,16 @@ export function MinnaExamRunnerModal({
                   <button
                     key={oIdx}
                     onClick={() => handleSelectOption(opt)}
-                    className={`p-3.5 sm:p-4 rounded-2xl border text-left text-xs sm:text-sm font-medium transition flex items-center justify-between gap-3 ${
-                      isSelected
+                    className={`p-3.5 sm:p-4 rounded-2xl border text-left text-xs sm:text-sm font-medium transition flex items-center justify-between gap-3 ${isSelected
                         ? 'border-red-600 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold shadow-sm ring-2 ring-red-500/50'
                         : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/80 hover:border-stone-400 text-stone-800 dark:text-stone-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-xl flex items-center justify-center text-xs font-mono font-bold shrink-0 ${
-                        isSelected
+                      <span className={`w-6 h-6 rounded-xl flex items-center justify-center text-xs font-mono font-bold shrink-0 ${isSelected
                           ? 'bg-red-600 text-white'
                           : 'bg-stone-100 dark:bg-stone-700 text-stone-500'
-                      }`}>
+                        }`}>
                         {String.fromCharCode(65 + oIdx)}
                       </span>
                       <span className="font-japanese text-sm sm:text-base">
