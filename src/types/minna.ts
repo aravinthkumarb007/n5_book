@@ -36,6 +36,24 @@ export interface MinnaVocabularyItem {
   category: string;
   exampleSentence?: MinnaSentenceExample;
   notes?: string;
+  learningStatus?: VocabLearningStatus;
+}
+
+export type VocabLearningStatus = 'learned' | 'not_sure' | 'not_learned';
+
+export type VocabStatusFilter = 'all' | 'marked' | 'learned' | 'not_sure' | 'not_learned';
+
+export interface VocabStatusRecord {
+  vocabId: string;
+  lessonNumber: number;
+  status: VocabLearningStatus;
+  updatedAt: string;
+  userId?: string;
+}
+
+export interface MarkedVocabItemWithMeta extends MinnaVocabularyItem {
+  status: VocabLearningStatus;
+  statusUpdatedAt?: string;
 }
 
 export interface MinnaGrammarPoint {

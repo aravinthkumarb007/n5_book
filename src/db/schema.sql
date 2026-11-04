@@ -408,3 +408,26 @@ BEGIN
     CREATE POLICY "Allow anon counters_quiz_results" ON counters_quiz_results FOR ALL USING (true);
   END IF;
 END $$;
+
+-- 21. Permanent Vocabulary Learning Statuses (Learned, Not Learned, Not Sure)
+CREATE TABLE IF NOT EXISTS vocabulary_learning_status (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL,
+    vocab_id VARCHAR(64) NOT NULL,
+    lesson_number INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('learned', 'not_sure', 'not_learned')),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, vocab_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vocab_status_user ON vocabulary_learning_status(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_vocab_status_lesson ON vocabulary_learning_status(lesson_number);
+
+ALTER TABLE vocabulary_learning_status ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon vocabulary_learning_status') THEN
+    CREATE POLICY "Allow anon vocabulary_learning_status" ON vocabulary_learning_status FOR ALL USING (true);
+  END IF;
+END $$;

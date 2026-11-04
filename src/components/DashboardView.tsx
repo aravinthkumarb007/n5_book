@@ -16,7 +16,8 @@ import {
   Zap,
   FileCheck,
   Calculator,
-  RotateCcw
+  RotateCcw,
+  Layers
 } from 'lucide-react';
 import { UserKanjiProgress, UserSettings } from '@/types/kanji';
 import { LEVEL_METADATA } from '@/data/kanjiDatabase';
@@ -563,6 +564,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
               <p className="text-sm font-bold text-stone-900 dark:text-stone-100">30-Day Plan</p>
               <p className="text-[11px] text-stone-500 mt-0.5">Adaptive daily agenda</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('batch_vocab')}
+              className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-indigo-500 hover:shadow-md transition-all text-left cursor-pointer group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-stone-500 uppercase">Batch Vocab</span>
+                <Layers size={16} className="text-indigo-500 group-hover:scale-110 transition-transform" />
+              </div>
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">Marked Vocabulary</p>
+              <p className="text-[11px] text-stone-500 mt-0.5">All marked words together</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('relearn')}
+              className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-rose-500 hover:shadow-md transition-all text-left cursor-pointer group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-stone-500 uppercase">Retention Hub</span>
+                <RotateCcw size={16} className="text-rose-500 group-hover:scale-110 transition-transform" />
+              </div>
+              <p className="text-sm font-bold text-stone-900 dark:text-stone-100">Vocab Re-learning</p>
+              <p className="text-[11px] text-stone-500 mt-0.5">Not Learned & Not Sure</p>
             </button>
           </div>
         </div>

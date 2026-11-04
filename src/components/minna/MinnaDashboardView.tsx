@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen, Sparkles, Trophy, CheckCircle2, Clock,
   Search, Plus, ArrowRight, Play, Award, Zap, Layers,
-  ChevronRight, RefreshCw, BarChart2, Star, Sliders
+  ChevronRight, RefreshCw, RotateCcw, BarChart2, Star, Sliders
 } from 'lucide-react';
 import { CustomExamConfig, CustomLesson, ExamQuestion, ExamResultRecord, MinnaLesson, MinnaUserLessonProgress } from '@/types/minna';
 import { ALL_MINNA_LESSONS, getCurriculumStats } from '@/data/minnaNoNihongo';
@@ -17,6 +17,8 @@ import {
 
 // Modals
 import { MinnaLessonDetailModal } from './MinnaLessonDetailModal';
+import { MinnaFlashcardsModal } from './MinnaFlashcardsModal';
+import { SelectiveLessonsModal } from './SelectiveLessonsModal';
 import { MinnaCustomExamModal } from './MinnaCustomExamModal';
 import { MinnaExamRunnerModal } from './MinnaExamRunnerModal';
 import { MinnaExamResultModal } from './MinnaExamResultModal';
@@ -27,9 +29,11 @@ import { AiQuizLoadingOverlay } from '@/components/common/AiQuizLoadingOverlay';
 
 interface MinnaDashboardViewProps {
   onNavigateHome?: () => void;
+  onNavigateToBatch?: () => void;
+  onNavigateToRelearn?: () => void;
 }
 
-export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) {
+export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNavigateToRelearn }: MinnaDashboardViewProps) {
   const [progressList, setProgressList] = useState<MinnaUserLessonProgress[]>([]);
   const [customLessons, setCustomLessons] = useState<CustomLesson[]>([]);
   const [examHistory, setExamHistory] = useState<ExamResultRecord[]>([]);
@@ -46,6 +50,9 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
   const [customLessonModalOpen, setCustomLessonModalOpen] = useState(false);
   const [editingCustomLesson, setEditingCustomLesson] = useState<CustomLesson | null>(null);
   const [appendicesModalOpen, setAppendicesModalOpen] = useState(false);
+  const [selectiveModalOpen, setSelectiveModalOpen] = useState(false);
+  const [flashcardLesson, setFlashcardLesson] = useState<MinnaLesson | null>(null);
+  const [selectiveLessonsList, setSelectiveLessonsList] = useState<number[] | null>(null);
 
   // Active Exam Execution
   const [activeExamConfig, setActiveExamConfig] = useState<CustomExamConfig | null>(null);
@@ -82,6 +89,16 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
   }, [progressList]);
 
   // Filter lessons
+  const selectiveVocabList = useMemo(() => {
+    if (!selectiveLessonsList || selectiveLessonsList.length === 0) return [];
+    const list: any[] = [];
+    for (const lNum of selectiveLessonsList) {
+      const lesson = ALL_MINNA_LESSONS.find(l => l.lessonNumber === lNum);
+      if (lesson) list.push(...lesson.vocabulary);
+    }
+    return list;
+  }, [selectiveLessonsList]);
+
   const filteredLessons = useMemo(() => {
     return ALL_MINNA_LESSONS.filter(l => {
       const p = progressMap.get(l.lessonNumber);
@@ -169,7 +186,34 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
               </p>
 
               {/* Action CTAs */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
+              <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                <button
+                  onClick={() => setSelectiveModalOpen(true)}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs sm:text-sm shadow-xl hover:from-amber-600 hover:to-orange-600 active:scale-95 transition flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <Layers className="w-4 h-4 text-white" />
+                  <span>Selective Lessons Flashcards</span>
+                </button>
+
+                {onNavigateToBatch && (
+                  <button
+                    onClick={onNavigateToBatch}
+                    className="px-5 py-3 rounded-2xl bg-indigo-600/90 hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-xl active:scale-95 transition flex items-center justify-center gap-2 border border-indigo-500/40 w-full sm:w-auto"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    <span>Marked Vocab Batch</span>
+                  </button>
+                )}
+
+                {onNavigateToRelearn && (
+                  <button
+                    onClick={onNavigateToRelearn}
+                    className="px-5 py-3 rounded-2xl bg-rose-600/90 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm shadow-xl active:scale-95 transition flex items-center justify-center gap-2 border border-rose-500/40 w-full sm:w-auto"
+                  >
+                    <RotateCcw className="w-4 h-4 text-amber-300" />
+                    <span>Re-learn Weak Vocab</span>
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setCustomExamInitialRange([1, 2, 3, 4, 5]);
@@ -450,18 +494,29 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
                             <span>Generate Lesson {lesson.lessonNumber} Assessment</span>
                           </button>
                         ) : (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-1.5">
                             <button
                               onClick={() => setSelectedLessonForDetail(lesson)}
-                              className="py-2.5 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                              className="py-2.5 px-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1"
+                              title="Browse Vocabulary & Grammar"
                             >
                               <BookOpen className="w-3.5 h-3.5" />
                               <span>Study</span>
                             </button>
 
                             <button
+                              onClick={() => setFlashcardLesson(lesson)}
+                              className="py-2.5 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95"
+                              title="Study Lesson with Interactive Flashcards"
+                            >
+                              <Layers className="w-3.5 h-3.5" />
+                              <span>Cards</span>
+                            </button>
+
+                            <button
                               onClick={() => handleLaunchQuickLessonQuiz(lesson)}
-                              className="py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                              className="py-2.5 px-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm active:scale-95"
+                              title="Practice Assessment"
                             >
                               <Play className="w-3.5 h-3.5" />
                               <span>Quiz</span>
@@ -602,6 +657,39 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
             isOpen={appendicesModalOpen}
             onClose={() => setAppendicesModalOpen(false)}
           />
+
+          {/* MODAL 8: Selective Lessons Flashcard Picker */}
+          {selectiveModalOpen && (
+            <SelectiveLessonsModal
+              onClose={() => setSelectiveModalOpen(false)}
+              onStartFlashcards={(lessonNums) => {
+                setSelectiveModalOpen(false);
+                setSelectiveLessonsList(lessonNums);
+              }}
+            />
+          )}
+
+          {/* MODAL 9: Single Lesson Flashcard Session */}
+          {flashcardLesson && (
+            <MinnaFlashcardsModal
+              title={`Lesson ${flashcardLesson.lessonNumber} Flashcards`}
+              subtitle={`${flashcardLesson.title} • ${flashcardLesson.vocabulary.length} Vocabulary Cards`}
+              vocabularyList={flashcardLesson.vocabulary}
+              onClose={() => setFlashcardLesson(null)}
+              onRefreshData={refreshLocalData}
+            />
+          )}
+
+          {/* MODAL 10: Selective Multi-Lesson Flashcards Session */}
+          {selectiveLessonsList && (
+            <MinnaFlashcardsModal
+              title={`Selective Lessons Flashcards (Lessons ${selectiveLessonsList.join(', ')})`}
+              subtitle={`Multi-Lesson Study Deck • ${selectiveVocabList.length} Total Vocabulary`}
+              vocabularyList={selectiveVocabList}
+              onClose={() => setSelectiveLessonsList(null)}
+              onRefreshData={refreshLocalData}
+            />
+          )}
 
           {/* AI Custom Exam Studio Generation Loading Indicator */}
           <AiQuizLoadingOverlay

@@ -45,9 +45,9 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l11_v21', lessonNumber: 11, kanji: '〜回', hiragana: '〜かい', romaji: '-kai', english: '- times, frequency', partOfSpeech: 'counter', category: 'Counters' },
       { id: 'l11_v22', lessonNumber: 11, kanji: 'りんご', hiragana: 'りんご', romaji: 'ringo', english: 'apple', partOfSpeech: 'noun', category: 'Food' },
       { id: 'l11_v23', lessonNumber: 11, kanji: 'みかん', hiragana: 'みかん', romaji: 'mikan', english: 'mandarin orange, tangerine', partOfSpeech: 'noun', category: 'Food' },
-      { id: 'l11_v24', lessonNumber: 11, kanji: 'サンドイッチ', hiragana: 'さんどいっち', romaji: 'sandoitchi', english: 'sandwich', partOfSpeech: 'noun', category: 'Food' },
-      { id: 'l11_v25', lessonNumber: 11, kanji: 'カレー[ライス]', hiragana: 'かれー[らいす]', romaji: 'karee [raisu]', english: 'curry [and rice]', partOfSpeech: 'noun', category: 'Food' },
-      { id: 'l11_v26', lessonNumber: 11, kanji: 'アイスクリーム', hiragana: 'あいすくりーむ', romaji: 'aisukuriimu', english: 'ice cream', partOfSpeech: 'noun', category: 'Food' },
+      { id: 'l11_v24', lessonNumber: 11, kanji: 'サンドイッチ', hiragana: 'サンドイッチ', romaji: 'sandoitchi', english: 'sandwich', partOfSpeech: 'noun', category: 'Food' },
+      { id: 'l11_v25', lessonNumber: 11, kanji: 'カレー[ライス]', hiragana: 'カレー[ライス]', romaji: 'karee [raisu]', english: 'curry [and rice]', partOfSpeech: 'noun', category: 'Food' },
+      { id: 'l11_v26', lessonNumber: 11, kanji: 'アイスクリーム', hiragana: 'アイスクリーム', romaji: 'aisukuriimu', english: 'ice cream', partOfSpeech: 'noun', category: 'Food' },
       { id: 'l11_v27', lessonNumber: 11, kanji: '切手', hiragana: 'きって', romaji: 'kitte', english: 'postage stamp', partOfSpeech: 'noun', category: 'Post & Office' },
       { id: 'l11_v28', lessonNumber: 11, kanji: 'はがき', hiragana: 'はがき', romaji: 'hagaki', english: 'post card', partOfSpeech: 'noun', category: 'Post & Office' },
       { id: 'l11_v29', lessonNumber: 11, kanji: '封筒', hiragana: 'ふうとう', romaji: 'fuutou', english: 'envelope', partOfSpeech: 'noun', category: 'Post & Office' },
@@ -82,7 +82,7 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l11_v58', lessonNumber: 11, kanji: '行って いらっしゃい。', hiragana: 'いって いらっしゃい。', romaji: 'Itte irasshai.', english: 'So long. (lit. Go and come back.)', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l11_v59', lessonNumber: 11, kanji: '行って まいります。', hiragana: 'いって まいります。', romaji: 'Itte mairimasu.', english: "So long. (lit. I'm going and coming back.)", partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l11_v60', lessonNumber: 11, kanji: 'それから', hiragana: 'それから', romaji: 'sorekara', english: 'and, furthermore, after that', partOfSpeech: 'conjunction', category: 'Conjunctions' },
-      { id: 'l11_v61', lessonNumber: 11, kanji: 'オーストラリア', hiragana: 'おーすとらりあ', romaji: 'Oosutoraria', english: 'Australia', partOfSpeech: 'noun', category: 'Countries' }
+      { id: 'l11_v61', lessonNumber: 11, kanji: 'オーストラリア', hiragana: 'オーストラリア', romaji: 'Oosutoraria', english: 'Australia', partOfSpeech: 'noun', category: 'Countries' }
     ],
     grammar: [
       {
@@ -253,11 +253,11 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l12_v21', lessonNumber: 12, kanji: '雨', hiragana: 'あめ', romaji: 'ame', english: 'rain, rainy', partOfSpeech: 'noun', category: 'Weather' },
       { id: 'l12_v22', lessonNumber: 12, kanji: '雪', hiragana: 'ゆき', romaji: 'yuki', english: 'snow, snowy', partOfSpeech: 'noun', category: 'Weather' },
       { id: 'l12_v23', lessonNumber: 12, kanji: '曇り', hiragana: 'くもり', romaji: 'kumori', english: 'cloudy', partOfSpeech: 'noun', category: 'Weather' },
-      { id: 'l12_v24', lessonNumber: 12, kanji: 'ホテル', hiragana: 'ほてる', romaji: 'hoteru', english: 'hotel', partOfSpeech: 'noun', category: 'Places' },
+      { id: 'l12_v24', lessonNumber: 12, kanji: 'ホテル', hiragana: 'ホテル', romaji: 'hoteru', english: 'hotel', partOfSpeech: 'noun', category: 'Places' },
       { id: 'l12_v25', lessonNumber: 12, kanji: '空港', hiragana: 'くうこう', romaji: 'kuukou', english: 'airport', partOfSpeech: 'noun', category: 'Places' },
       { id: 'l12_v26', lessonNumber: 12, kanji: '海', hiragana: 'うみ', romaji: 'umi', english: 'sea, ocean', partOfSpeech: 'noun', category: 'Nature' },
       { id: 'l12_v27', lessonNumber: 12, kanji: '世界', hiragana: 'せかい', romaji: 'sekai', english: 'world', partOfSpeech: 'noun', category: 'General' },
-      { id: 'l12_v28', lessonNumber: 12, kanji: 'パーティー', hiragana: 'ぱーてぃー', romaji: 'paatii', english: 'party (~を します: give a party)', partOfSpeech: 'noun', category: 'Social' },
+      { id: 'l12_v28', lessonNumber: 12, kanji: 'パーティー', hiragana: 'パーティー', romaji: 'paatii', english: 'party (~を します: give a party)', partOfSpeech: 'noun', category: 'Social' },
       { id: 'l12_v29', lessonNumber: 12, kanji: '[お]祭り', hiragana: '[お]まつり', romaji: '[o]matsuri', english: 'festival', partOfSpeech: 'noun', category: 'Culture' },
       { id: 'l12_v30', lessonNumber: 12, kanji: '試験', hiragana: 'しけん', romaji: 'shiken', english: 'examination, test', partOfSpeech: 'noun', category: 'School' },
       { id: 'l12_v31', lessonNumber: 12, kanji: 'すき焼き', hiragana: 'すきやき', romaji: 'sukiyaki', english: 'sukiyaki (beef and vegetable hot pot)', partOfSpeech: 'noun', category: 'Food' },
@@ -276,8 +276,8 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l12_v44', lessonNumber: 12, kanji: 'でも', hiragana: 'でも', romaji: 'demo', english: 'but, however', partOfSpeech: 'conjunction', category: 'Conjunctions' },
       { id: 'l12_v45', lessonNumber: 12, kanji: '疲れました。', hiragana: 'つかれました。', romaji: 'Tsukaremashita.', english: "(I'm) tired.", partOfSpeech: 'phrase', category: 'Expressions' },
       { id: 'l12_v46', lessonNumber: 12, kanji: '祇園祭', hiragana: 'ぎおんまつり', romaji: 'Gion-matsuri', english: 'Gion Festival (famous Kyoto festival)', partOfSpeech: 'noun', category: 'Culture' },
-      { id: 'l12_v47', lessonNumber: 12, kanji: 'ホンコン', hiragana: 'ほんこん', romaji: 'Honkon', english: 'Hong Kong', partOfSpeech: 'noun', category: 'Places' },
-      { id: 'l12_v48', lessonNumber: 12, kanji: 'シンガポール', hiragana: 'しんがぽーる', romaji: 'Shingapooru', english: 'Singapore', partOfSpeech: 'noun', category: 'Places' }
+      { id: 'l12_v47', lessonNumber: 12, kanji: 'ホンコン', hiragana: 'ホンコン', romaji: 'Honkon', english: 'Hong Kong', partOfSpeech: 'noun', category: 'Places' },
+      { id: 'l12_v48', lessonNumber: 12, kanji: 'シンガポール', hiragana: 'シンガポール', romaji: 'Shingapooru', english: 'Singapore', partOfSpeech: 'noun', category: 'Places' }
     ],
     grammar: [
       {
@@ -452,12 +452,12 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l13_v15', lessonNumber: 13, kanji: '広い', hiragana: 'ひろい', romaji: 'hiroi', english: 'wide, spacious', partOfSpeech: 'i-adjective', category: 'Adjectives' },
       { id: 'l13_v16', lessonNumber: 13, kanji: '狭い', hiragana: 'せまい', romaji: 'semai', english: 'narrow, small (room, etc.)', partOfSpeech: 'i-adjective', category: 'Adjectives' },
       { id: 'l13_v17', lessonNumber: 13, kanji: '市役所', hiragana: 'しやくしょ', romaji: 'shiyakusho', english: 'municipal office, city hall', partOfSpeech: 'noun', category: 'Town' },
-      { id: 'l13_v18', lessonNumber: 13, kanji: 'プール', hiragana: 'ぷーる', romaji: 'puuru', english: 'swimming pool', partOfSpeech: 'noun', category: 'Town' },
+      { id: 'l13_v18', lessonNumber: 13, kanji: 'プール', hiragana: 'プール', romaji: 'puuru', english: 'swimming pool', partOfSpeech: 'noun', category: 'Town' },
       { id: 'l13_v19', lessonNumber: 13, kanji: '川', hiragana: 'かわ', romaji: 'kawa', english: 'river', partOfSpeech: 'noun', category: 'Nature' },
       { id: 'l13_v20', lessonNumber: 13, kanji: '経済', hiragana: 'けいざい', romaji: 'keizai', english: 'economy, economics', partOfSpeech: 'noun', category: 'Subjects' },
       { id: 'l13_v21', lessonNumber: 13, kanji: '美術', hiragana: 'びじゅつ', romaji: 'bijutsu', english: 'fine arts', partOfSpeech: 'noun', category: 'Subjects' },
       { id: 'l13_v22', lessonNumber: 13, kanji: '釣り', hiragana: 'つり', romaji: 'tsuri', english: 'fishing (~を します: fish, angle)', partOfSpeech: 'noun', category: 'Hobbies' },
-      { id: 'l13_v23', lessonNumber: 13, kanji: 'スキー', hiragana: 'すきー', romaji: 'sukii', english: 'skiing (~を します: ski)', partOfSpeech: 'noun', category: 'Hobbies' },
+      { id: 'l13_v23', lessonNumber: 13, kanji: 'スキー', hiragana: 'スキー', romaji: 'sukii', english: 'skiing (~を します: ski)', partOfSpeech: 'noun', category: 'Hobbies' },
       { id: 'l13_v24', lessonNumber: 13, kanji: '会議', hiragana: 'かいぎ', romaji: 'kaigi', english: 'meeting, conference (~を します: hold a conference)', partOfSpeech: 'noun', category: 'Business' },
       { id: 'l13_v25', lessonNumber: 13, kanji: '登録', hiragana: 'とうろく', romaji: 'touroku', english: 'registration (~を します: register)', partOfSpeech: 'noun', category: 'General' },
       { id: 'l13_v26', lessonNumber: 13, kanji: '週末', hiragana: 'しゅうまつ', romaji: 'shuumatsu', english: 'weekend', partOfSpeech: 'noun', category: 'Time' },
@@ -474,7 +474,7 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l13_v37', lessonNumber: 13, kanji: '牛どん', hiragana: 'ぎゅうどん', romaji: 'gyuudon', english: 'bowl of rice topped with beef', partOfSpeech: 'noun', category: 'Food' },
       { id: 'l13_v38', lessonNumber: 13, kanji: '[少々] お待ちください。', hiragana: '[しょうしょう] おまちください。', romaji: '[Shoushou] omachi kudasai.', english: 'Please wait [a moment].', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l13_v39', lessonNumber: 13, kanji: '別々に', hiragana: 'べつべつに', romaji: 'betsubetsu ni', english: 'separately', partOfSpeech: 'adverb', category: 'Expressions' },
-      { id: 'l13_v40', lessonNumber: 13, kanji: 'ロシア', hiragana: 'ろしあ', romaji: 'Roshia', english: 'Russia', partOfSpeech: 'noun', category: 'Countries' }
+      { id: 'l13_v40', lessonNumber: 13, kanji: 'ロシア', hiragana: 'ロシア', romaji: 'Roshia', english: 'Russia', partOfSpeech: 'noun', category: 'Countries' }
     ],
     grammar: [
       {
@@ -655,9 +655,9 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l14_v15', lessonNumber: 14, kanji: '教えます II', hiragana: 'おしえます', romaji: 'oshiemasu', english: 'tell [an address], teach', partOfSpeech: 'verb-2', category: 'Verbs', notes: '[住所を〜] tell [an address]' },
       { id: 'l14_v16', lessonNumber: 14, kanji: '始めます II', hiragana: 'はじめます', romaji: 'hajimemasu', english: 'start, begin', partOfSpeech: 'verb-2', category: 'Verbs' },
       { id: 'l14_v17', lessonNumber: 14, kanji: '降ります I', hiragana: 'ふります', romaji: 'furimasu', english: 'rain, fall [rain, snow]', partOfSpeech: 'verb-1', category: 'Verbs', notes: '[雨が〜] rain' },
-      { id: 'l14_v18', lessonNumber: 14, kanji: 'コピーします III', hiragana: 'こぴーします', romaji: 'kopiishimasu', english: 'copy, photocopy', partOfSpeech: 'verb-3', category: 'Verbs' },
-      { id: 'l14_v19', lessonNumber: 14, kanji: 'エアコン', hiragana: 'えあこん', romaji: 'eakon', english: 'air conditioner', partOfSpeech: 'noun', category: 'Objects' },
-      { id: 'l14_v20', lessonNumber: 14, kanji: 'パスポート', hiragana: 'ぱすぽーと', romaji: 'pasupooto', english: 'passport', partOfSpeech: 'noun', category: 'Objects' },
+      { id: 'l14_v18', lessonNumber: 14, kanji: 'コピーします III', hiragana: 'コピーします', romaji: 'kopiishimasu', english: 'copy, photocopy', partOfSpeech: 'verb-3', category: 'Verbs' },
+      { id: 'l14_v19', lessonNumber: 14, kanji: 'エアコン', hiragana: 'エアコン', romaji: 'eakon', english: 'air conditioner', partOfSpeech: 'noun', category: 'Objects' },
+      { id: 'l14_v20', lessonNumber: 14, kanji: 'パスポート', hiragana: 'パスポート', romaji: 'pasupooto', english: 'passport', partOfSpeech: 'noun', category: 'Objects' },
       { id: 'l14_v21', lessonNumber: 14, kanji: '名前', hiragana: 'なまえ', romaji: 'namae', english: 'name', partOfSpeech: 'noun', category: 'General' },
       { id: 'l14_v22', lessonNumber: 14, kanji: '住所', hiragana: 'じゅうしょ', romaji: 'juusho', english: 'address', partOfSpeech: 'noun', category: 'General' },
       { id: 'l14_v23', lessonNumber: 14, kanji: '地図', hiragana: 'ちず', romaji: 'chizu', english: 'map', partOfSpeech: 'noun', category: 'Objects' },
@@ -851,15 +851,15 @@ export const MINNA_LESSONS_11_TO_15: MinnaLesson[] = [
       { id: 'l15_v10', lessonNumber: 15, kanji: '知って います', hiragana: 'しって います', romaji: 'shitte imasu', english: 'know (state of knowing)', partOfSpeech: 'verb-1', category: 'Verbs' },
       { id: 'l15_v11', lessonNumber: 15, kanji: '住んで います', hiragana: 'すんで います', romaji: 'sunde imasu', english: 'live [in Osaka]', partOfSpeech: 'verb-1', category: 'Verbs', notes: '[大阪に〜] live [in Osaka]' },
       { id: 'l15_v12', lessonNumber: 15, kanji: '資料', hiragana: 'しりょう', romaji: 'shiryou', english: 'materials, data', partOfSpeech: 'noun', category: 'Office' },
-      { id: 'l15_v13', lessonNumber: 15, kanji: 'カタログ', hiragana: 'かたろぐ', romaji: 'katarogu', english: 'catalog', partOfSpeech: 'noun', category: 'Office' },
+      { id: 'l15_v13', lessonNumber: 15, kanji: 'カタログ', hiragana: 'カタログ', romaji: 'katarogu', english: 'catalog', partOfSpeech: 'noun', category: 'Office' },
       { id: 'l15_v14', lessonNumber: 15, kanji: '時刻表', hiragana: 'じこくひょう', romaji: 'jikokuhyou', english: 'timetable', partOfSpeech: 'noun', category: 'Travel' },
       { id: 'l15_v15', lessonNumber: 15, kanji: '服', hiragana: 'ふく', romaji: 'fuku', english: 'clothes', partOfSpeech: 'noun', category: 'Clothes' },
       { id: 'l15_v16', lessonNumber: 15, kanji: '製品', hiragana: 'せいひん', romaji: 'seihin', english: 'products, manufactured goods', partOfSpeech: 'noun', category: 'Business' },
-      { id: 'l15_v17', lessonNumber: 15, kanji: 'ソフト', hiragana: 'そふと', romaji: 'sofuto', english: 'software', partOfSpeech: 'noun', category: 'Technology' },
+      { id: 'l15_v17', lessonNumber: 15, kanji: 'ソフト', hiragana: 'ソフト', romaji: 'sofuto', english: 'software', partOfSpeech: 'noun', category: 'Technology' },
       { id: 'l15_v18', lessonNumber: 15, kanji: '専門', hiragana: 'せんもん', romaji: 'senmon', english: 'speciality, field of study', partOfSpeech: 'noun', category: 'School' },
       { id: 'l15_v19', lessonNumber: 15, kanji: '歯医者', hiragana: 'はいしゃ', romaji: 'haisha', english: "dentist, dentist's", partOfSpeech: 'noun', category: 'Occupations' },
       { id: 'l15_v20', lessonNumber: 15, kanji: '床屋', hiragana: 'とこや', romaji: 'tokoya', english: "barber, barber's", partOfSpeech: 'noun', category: 'Occupations' },
-      { id: 'l15_v21', lessonNumber: 15, kanji: 'プレイガイド', hiragana: 'ぷれいがいど', romaji: 'pureigaido', english: '(theater) ticket agency', partOfSpeech: 'noun', category: 'Town' },
+      { id: 'l15_v21', lessonNumber: 15, kanji: 'プレイガイド', hiragana: 'プレイガイド', romaji: 'pureigaido', english: '(theater) ticket agency', partOfSpeech: 'noun', category: 'Town' },
       { id: 'l15_v22', lessonNumber: 15, kanji: '独身', hiragana: 'どくしん', romaji: 'dokushin', english: 'single, unmarried', partOfSpeech: 'noun', category: 'Family' },
       { id: 'l15_v23', lessonNumber: 15, kanji: '特に', hiragana: 'とくに', romaji: 'tokuni', english: 'especially, particularly', partOfSpeech: 'adverb', category: 'Degree' },
       { id: 'l15_v24', lessonNumber: 15, kanji: '思い出す I', hiragana: 'おもいだします', romaji: 'omoidashimasu', english: 'remember, recollect', partOfSpeech: 'verb-1', category: 'Verbs' },

@@ -49,9 +49,9 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l16_v25', lessonNumber: 16, kanji: '歯', hiragana: 'は', romaji: 'ha', english: 'tooth', partOfSpeech: 'noun', category: 'Body' },
       { id: 'l16_v26', lessonNumber: 16, kanji: 'お腹', hiragana: 'おなか', romaji: 'onaka', english: 'stomach', partOfSpeech: 'noun', category: 'Body' },
       { id: 'l16_v27', lessonNumber: 16, kanji: '足', hiragana: 'あし', romaji: 'ashi', english: 'leg, foot', partOfSpeech: 'noun', category: 'Body' },
-      { id: 'l16_v28', lessonNumber: 16, kanji: 'サービス', hiragana: 'さーびす', romaji: 'saabisu', english: 'service', partOfSpeech: 'noun', category: 'General' },
-      { id: 'l16_v29', lessonNumber: 16, kanji: 'ジョギング', hiragana: 'じょぎんぐ', romaji: 'jogingu', english: 'jogging (~を します: jog)', partOfSpeech: 'noun', category: 'Sports' },
-      { id: 'l16_v30', lessonNumber: 16, kanji: 'シャワー', hiragana: 'しゃわー', romaji: 'shawaa', english: 'shower', partOfSpeech: 'noun', category: 'Daily Life' },
+      { id: 'l16_v28', lessonNumber: 16, kanji: 'サービス', hiragana: 'サービス', romaji: 'saabisu', english: 'service', partOfSpeech: 'noun', category: 'General' },
+      { id: 'l16_v29', lessonNumber: 16, kanji: 'ジョギング', hiragana: 'ジョギング', romaji: 'jogingu', english: 'jogging (~を します: jog)', partOfSpeech: 'noun', category: 'Sports' },
+      { id: 'l16_v30', lessonNumber: 16, kanji: 'シャワー', hiragana: 'シャワー', romaji: 'shawaa', english: 'shower', partOfSpeech: 'noun', category: 'Daily Life' },
       { id: 'l16_v31', lessonNumber: 16, kanji: '緑', hiragana: 'みどり', romaji: 'midori', english: 'green, greenery', partOfSpeech: 'noun', category: 'Colors & Nature' },
       { id: 'l16_v32', lessonNumber: 16, kanji: '[お]寺', hiragana: '[お]てら', romaji: '[o]tera', english: 'Buddhist temple', partOfSpeech: 'noun', category: 'Places' },
       { id: 'l16_v33', lessonNumber: 16, kanji: '神社', hiragana: 'じんじゃ', romaji: 'jinja', english: 'Shinto shrine', partOfSpeech: 'noun', category: 'Places' },
@@ -62,12 +62,12 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l16_v38', lessonNumber: 16, kanji: '[いいえ、] まだまだです。', hiragana: '[いいえ、] まだまだです。', romaji: '[Iie,] madamada desu.', english: '[No,] I still have a long way to go.', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l16_v39', lessonNumber: 16, kanji: 'お引き出しですか。', hiragana: 'おひきだしですか。', romaji: 'Ohikidashi desu ka.', english: 'Are you making a withdrawal?', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l16_v40', lessonNumber: 16, kanji: 'まず', hiragana: 'まず', romaji: 'mazu', english: 'first of all', partOfSpeech: 'adverb', category: 'Manner' },
-      { id: 'l16_v41', lessonNumber: 16, kanji: 'キャッシュカード', hiragana: 'きゃっしゅかーど', romaji: 'kyasshu kaado', english: 'cash dispensing card, ATM card', partOfSpeech: 'noun', category: 'Banking' },
+      { id: 'l16_v41', lessonNumber: 16, kanji: 'キャッシュカード', hiragana: 'キャッシュカード', romaji: 'kyasshu kaado', english: 'cash dispensing card, ATM card', partOfSpeech: 'noun', category: 'Banking' },
       { id: 'l16_v42', lessonNumber: 16, kanji: '暗証番号', hiragana: 'あんしょうばんごう', romaji: 'anshou bangou', english: 'personal identification number, PIN', partOfSpeech: 'noun', category: 'Banking' },
       { id: 'l16_v43', lessonNumber: 16, kanji: '次に', hiragana: 'つぎに', romaji: 'tsugi ni', english: 'next, as a next step', partOfSpeech: 'adverb', category: 'Manner' },
       { id: 'l16_v44', lessonNumber: 16, kanji: '金額', hiragana: 'きんがく', romaji: 'kingaku', english: 'amount of money', partOfSpeech: 'noun', category: 'Banking' },
       { id: 'l16_v45', lessonNumber: 16, kanji: '確認', hiragana: 'かくにん', romaji: 'kakunin', english: 'confirmation (~を します: confirm)', partOfSpeech: 'noun', category: 'Banking' },
-      { id: 'l16_v46', lessonNumber: 16, kanji: 'ボタン', hiragana: 'ぼたん', romaji: 'botan', english: 'button', partOfSpeech: 'noun', category: 'Technology' }
+      { id: 'l16_v46', lessonNumber: 16, kanji: 'ボタン', hiragana: 'ボタン', romaji: 'botan', english: 'button', partOfSpeech: 'noun', category: 'Technology' }
     ],
     grammar: [
       {
@@ -458,8 +458,8 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l18_v8', lessonNumber: 18, kanji: '運転します III', hiragana: 'うんてんします', romaji: 'untenshimasu', english: 'drive', partOfSpeech: 'verb-3', category: 'Verbs' },
       { id: 'l18_v9', lessonNumber: 18, kanji: '予約します III', hiragana: 'よやくします', romaji: 'yoyakushimasu', english: 'reserve, book', partOfSpeech: 'verb-3', category: 'Verbs' },
       { id: 'l18_v10', lessonNumber: 18, kanji: '見学します III', hiragana: 'けんがくします', romaji: 'kengakushimasu', english: 'visit some place for study / inspection', partOfSpeech: 'verb-3', category: 'Verbs' },
-      { id: 'l18_v11', lessonNumber: 18, kanji: 'ピアノ', hiragana: 'ぴあの', romaji: 'piano', english: 'piano', partOfSpeech: 'noun', category: 'Music' },
-      { id: 'l18_v12', lessonNumber: 18, kanji: '〜メートル', hiragana: '〜めーとる', romaji: '-meetoru', english: '- meter', partOfSpeech: 'counter', category: 'Measures' },
+      { id: 'l18_v11', lessonNumber: 18, kanji: 'ピアノ', hiragana: 'ピアノ', romaji: 'piano', english: 'piano', partOfSpeech: 'noun', category: 'Music' },
+      { id: 'l18_v12', lessonNumber: 18, kanji: '〜メートル', hiragana: '〜メートル', romaji: '-meetoru', english: '- meter', partOfSpeech: 'counter', category: 'Measures' },
       { id: 'l18_v13', lessonNumber: 18, kanji: '国際〜', hiragana: 'こくさい〜', romaji: 'kokusai~', english: 'international ~', partOfSpeech: 'noun', category: 'General' },
       { id: 'l18_v14', lessonNumber: 18, kanji: '現金', hiragana: 'げんきん', romaji: 'genkin', english: 'cash', partOfSpeech: 'noun', category: 'Money' },
       { id: 'l18_v15', lessonNumber: 18, kanji: '趣味', hiragana: 'しゅみ', romaji: 'shumi', english: 'hobby', partOfSpeech: 'noun', category: 'Hobbies' },
@@ -476,7 +476,7 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l18_v26', lessonNumber: 18, kanji: '牧場', hiragana: 'ぼくじょう', romaji: 'bokujou', english: 'ranch, stock farm', partOfSpeech: 'noun', category: 'Places' },
       { id: 'l18_v27', lessonNumber: 18, kanji: 'ほんとうですか。', hiragana: 'ほんとうですか。', romaji: 'Hontou desu ka.', english: 'Really? / Is that true?', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l18_v28', lessonNumber: 18, kanji: 'ぜひ', hiragana: 'ぜひ', romaji: 'zehi', english: 'by all means, certainly', partOfSpeech: 'adverb', category: 'Manner' },
-      { id: 'l18_v29', lessonNumber: 18, kanji: 'ビートルズ', hiragana: 'びーとるず', romaji: 'Biitoruzu', english: 'The Beatles', partOfSpeech: 'noun', category: 'Music' }
+      { id: 'l18_v29', lessonNumber: 18, kanji: 'ビートルズ', hiragana: 'ビートルズ', romaji: 'Biitoruzu', english: 'The Beatles', partOfSpeech: 'noun', category: 'Music' }
     ],
     grammar: [
       {
@@ -644,9 +644,9 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l19_v10', lessonNumber: 19, kanji: '調子が いい', hiragana: 'ちょうしが いい', romaji: 'choushi ga ii', english: 'be in good condition', partOfSpeech: 'phrase', category: 'Health' },
       { id: 'l19_v11', lessonNumber: 19, kanji: '調子が 悪い', hiragana: 'ちょうしが わるい', romaji: 'choushi ga warui', english: 'be in bad condition', partOfSpeech: 'phrase', category: 'Health' },
       { id: 'l19_v12', lessonNumber: 19, kanji: '調子', hiragana: 'ちょうし', romaji: 'choushi', english: 'condition', partOfSpeech: 'noun', category: 'Health' },
-      { id: 'l19_v13', lessonNumber: 19, kanji: 'ゴルフ', hiragana: 'ごるふ', romaji: 'gorufu', english: 'golf (~を します: play golf)', partOfSpeech: 'noun', category: 'Sports' },
+      { id: 'l19_v13', lessonNumber: 19, kanji: 'ゴルフ', hiragana: 'ゴルフ', romaji: 'gorufu', english: 'golf (~を します: play golf)', partOfSpeech: 'noun', category: 'Sports' },
       { id: 'l19_v14', lessonNumber: 19, kanji: '相撲', hiragana: 'すもう', romaji: 'sumou', english: 'sumo wrestling', partOfSpeech: 'noun', category: 'Sports' },
-      { id: 'l19_v15', lessonNumber: 19, kanji: 'パチンコ', hiragana: 'ぱちんこ', romaji: 'pachinko', english: 'pinball game (~を します: play pachinko)', partOfSpeech: 'noun', category: 'Hobbies' },
+      { id: 'l19_v15', lessonNumber: 19, kanji: 'パチンコ', hiragana: 'パチンコ', romaji: 'pachinko', english: 'pinball game (~を します: play pachinko)', partOfSpeech: 'noun', category: 'Hobbies' },
       { id: 'l19_v16', lessonNumber: 19, kanji: 'お茶', hiragana: 'おちゃ', romaji: 'ocha', english: 'tea ceremony', partOfSpeech: 'noun', category: 'Culture' },
       { id: 'l19_v17', lessonNumber: 19, kanji: '日', hiragana: 'ひ', romaji: 'hi', english: 'day, date', partOfSpeech: 'noun', category: 'Time' },
       { id: 'l19_v18', lessonNumber: 19, kanji: '一度', hiragana: 'いちど', romaji: 'ichido', english: 'once', partOfSpeech: 'adverb', category: 'Frequency' },
@@ -656,12 +656,12 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l19_v22', lessonNumber: 19, kanji: 'おかげさまで', hiragana: 'おかげさまで', romaji: 'okagesama de', english: 'Thank you (expressing gratitude for help received)', partOfSpeech: 'phrase', category: 'Greetings' },
       { id: 'l19_v23', lessonNumber: 19, kanji: '乾杯', hiragana: 'かんぱい', romaji: 'kanpai', english: 'Bottoms up! / Cheers!', partOfSpeech: 'phrase', category: 'Social' },
       { id: 'l19_v24', lessonNumber: 19, kanji: '実は', hiragana: 'じつは', romaji: 'jitsu wa', english: 'actually, to tell the truth', partOfSpeech: 'adverb', category: 'Conversations' },
-      { id: 'l19_v25', lessonNumber: 19, kanji: 'ダイエット', hiragana: 'だいえっと', romaji: 'daietto', english: 'diet (~を します: go on a diet)', partOfSpeech: 'noun', category: 'Health' },
+      { id: 'l19_v25', lessonNumber: 19, kanji: 'ダイエット', hiragana: 'ダイエット', romaji: 'daietto', english: 'diet (~を します: go on a diet)', partOfSpeech: 'noun', category: 'Health' },
       { id: 'l19_v26', lessonNumber: 19, kanji: '何回も', hiragana: 'なんかいも', romaji: 'nan-kai mo', english: 'many times', partOfSpeech: 'adverb', category: 'Frequency' },
       { id: 'l19_v27', lessonNumber: 19, kanji: 'しかし', hiragana: 'しかし', romaji: 'shikashi', english: 'but, however', partOfSpeech: 'conjunction', category: 'Conjunctions' },
       { id: 'l19_v28', lessonNumber: 19, kanji: '無理[な]', hiragana: 'むり[な]', romaji: 'muri[na]', english: 'excessive, impossible', partOfSpeech: 'na-adjective', category: 'Adjectives' },
       { id: 'l19_v29', lessonNumber: 19, kanji: '体に いい', hiragana: 'からだに いい', romaji: 'karada ni ii', english: 'good for one\'s health', partOfSpeech: 'phrase', category: 'Health' },
-      { id: 'l19_v30', lessonNumber: 19, kanji: 'ケーキ', hiragana: 'けーき', romaji: 'keeki', english: 'cake', partOfSpeech: 'noun', category: 'Food' }
+      { id: 'l19_v30', lessonNumber: 19, kanji: 'ケーキ', hiragana: 'ケーキ', romaji: 'keeki', english: 'cake', partOfSpeech: 'noun', category: 'Food' }
     ],
     grammar: [
       {
@@ -817,11 +817,11 @@ export const MINNA_LESSONS_16_TO_20: MinnaLesson[] = [
       { id: 'l20_v8', lessonNumber: 20, kanji: '〜君', hiragana: '〜くん', romaji: '-kun', english: 'Mr. (informal suffix added to boy/man\'s name)', partOfSpeech: 'phrase', category: 'Suffixes' },
       { id: 'l20_v9', lessonNumber: 20, kanji: 'うん', hiragana: 'うん', romaji: 'un', english: 'yes (informal equivalent of はい)', partOfSpeech: 'phrase', category: 'Conversations' },
       { id: 'l20_v10', lessonNumber: 20, kanji: 'ううん', hiragana: 'ううん', romaji: 'uun', english: 'no (informal equivalent of いいえ)', partOfSpeech: 'phrase', category: 'Conversations' },
-      { id: 'l20_v11', lessonNumber: 20, kanji: 'サラリーマン', hiragana: 'さらりーまん', romaji: 'sarariiman', english: 'salaried worker, office worker', partOfSpeech: 'noun', category: 'Occupations' },
+      { id: 'l20_v11', lessonNumber: 20, kanji: 'サラリーマン', hiragana: 'サラリーマン', romaji: 'sarariiman', english: 'salaried worker, office worker', partOfSpeech: 'noun', category: 'Occupations' },
       { id: 'l20_v12', lessonNumber: 20, kanji: 'ことば', hiragana: 'ことば', romaji: 'kotoba', english: 'word, language', partOfSpeech: 'noun', category: 'General' },
       { id: 'l20_v13', lessonNumber: 20, kanji: '物価', hiragana: 'ぶっか', romaji: 'bukka', english: 'commodity prices', partOfSpeech: 'noun', category: 'Society' },
       { id: 'l20_v14', lessonNumber: 20, kanji: '着物', hiragana: 'きもの', romaji: 'kimono', english: 'kimono (traditional Japanese attire)', partOfSpeech: 'noun', category: 'Culture' },
-      { id: 'l20_v15', lessonNumber: 20, kanji: 'ビザ', hiragana: 'びざ', romaji: 'biza', english: 'visa', partOfSpeech: 'noun', category: 'Travel' },
+      { id: 'l20_v15', lessonNumber: 20, kanji: 'ビザ', hiragana: 'ビザ', romaji: 'biza', english: 'visa', partOfSpeech: 'noun', category: 'Travel' },
       { id: 'l20_v16', lessonNumber: 20, kanji: '初め', hiragana: 'はじめ', romaji: 'hajime', english: 'the beginning', partOfSpeech: 'noun', category: 'Time' },
       { id: 'l20_v17', lessonNumber: 20, kanji: '終わり', hiragana: 'おわり', romaji: 'owari', english: 'the end', partOfSpeech: 'noun', category: 'Time' },
       { id: 'l20_v18', lessonNumber: 20, kanji: 'こっち', hiragana: 'こっち', romaji: 'kocchi', english: 'this way, this place (informal こちら)', partOfSpeech: 'pronoun', category: 'Demonstratives' },

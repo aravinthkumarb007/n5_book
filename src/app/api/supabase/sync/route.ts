@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       mockExamResults,
       countersQuizResult,
       countersQuizResults,
+      vocabUpdates,
       userId = '00000000-0000-0000-0000-000000000001' 
     } = body;
 
@@ -178,6 +179,31 @@ export async function POST(request: Request) {
       if (!cqErr) syncedCountersQuiz = true;
     }
 
+    // 7. Sync Vocabulary Learning Statuses
+    let syncedVocabCount = 0;
+    if (vocabUpdates && Array.isArray(vocabUpdates) && vocabUpdates.length > 0) {
+      const updatedAt = new Date().toISOString();
+      const cacheRows = vocabUpdates.filter((v: any) => v && v.vocabId && v.status).map((v: any) => ({
+        cache_key: `vocab_status_${userId}_${v.vocabId}`,
+        content_type: 'vocabulary_status',
+        payload: {
+          vocabId: v.vocabId,
+          lessonNumber: Number(v.lessonNumber) || 0,
+          status: v.status,
+          updatedAt,
+          userId
+        },
+        updated_at: updatedAt
+      }));
+
+      if (cacheRows.length > 0) {
+        const { error: vErr } = await supabase
+          .from('content_cache')
+          .upsert(cacheRows, { onConflict: 'cache_key' });
+        if (!vErr) syncedVocabCount = cacheRows.length;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       syncedProgressCount,
@@ -185,6 +211,7 @@ export async function POST(request: Request) {
       syncedMinnaCount,
       syncedMockExam,
       syncedCountersQuiz,
+      syncedVocabCount,
       timestamp: new Date().toISOString()
     });
   } catch (err: any) {
