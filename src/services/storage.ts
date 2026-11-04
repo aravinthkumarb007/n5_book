@@ -87,26 +87,10 @@ export function triggerAutoCloudSync() {
 
   autoSyncTimer = setTimeout(async () => {
     try {
-      const progressList = storage.getProgress();
-      const settings = storage.getSettings();
-      const quizHistory = storage.getQuizHistory();
-
-      window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'syncing' } }));
-
-      const res = await fetch('/api/supabase/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progressList, settings, quizHistory })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'saved', timestamp: Date.now() } }));
-      } else {
-        window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'offline' } }));
-      }
-    } catch {
-      window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'offline' } }));
+      const { syncFullProjectToCloud } = await import('./cloudSyncService');
+      await syncFullProjectToCloud();
+    } catch (e) {
+      console.warn('Auto cloud sync failed:', e);
     }
   }, 1000);
 }
@@ -156,6 +140,26 @@ class StorageService {
     list[index] = { ...list[index], ...update };
     const withUnlocks = evaluateLevelProgressions(list);
     this.saveProgress(withUnlocks);
+
+    // If kanji was marked as learned, verify if this completed its level
+    if (update.learning_status === 'learned') {
+      const kanjiMeta = ALL_120_KANJI.find(k => k.id === kanjiId);
+      if (kanjiMeta) {
+        const lvlMeta = LEVEL_METADATA.find(l => l.level === kanjiMeta.level);
+        if (lvlMeta) {
+          const allLearned = lvlMeta.kanjiIds.every(id => {
+            const item = withUnlocks.find(p => p.kanji_id === id);
+            return item && item.learning_status === 'learned';
+          });
+          if (allLearned && typeof window !== 'undefined') {
+            import('./cloudSyncService').then(({ verifyAndSaveLevelCompletion }) => {
+              verifyAndSaveLevelCompletion(kanjiMeta.level, withUnlocks);
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+
     return withUnlocks;
   }
 

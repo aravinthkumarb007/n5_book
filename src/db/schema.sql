@@ -347,3 +347,64 @@ BEGIN
 END $$;
 
 
+
+-- 19. JLPT N5 Official Format Mock Exam Results
+CREATE TABLE IF NOT EXISTS mock_exam_results (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    mode VARCHAR(50) NOT NULL,
+    total_raw_score NUMERIC(5, 2) NOT NULL,
+    percentage NUMERIC(5, 2) NOT NULL,
+    total_questions INTEGER NOT NULL,
+    correct_count INTEGER NOT NULL,
+    incorrect_count INTEGER NOT NULL,
+    unanswered_count INTEGER NOT NULL,
+    scaled_total_score INTEGER NOT NULL,
+    scaled_vocab_grammar_reading INTEGER NOT NULL,
+    scaled_listening INTEGER NOT NULL,
+    is_passed BOOLEAN NOT NULL DEFAULT false,
+    section_breakdown JSONB DEFAULT '[]'::jsonb,
+    weak_topics JSONB DEFAULT '[]'::jsonb,
+    strong_topics JSONB DEFAULT '[]'::jsonb,
+    answers JSONB DEFAULT '[]'::jsonb,
+    time_spent_seconds INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mock_exam_user ON mock_exam_results(user_id);
+CREATE INDEX IF NOT EXISTS idx_mock_exam_date ON mock_exam_results(created_at DESC);
+
+-- 20. Japanese Counters & Numbers Quiz Results
+CREATE TABLE IF NOT EXISTS counters_quiz_results (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id UUID NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    category_title VARCHAR(200) NOT NULL,
+    score_percent NUMERIC(5, 2) NOT NULL,
+    total_questions INTEGER NOT NULL,
+    correct_count INTEGER NOT NULL,
+    incorrect_count INTEGER NOT NULL,
+    unanswered_count INTEGER NOT NULL,
+    time_spent_seconds INTEGER DEFAULT 0,
+    strong_areas JSONB DEFAULT '[]'::jsonb,
+    weak_areas JSONB DEFAULT '[]'::jsonb,
+    answers JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_counters_quiz_user ON counters_quiz_results(user_id);
+CREATE INDEX IF NOT EXISTS idx_counters_quiz_date ON counters_quiz_results(created_at DESC);
+
+ALTER TABLE mock_exam_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE counters_quiz_results ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon mock_exam_results') THEN
+    CREATE POLICY "Allow anon mock_exam_results" ON mock_exam_results FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow anon counters_quiz_results') THEN
+    CREATE POLICY "Allow anon counters_quiz_results" ON counters_quiz_results FOR ALL USING (true);
+  END IF;
+END $$;

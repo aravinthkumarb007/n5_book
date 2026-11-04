@@ -139,132 +139,132 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16">
+      <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-16 w-full max-w-full min-w-0 overflow-x-hidden">
 
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-900 to-red-950 text-white p-6 sm:p-10 border border-stone-800 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 -mb-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Hero Banner */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-900 to-red-950 text-white p-6 sm:p-10 border border-stone-800 shadow-2xl w-full max-w-full min-w-0">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 -mb-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-600 text-white shadow-md">
-              JLPT N5 Core Curriculum
-            </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white/90 backdrop-blur-sm">
-              Shokyu I • 初級I (Lessons 1–25)
-            </span>
-          </div>
+            <div className="relative z-10 max-w-3xl space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-600 text-white shadow-md">
+                  JLPT N5 Core Curriculum
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white/90 backdrop-blur-sm">
+                  Shokyu I • 初級I (Lessons 1–25)
+                </span>
+              </div>
 
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            みんなの日本語
-            <span className="block text-lg sm:text-2xl lg:text-3xl font-bold text-stone-300 mt-1">
-              Minna no Nihongo Master Academy
-            </span>
-          </h1>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+                みんなの日本語
+                <span className="block text-lg sm:text-2xl lg:text-3xl font-bold text-stone-300 mt-1">
+                  Minna no Nihongo Master Academy
+                </span>
+              </h1>
 
-          <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-2xl">
-            Complete lesson-by-lesson textbook curriculum with native vocabulary audio, structured grammar formulas,
-            interactive sentence formation tiles, and custom AI-powered exam generators.
-          </p>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-2xl">
+                Complete lesson-by-lesson textbook curriculum with native vocabulary audio, structured grammar formulas,
+                interactive sentence formation tiles, and custom AI-powered exam generators.
+              </p>
 
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
-            <button
-              onClick={() => {
-                setCustomExamInitialRange([1, 2, 3, 4, 5]);
-                setCustomExamModalOpen(true);
-              }}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs sm:text-sm shadow-xl hover:from-red-700 hover:to-rose-700 active:scale-95 transition flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>AI Custom Exam Studio</span>
-            </button>
+              {/* Action CTAs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-2">
+                <button
+                  onClick={() => {
+                    setCustomExamInitialRange([1, 2, 3, 4, 5]);
+                    setCustomExamModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs sm:text-sm shadow-xl hover:from-red-700 hover:to-rose-700 active:scale-95 transition flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>AI Custom Exam Studio</span>
+                </button>
 
-            <button
-              onClick={() => {
-                setEditingCustomLesson(null);
-                setCustomLessonModalOpen(true);
-              }}
-              className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-sm border border-white/20 active:scale-95 transition flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Custom Lesson</span>
-            </button>
+                <button
+                  onClick={() => {
+                    setEditingCustomLesson(null);
+                    setCustomLessonModalOpen(true);
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-sm border border-white/20 active:scale-95 transition flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Custom Lesson</span>
+                </button>
 
-            <button
-              onClick={() => setAppendicesModalOpen(true)}
-              className="px-5 py-3 rounded-2xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-xl active:scale-95 transition flex items-center justify-center gap-2 border border-indigo-500/40 w-full sm:w-auto"
-            >
-              <BookOpen className="w-4 h-4 text-indigo-200" />
-              <span>Textbook Appendices (助詞・活用・助数詞)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Curriculum Stat Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
-          <div className="p-2 sm:p-3 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 shrink-0">
-            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
-              {stats.completedLessons} / {curriculumStats.totalLessons}
-            </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
-              Lessons Done
+                <button
+                  onClick={() => setAppendicesModalOpen(true)}
+                  className="px-5 py-3 rounded-2xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm shadow-xl active:scale-95 transition flex items-center justify-center gap-2 border border-indigo-500/40 w-full sm:w-auto"
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-200" />
+                  <span>Textbook Appendices (助詞・活用・助数詞)</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
-          <div className="p-2 sm:p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
-              {stats.totalLearnedVocab}
+          {/* Curriculum Stat Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
+              <div className="p-2 sm:p-3 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 shrink-0">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
+                  {stats.completedLessons} / {curriculumStats.totalLessons}
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
+                  Lessons Done
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
-              Vocab Mastered
-            </div>
-          </div>
-        </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
-          <div className="p-2 sm:p-3 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
-              {stats.totalUnderstoodGrammar}
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
+              <div className="p-2 sm:p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
+                  {stats.totalLearnedVocab}
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
+                  Vocab Mastered
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
-              Grammar Points
-            </div>
-          </div>
-        </div>
 
-        <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
-          <div className="p-2 sm:p-3 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shrink-0">
-            <Award className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
-              {stats.avgExamScore}%
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
+              <div className="p-2 sm:p-3 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
+                  {stats.totalUnderstoodGrammar}
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
+                  Grammar Points
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
-              Avg Exam Score
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Filter and Search Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full">
-          {/* Search */}
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex items-center gap-2.5 sm:gap-3.5">
+              <div className="p-2 sm:p-3 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 shrink-0">
+                <Award className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-2xl font-black text-stone-900 dark:text-white truncate">
+                  {stats.avgExamScore}%
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider truncate">
+                  Avg Exam Score
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter and Search Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full">
+            {/* Search */}
             <div className="relative flex-1 max-w-md min-w-0">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
               <input
@@ -277,205 +277,204 @@ export function MinnaDashboardView({ onNavigateHome }: MinnaDashboardViewProps) 
             </div>
 
             {/* Filter Badges */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full scrollbar-none">
-                {[
-                  { id: 'all', label: 'All 25 Lessons' },
-                  { id: 'assessments', label: '🎯 Lesson Assessments (1–25)' },
-                  { id: 'in_progress', label: 'In Progress' },
-                  { id: 'completed', label: 'Completed' },
-                  { id: 'custom', label: `Custom Units (${customLessons.length})` }
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setStatusFilter(item.id as any)}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap transition cursor-pointer shrink-0 ${
-                      statusFilter === item.id
-                        ? 'bg-red-600 text-white shadow-sm'
-                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full scrollbar-none">
+              {[
+                { id: 'all', label: 'All 25 Lessons' },
+                { id: 'assessments', label: '🎯 Lesson Assessments (1–25)' },
+                { id: 'in_progress', label: 'In Progress' },
+                { id: 'completed', label: 'Completed' },
+                { id: 'custom', label: `Custom Units (${customLessons.length})` }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setStatusFilter(item.id as any)}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap transition cursor-pointer shrink-0 ${statusFilter === item.id
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
                     }`}
-                  >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Custom Lessons Section (If Selected or Available) */}
-      {(statusFilter === 'custom' || customLessons.length > 0) && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
-            <h2 className="text-sm font-black uppercase tracking-wider text-stone-500 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-red-500" />
-              <span>User Custom Study Lessons ({customLessons.length})</span>
-            </h2>
-            <button
-              onClick={() => {
-                setEditingCustomLesson(null);
-                setCustomLessonModalOpen(true);
-              }}
-              className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 hover:underline"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Custom Unit</span>
-            </button>
-          </div>
-
-          {customLessons.length === 0 ? (
-            <div className="p-6 rounded-2xl border border-dashed border-stone-300 dark:border-stone-800 text-center text-xs text-stone-400">
-              No custom study lessons created yet. Click "New Custom Unit" to build a tailored lesson!
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {customLessons.map((cl) => (
-                <div
-                  key={cl.id}
-                  className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex flex-col justify-between gap-3 hover:border-red-400 transition"
                 >
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      {cl.tags.map((t, idx) => (
-                        <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-bold">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    <h3 className="font-bold text-sm text-stone-900 dark:text-white">{cl.title}</h3>
-                    {cl.description && (
-                      <p className="text-xs text-stone-500 line-clamp-2 mt-1">{cl.description}</p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800 text-xs">
-                    <span className="text-stone-400">
-                      {cl.vocabulary.length} Vocab • {cl.grammar.length} Grammar
-                    </span>
-                    <button
-                      onClick={() => {
-                        setEditingCustomLesson(cl);
-                        setCustomLessonModalOpen(true);
-                      }}
-                      className="text-red-600 dark:text-red-400 font-bold hover:underline"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
+                  {item.label}
+                </button>
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      {/* Primary Lessons Grid */}
-      {statusFilter !== 'custom' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
-            <h2 className="text-sm font-black uppercase tracking-wider text-stone-500">
-              {statusFilter === 'assessments'
-                ? `🎯 Lesson-Wise Assessments (${filteredLessons.length} Lessons Available)`
-                : `Minna no Nihongo Lessons (${filteredLessons.length})`}
-              </h2>
-              <span className="text-xs text-stone-400">
-                {statusFilter === 'assessments'
-                  ? 'Generate AI tests or instant quizzes strictly for any single lesson'
-                  : 'Click any lesson to browse vocabulary, grammar explanations & dialogues'}
-              </span>
-            </div>
+          {/* Custom Lessons Section (If Selected or Available) */}
+          {(statusFilter === 'custom' || customLessons.length > 0) && (
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                <h2 className="text-sm font-black uppercase tracking-wider text-stone-500 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-red-500" />
+                  <span>User Custom Study Lessons ({customLessons.length})</span>
+                </h2>
+                <button
+                  onClick={() => {
+                    setEditingCustomLesson(null);
+                    setCustomLessonModalOpen(true);
+                  }}
+                  className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 hover:underline"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Custom Unit</span>
+                </button>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredLessons.map((lesson) => {
-                const p = progressMap.get(lesson.lessonNumber);
-                const status = p?.status || 'not_started';
-                const learnedVocabCount = p?.learnedVocabIds?.length || 0;
-                const understoodGrammarCount = p?.understoodGrammarIds?.length || 0;
-                const bestScore = p?.bestScore || 0;
+              {customLessons.length === 0 ? (
+                <div className="p-6 rounded-2xl border border-dashed border-stone-300 dark:border-stone-800 text-center text-xs text-stone-400">
+                  No custom study lessons created yet. Click "New Custom Unit" to build a tailored lesson!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {customLessons.map((cl) => (
+                    <div
+                      key={cl.id}
+                      className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm flex flex-col justify-between gap-3 hover:border-red-400 transition"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          {cl.tags.map((t, idx) => (
+                            <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 font-bold">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <h3 className="font-bold text-sm text-stone-900 dark:text-white">{cl.title}</h3>
+                        {cl.description && (
+                          <p className="text-xs text-stone-500 line-clamp-2 mt-1">{cl.description}</p>
+                        )}
+                      </div>
 
-                return (
-                  <div
-                    key={lesson.id}
-                    className="p-5 rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 group"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                          Lesson {lesson.lessonNumber}
+                      <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800 text-xs">
+                        <span className="text-stone-400">
+                          {cl.vocabulary.length} Vocab • {cl.grammar.length} Grammar
                         </span>
+                        <button
+                          onClick={() => {
+                            setEditingCustomLesson(cl);
+                            setCustomLessonModalOpen(true);
+                          }}
+                          className="text-red-600 dark:text-red-400 font-bold hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-                        {/* Status Badge */}
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${status === 'mastered'
+          {/* Primary Lessons Grid */}
+          {statusFilter !== 'custom' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                <h2 className="text-sm font-black uppercase tracking-wider text-stone-500">
+                  {statusFilter === 'assessments'
+                    ? `🎯 Lesson-Wise Assessments (${filteredLessons.length} Lessons Available)`
+                    : `Minna no Nihongo Lessons (${filteredLessons.length})`}
+                </h2>
+                <span className="text-xs text-stone-400">
+                  {statusFilter === 'assessments'
+                    ? 'Generate AI tests or instant quizzes strictly for any single lesson'
+                    : 'Click any lesson to browse vocabulary, grammar explanations & dialogues'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredLessons.map((lesson) => {
+                  const p = progressMap.get(lesson.lessonNumber);
+                  const status = p?.status || 'not_started';
+                  const learnedVocabCount = p?.learnedVocabIds?.length || 0;
+                  const understoodGrammarCount = p?.understoodGrammarIds?.length || 0;
+                  const bestScore = p?.bestScore || 0;
+
+                  return (
+                    <div
+                      key={lesson.id}
+                      className="p-5 rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 group"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                            Lesson {lesson.lessonNumber}
+                          </span>
+
+                          {/* Status Badge */}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${status === 'mastered'
                             ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                             : status === 'completed'
                               ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
                               : status === 'in_progress'
                                 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
                                 : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
-                          }`}>
-                          {status.replace('_', ' ')}
-                        </span>
-                      </div>
-
-                      <h3 className="text-base font-black text-stone-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                        {lesson.title}
-                      </h3>
-                      <p className="text-xs font-japanese text-stone-500 font-medium line-clamp-1">
-                        {lesson.titleJapanese}
-                      </p>
-
-                      <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2 leading-relaxed">
-                        {lesson.description}
-                      </p>
-                    </div>
-
-                    {/* Metrics and Buttons */}
-                    <div className="space-y-3 pt-3 border-t border-stone-100 dark:border-stone-800/80">
-                      <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
-                        <span>
-                          {learnedVocabCount}/{lesson.vocabulary.length} Vocab
-                        </span>
-                        <span>
-                          {understoodGrammarCount}/{lesson.grammar.length} Grammar
-                        </span>
-                        {bestScore > 0 && (
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                            Best: {bestScore}%
+                            }`}>
+                            {status.replace('_', ' ')}
                           </span>
-                        )}
+                        </div>
+
+                        <h3 className="text-base font-black text-stone-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {lesson.title}
+                        </h3>
+                        <p className="text-xs font-japanese text-stone-500 font-medium line-clamp-1">
+                          {lesson.titleJapanese}
+                        </p>
+
+                        <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2 leading-relaxed">
+                          {lesson.description}
+                        </p>
                       </div>
 
-                      {statusFilter === 'assessments' ? (
-                        <button
-                          onClick={() => handleLaunchQuickLessonQuiz(lesson)}
-                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md active:scale-95"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                          <span>Generate Lesson {lesson.lessonNumber} Assessment</span>
-                        </button>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => setSelectedLessonForDetail(lesson)}
-                            className="py-2.5 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                          >
-                            <BookOpen className="w-3.5 h-3.5" />
-                            <span>Study</span>
-                          </button>
+                      {/* Metrics and Buttons */}
+                      <div className="space-y-3 pt-3 border-t border-stone-100 dark:border-stone-800/80">
+                        <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
+                          <span>
+                            {learnedVocabCount}/{lesson.vocabulary.length} Vocab
+                          </span>
+                          <span>
+                            {understoodGrammarCount}/{lesson.grammar.length} Grammar
+                          </span>
+                          {bestScore > 0 && (
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                              Best: {bestScore}%
+                            </span>
+                          )}
+                        </div>
 
+                        {statusFilter === 'assessments' ? (
                           <button
                             onClick={() => handleLaunchQuickLessonQuiz(lesson)}
-                            className="py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md active:scale-95"
                           >
-                            <Play className="w-3.5 h-3.5" />
-                            <span>Quiz</span>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Generate Lesson {lesson.lessonNumber} Assessment</span>
                           </button>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => setSelectedLessonForDetail(lesson)}
+                              className="py-2.5 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>Study</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleLaunchQuickLessonQuiz(lesson)}
+                              className="py-2.5 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                              <span>Quiz</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-      )}
+          )}
 
           {/* Recent Exam History */}
           {examHistory.length > 0 && (
