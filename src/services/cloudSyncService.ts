@@ -4,6 +4,7 @@ import { storage, evaluateLevelProgressions } from './storage';
 import { loadMinnaProgress, saveMinnaProgress } from './minnaStorage';
 import { getExamHistory, saveExamResult } from './mockExamStorage';
 import { getCountersQuizHistory, saveCountersQuizResult } from './countersStorage';
+import { getStoredVocabStatuses, syncVocabStatusesFromBackend } from './vocabStorage';
 
 export interface SyncResult {
   success: boolean;
@@ -145,6 +146,12 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
     const minnaProgress = loadMinnaProgress();
     const mockExamResults = getExamHistory();
     const countersQuizResults = getCountersQuizHistory();
+    const vocabStatuses = getStoredVocabStatuses();
+    const vocabUpdates = Object.values(vocabStatuses).map(s => ({
+      vocabId: s.vocabId,
+      lessonNumber: s.lessonNumber,
+      status: s.status
+    }));
 
     const payload = {
       progressList,
@@ -152,7 +159,8 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
       quizHistory,
       minnaProgress,
       mockExamResults,
-      countersQuizResults
+      countersQuizResults,
+      vocabUpdates
     };
 
     const res = await fetch('/api/supabase/sync', {
@@ -261,6 +269,9 @@ export async function restoreAndMergeCloudData(): Promise<{
       window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'offline' } }));
       return { restored: false, hasLearnedKanji: false, learnedCount: 0, message: data.error };
     }
+
+    // Sync vocabulary learning statuses from backend
+    await syncVocabStatusesFromBackend();
 
     const currentLocal = storage.getProgress();
 

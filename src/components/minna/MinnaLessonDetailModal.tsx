@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Volume2, CheckCircle2, Circle, AlertCircle, BookOpen,
-  MessageSquare, Sparkles, ChevronRight, Check, Trophy, Zap, ArrowRight
+  MessageSquare, Sparkles, ChevronRight, Check, Trophy, Zap, ArrowRight, Layers,
+  HelpCircle, X, ShieldCheck, CheckSquare, Square, RotateCcw, Eye, EyeOff
 } from 'lucide-react';
-import { MinnaLesson } from '@/types/minna';
+import { MinnaLesson, VocabLearningStatus, MinnaVocabularyItem } from '@/types/minna';
+import { getStoredVocabStatuses, setVocabStatus, batchSetVocabStatus } from '@/services/vocabStorage';
+import { MinnaFlashcardsModal } from './MinnaFlashcardsModal';
 import { speakJapanese } from '@/services/audio';
 import { toggleVocabLearned, toggleGrammarUnderstood } from '@/services/minnaStorage';
+import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
 
 interface MinnaLessonDetailModalProps {
   lesson: MinnaLesson;
@@ -32,13 +36,147 @@ export function MinnaLessonDetailModal({
   const [userExerciseAnswers, setUserExerciseAnswers] = useState<Record<string, string>>({});
   const [exerciseEvaluations, setExerciseEvaluations] = useState<Record<string, boolean>>({});
   const [activeTiles, setActiveTiles] = useState<Record<string, string[]>>({});
+  const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [vocabStatuses, setVocabStatuses] = useState<Record<string, VocabLearningStatus>>({});
+  const [selectedVocabIds, setSelectedVocabIds] = useState<Set<string>>(new Set());
+  const [customFlashcardsCards, setCustomFlashcardsCards] = useState<MinnaVocabularyItem[] | null>(null);
+  const [batchNotice, setBatchNotice] = useState<string | null>(null);
+  const [vocabStatusFilter, setVocabStatusFilter] = useState<'all' | 'learned' | 'relearn' | 'unmarked'>('all');
 
-  const filteredVocab = lesson.vocabulary.filter(v =>
-    v.kanji.toLowerCase().includes(vocabSearch.toLowerCase()) ||
-    v.hiragana.toLowerCase().includes(vocabSearch.toLowerCase()) ||
-    v.english.toLowerCase().includes(vocabSearch.toLowerCase()) ||
-    v.romaji.toLowerCase().includes(vocabSearch.toLowerCase())
-  );
+  // Hide/Show Mode State for Vocabulary
+  const [isHideShowActive, setIsHideShowActive] = useState(false);
+  const [showJapaneseHideEnglish, setShowJapaneseHideEnglish] = useState(true);
+  const [revealedCardIds, setRevealedCardIds] = useState<Set<string>>(new Set());
+
+  const toggleRevealCard = (vocabId: string) => {
+    setRevealedCardIds(prev => {
+      const next = new Set(prev);
+      if (next.has(vocabId)) next.delete(vocabId);
+      else next.add(vocabId);
+      return next;
+    });
+  };
+
+  const toggleSelectVocab = (vocabId: string) => {
+    setSelectedVocabIds(prev => {
+      const next = new Set(prev);
+      if (next.has(vocabId)) next.delete(vocabId);
+      else next.add(vocabId);
+      return next;
+    });
+  };
+
+  const selectAllFiltered = () => {
+    if (selectedVocabIds.size === filteredVocab.length && filteredVocab.length > 0) {
+      setSelectedVocabIds(new Set());
+    } else {
+      setSelectedVocabIds(new Set(filteredVocab.map(v => v.id)));
+    }
+  };
+
+  const handleBatchSetStatus = async (status: VocabLearningStatus | null) => {
+    if (selectedVocabIds.size === 0) return;
+    const count = selectedVocabIds.size;
+    const updates = Array.from(selectedVocabIds).map(vocabId => ({
+      vocabId,
+      lessonNumber: lesson.lessonNumber,
+      status
+    }));
+
+    setVocabStatuses(prev => {
+      const copy = { ...prev };
+      for (const id of selectedVocabIds) {
+        if (!status) delete copy[id];
+        else copy[id] = status;
+      }
+      return copy;
+    });
+
+    await batchSetVocabStatus(updates);
+
+    if (status === 'not_sure' || status === 'not_learned') {
+      setBatchNotice(`⚡ Added ${count} vocabulary items to Re-learn section for Fast Recall!`);
+    } else if (status === 'learned') {
+      setBatchNotice(`✓ Marked ${count} vocabulary items as Learned!`);
+    } else {
+      setBatchNotice(`Cleared status for ${count} vocabulary items.`);
+    }
+
+    setTimeout(() => setBatchNotice(null), 3500);
+    setSelectedVocabIds(new Set());
+    onRefreshProgress();
+  };
+
+  const handleFastRecallRelearn = () => {
+    const relearnWords = lesson.vocabulary.filter(v => vocabStatuses[v.id] === 'not_sure' || vocabStatuses[v.id] === 'not_learned');
+    if (relearnWords.length > 0) {
+      setCustomFlashcardsCards(relearnWords);
+      setFlashcardsOpen(true);
+    }
+  };
+
+  const handleStudySelectedInFlashcards = () => {
+    const selected = lesson.vocabulary.filter(v => selectedVocabIds.has(v.id));
+    if (selected.length > 0) {
+      setCustomFlashcardsCards(selected);
+      setFlashcardsOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    const refreshStatuses = () => {
+      const stored = getStoredVocabStatuses();
+      const map = {};
+      for (const v of lesson.vocabulary) {
+        if (stored[v.id]?.status) {
+          map[v.id] = stored[v.id].status;
+        } else if (learnedVocabIds.includes(v.id)) {
+          map[v.id] = 'learned';
+        }
+      }
+      setVocabStatuses(map);
+    };
+
+    refreshStatuses();
+    window.addEventListener('vocab-status-updated', refreshStatuses);
+    return () => window.removeEventListener('vocab-status-updated', refreshStatuses);
+  }, [lesson, learnedVocabIds]);
+
+  const handleSetVocabStatus = async (vocabId: string, status: VocabLearningStatus | null) => {
+    const current = vocabStatuses[vocabId];
+    const nextStatus = current === status ? null : status;
+
+    setVocabStatuses(prev => {
+      const copy = { ...prev };
+      if (!nextStatus) delete copy[vocabId];
+      else copy[vocabId] = nextStatus;
+      return copy;
+    });
+
+    await setVocabStatus(vocabId, lesson.lessonNumber, nextStatus);
+    onRefreshProgress();
+  };
+
+  const filteredVocab = lesson.vocabulary.filter(v => {
+    const status = vocabStatuses[v.id] || (learnedVocabIds.includes(v.id) ? 'learned' : null);
+    if (vocabStatusFilter === 'learned' && status !== 'learned') return false;
+    if (vocabStatusFilter === 'relearn' && status !== 'not_sure' && status !== 'not_learned') return false;
+    if (vocabStatusFilter === 'unmarked' && status !== null) return false;
+
+    if (vocabSearch.trim()) {
+      const q = vocabSearch.toLowerCase();
+      return (
+        v.kanji.toLowerCase().includes(q) ||
+        v.hiragana.toLowerCase().includes(q) ||
+        v.english.toLowerCase().includes(q) ||
+        v.romaji.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const lessonRelearnCount = lesson.vocabulary.filter(v => vocabStatuses[v.id] === 'not_sure' || vocabStatuses[v.id] === 'not_learned').length;
+  const lessonLearnedCount = lesson.vocabulary.filter(v => vocabStatuses[v.id] === 'learned' || learnedVocabIds.includes(v.id)).length;
 
   const vocabProgressPercent = lesson.vocabulary.length > 0
     ? Math.round((lesson.vocabulary.filter(v => learnedVocabIds.includes(v.id)).length / lesson.vocabulary.length) * 100)
@@ -101,12 +239,93 @@ export function MinnaLessonDetailModal({
 
           <div className="flex items-center gap-2 shrink-0">
             <button
+              onClick={() => {
+                setCustomFlashcardsCards(null);
+                setFlashcardsOpen(true);
+              }}
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm rounded-xl backdrop-blur-sm border border-white/20 active:scale-95 transition flex items-center gap-1.5"
+              title="Study Vocabulary Flashcards"
+            >
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+              <span>Flashcards</span>
+            </button>
+            <button
               onClick={() => onLaunchLessonQuiz(lesson)}
               className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-red-600 font-bold text-xs sm:text-sm rounded-xl shadow-lg hover:bg-stone-50 active:scale-95 transition flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
               <span>Test</span>
             </button>
+
+            {/* Centralized Hide/Show Mode Controller (Eye icon + single common checkbox) */}
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:py-2 rounded-xl border transition-all ${
+                isHideShowActive
+                  ? 'bg-white text-stone-900 border-white shadow-lg'
+                  : 'bg-white/20 hover:bg-white/30 text-white border-white/20 backdrop-blur-sm'
+              }`}
+              title={
+                isHideShowActive
+                  ? 'Hide/Show Mode Active (Click Eye to disable and restore normal display)'
+                  : 'Click Eye icon to activate Hide/Show Mode'
+              }
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsHideShowActive(prev => {
+                    const next = !prev;
+                    if (next) {
+                      // By default, display only Japanese and hide all English meanings
+                      setShowJapaneseHideEnglish(true);
+                      setRevealedCardIds(new Set());
+                    }
+                    return next;
+                  });
+                }}
+                className={`flex items-center gap-1 text-xs font-bold transition active:scale-90 ${
+                  isHideShowActive ? 'text-red-600' : 'text-white'
+                }`}
+                aria-label="Toggle Vocabulary Hide/Show Mode"
+              >
+                {isHideShowActive ? (
+                  <Eye className="w-4 h-4 text-red-600 shrink-0" />
+                ) : (
+                  <EyeOff className="w-4 h-4 text-white shrink-0" />
+                )}
+                <span className="hidden md:inline text-[11px]">
+                  {isHideShowActive ? 'Hide/Show On' : 'Hide/Show'}
+                </span>
+              </button>
+
+              {/* Single Common Checkbox for all vocabulary words */}
+              <label
+                className={`flex items-center gap-1 cursor-pointer select-none pl-1.5 border-l text-[11px] font-bold ${
+                  isHideShowActive ? 'border-stone-200 text-stone-800' : 'border-white/30 text-white'
+                }`}
+                title={
+                  showJapaneseHideEnglish
+                    ? 'Selected: Displaying Japanese words, hiding English meanings. Uncheck to flip.'
+                    : 'Unselected: Hiding Japanese words, displaying English meanings. Check to flip.'
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={showJapaneseHideEnglish}
+                  onChange={(e) => {
+                    if (!isHideShowActive) {
+                      setIsHideShowActive(true);
+                    }
+                    setShowJapaneseHideEnglish(e.target.checked);
+                    setRevealedCardIds(new Set());
+                  }}
+                  className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                />
+                <span className="hidden sm:inline">
+                  {showJapaneseHideEnglish ? 'Japanese' : 'English'}
+                </span>
+              </label>
+            </div>
             <button
               onClick={onClose}
               className="p-1.5 sm:p-2 rounded-xl bg-black/20 hover:bg-black/30 text-white transition"
@@ -198,6 +417,21 @@ export function MinnaLessonDetailModal({
           {/* TAB 1: VOCABULARY */}
           {activeTab === 'vocab' && (
             <div className="space-y-4">
+              {/* Batch feedback notice */}
+              {batchNotice && (
+                <div className="p-3 rounded-2xl bg-stone-900 text-white text-xs font-bold flex items-center justify-between shadow-lg animate-fadeIn border border-stone-800">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>{batchNotice}</span>
+                  </div>
+                  <button onClick={() => setBatchNotice(null)} className="text-white/70 hover:text-white p-1">
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Toolbar: Search, Filters, and Quick Launchers */}
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-4">
                   <input
                     type="text"
@@ -206,71 +440,344 @@ export function MinnaLessonDetailModal({
                     onChange={(e) => setVocabSearch(e.target.value)}
                     className="w-full sm:max-w-md px-4 py-2 text-xs rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
-                    <span className="text-xs text-stone-500 shrink-0 text-right sm:text-left">
-                      Showing {filteredVocab.length} words
-                    </span>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {lessonRelearnCount > 0 && (
+                      <button
+                        onClick={handleFastRecallRelearn}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 text-white font-bold text-xs shadow-sm hover:from-amber-600 hover:to-rose-700 active:scale-95 transition flex items-center gap-1.5"
+                        title="Start Fast Recall Flashcards for words marked in Re-learn"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-200" />
+                        <span>Fast Recall Re-learn ({lessonRelearnCount})</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setCustomFlashcardsCards(null);
+                        setFlashcardsOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs transition flex items-center gap-1.5 border border-stone-200 dark:border-stone-700"
+                      title="Study all lesson vocabulary in interactive flashcards"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-red-500" />
+                      <span>Study Flashcards</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredVocab.map((v) => {
-                    const isLearned = learnedVocabIds.includes(v.id);
-                    return (
-                      <div
-                        key={v.id}
-                        className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${isLearned
-                            ? 'border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20'
-                            : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/40 hover:border-red-300 dark:hover:border-red-900/40'
-                          }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2 flex-1 min-w-0">
-                            <span className="text-lg sm:text-xl font-black font-japanese text-stone-900 dark:text-white">
-                              {v.kanji}
-                            </span>
-                            <span className="text-xs text-stone-500 font-japanese font-medium">
-                              {v.hiragana}
-                            </span>
-                            <span className="text-[11px] text-stone-400 font-mono">
-                              ({v.romaji})
-                            </span>
-                          </div>
+                {/* Filter Pills & Select All Row */}
+                <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 bg-stone-100 dark:bg-stone-800/60 p-1 rounded-xl">
+                    <button
+                      onClick={() => setVocabStatusFilter('all')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        vocabStatusFilter === 'all'
+                          ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-xs'
+                          : 'text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                      }`}
+                    >
+                      All ({lesson.vocabulary.length})
+                    </button>
+                    <button
+                      onClick={() => setVocabStatusFilter('relearn')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                        vocabStatusFilter === 'relearn'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                      }`}
+                    >
+                      <Zap className="w-3 h-3" />
+                      <span>In Re-learn ({lessonRelearnCount})</span>
+                    </button>
+                    <button
+                      onClick={() => setVocabStatusFilter('learned')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                        vocabStatusFilter === 'learned'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                      }`}
+                    >
+                      <Check className="w-3 h-3" />
+                      <span>Learned ({lessonLearnedCount})</span>
+                    </button>
+                  </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={selectAllFiltered}
+                    className="text-xs font-bold text-stone-500 hover:text-stone-900 dark:hover:text-stone-200 flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+                  >
+                    {selectedVocabIds.size === filteredVocab.length && filteredVocab.length > 0 ? (
+                      <CheckSquare className="w-4 h-4 text-red-500" />
+                    ) : (
+                      <Square className="w-4 h-4 text-stone-400" />
+                    )}
+                    <span>
+                      {selectedVocabIds.size === filteredVocab.length && filteredVocab.length > 0
+                        ? 'Deselect All'
+                        : `Select All (${filteredVocab.length})`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Batch Action Ribbon when items are selected */}
+              {selectedVocabIds.size > 0 && (
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-stone-900 via-stone-900 to-rose-950 text-white flex flex-wrap items-center justify-between gap-3 shadow-md animate-fadeIn border border-stone-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-red-600 text-white font-mono font-black text-xs flex items-center justify-center">
+                      {selectedVocabIds.size}
+                    </span>
+                    <span className="text-xs font-bold">
+                      vocabulary items selected for batch action
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleBatchSetStatus('not_sure')}
+                      className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95"
+                      title="Add selected words to Re-learn section for fast recall"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Add Batch to Re-learn (Fast Recall)</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleBatchSetStatus('learned')}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95"
+                      title="Mark selected words as learned"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Mark Learned</span>
+                    </button>
+
+                    <button
+                      onClick={handleStudySelectedInFlashcards}
+                      className="px-3.5 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-sm transition flex items-center gap-1.5 active:scale-95"
+                      title="Study selected words in interactive flashcards"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Flashcards ({selectedVocabIds.size})</span>
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedVocabIds(new Set())}
+                      className="text-stone-400 hover:text-white text-xs px-2 py-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Active Hide/Show Mode Sticky Banner */}
+              {isHideShowActive && (
+                <div className="sticky top-0 z-20 p-3 sm:p-3.5 rounded-2xl bg-stone-900/95 dark:bg-stone-900/95 backdrop-blur-md text-white flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shadow-xl border border-stone-700/80 animate-fadeIn">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-red-600/30 text-red-400 flex items-center justify-center shrink-0">
+                      <Eye className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white block">
+                          Hide/Show Mode Active
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white">
+                          {showJapaneseHideEnglish ? 'Japanese Words' : 'English Meanings'}
+                        </span>
+                      </div>
+                      <span className="text-stone-300 dark:text-stone-400 text-[11px] block mt-0.5">
+                        {showJapaneseHideEnglish
+                          ? 'Displaying Japanese words • All English meanings hidden'
+                          : 'Hiding Japanese words • English meanings displayed'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap ml-auto sm:ml-0">
+                    {/* Quick Checkbox Switcher on Sticky Banner */}
+                    <label
+                      className="flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1.5 rounded-xl bg-stone-800/90 hover:bg-stone-700 border border-stone-700 text-xs font-bold text-stone-200 transition"
+                      title={
+                        showJapaneseHideEnglish
+                          ? 'Selected: Displaying Japanese words, hiding English meanings. Uncheck to flip.'
+                          : 'Unselected: Hiding Japanese words, displaying English meanings. Check to flip.'
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={showJapaneseHideEnglish}
+                        onChange={(e) => {
+                          setShowJapaneseHideEnglish(e.target.checked);
+                          setRevealedCardIds(new Set());
+                        }}
+                        className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                      />
+                      <span className="text-[11px] hidden xs:inline">
+                        {showJapaneseHideEnglish ? 'Japanese' : 'English'}
+                      </span>
+                    </label>
+
+                    <button
+                      onClick={() => {
+                        setShowJapaneseHideEnglish(prev => !prev);
+                        setRevealedCardIds(new Set());
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm"
+                      title="Flip which language is hidden and which is shown"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Flip ({showJapaneseHideEnglish ? 'Show English' : 'Show Japanese'})</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsHideShowActive(false)}
+                      className="text-stone-400 hover:text-white text-xs px-2.5 py-1.5 rounded-xl hover:bg-stone-800 transition"
+                      title="Disable Hide/Show Mode"
+                    >
+                      Disable
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredVocab.map((v) => {
+                  const status = vocabStatuses[v.id] || (learnedVocabIds.includes(v.id) ? 'learned' : null);
+                  const isLearned = status === 'learned';
+                  const isRelearn = status === 'not_sure' || status === 'not_learned';
+                  const isSelected = selectedVocabIds.has(v.id);
+
+                  return (
+                    <div
+                      key={v.id}
+                      className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                        isSelected
+                          ? 'ring-2 ring-red-500/60 border-red-400 bg-red-50/20 dark:bg-red-950/20'
+                          : isRelearn
+                          ? 'border-amber-300 dark:border-amber-800/80 bg-amber-50/40 dark:bg-amber-950/20 hover:border-amber-400'
+                          : isLearned
+                          ? 'border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20'
+                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/40 hover:border-stone-300'
+                      }`}
+                    >
+                      <div>
+                        {/* Card Top: Checkbox, Japanese, Speaker, and Live Badges */}
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
                             <button
-                              onClick={() => speakJapanese(v.kanji || v.hiragana)}
-                              className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 transition"
-                              title="Listen Pronunciation"
+                              onClick={() => toggleSelectVocab(v.id)}
+                              className="mt-1 text-stone-400 hover:text-red-500 transition shrink-0"
+                              title={isSelected ? 'Deselect' : 'Select for batch action'}
                             >
-                              <Volume2 className="w-4 h-4 text-red-500" />
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-red-600" />
+                              ) : (
+                                <Square className="w-4 h-4 text-stone-300 dark:text-stone-600" />
+                              )}
                             </button>
-                            <button
-                              onClick={() => handleToggleVocab(v.id)}
-                              className={`p-1.5 rounded-lg transition ${isLearned
-                                  ? 'bg-emerald-500 text-white shadow-sm'
-                                  : 'bg-stone-200 dark:bg-stone-700 text-stone-400 hover:text-stone-600'
-                                }`}
-                              title={isLearned ? 'Learned' : 'Mark as Learned'}
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
+
+                            {(() => {
+                              const jp = getJapaneseWordDisplay(v);
+                              const isJapaneseHidden = isHideShowActive && !showJapaneseHideEnglish && !revealedCardIds.has(v.id);
+
+                              return (
+                                <>
+                                  <div className="flex-1 min-w-0">
+                                    {isJapaneseHidden ? (
+                                      <div
+                                        onClick={() => toggleRevealCard(v.id)}
+                                        className="py-1.5 px-3 rounded-xl bg-stone-100 dark:bg-stone-800/80 hover:bg-stone-200 border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 font-mono text-xs flex items-center gap-1.5 cursor-pointer w-fit select-none transition"
+                                        title="Click to peek Japanese word"
+                                      >
+                                        <EyeOff className="w-3.5 h-3.5 text-stone-400" />
+                                        <span>[Japanese Hidden — Click to peek]</span>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {/* Primary Text: Katakana for loanwords, Hiragana reading for kanji, Hiragana for native */}
+                                        <div className="text-xl sm:text-2xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words leading-tight">
+                                          {jp.primaryText}
+                                        </div>
+
+                                        {/* Secondary Text: Kanji (if present) & Romaji */}
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                          {jp.secondaryText && (
+                                            <span className="text-xs sm:text-sm font-normal font-japanese text-stone-500 dark:text-stone-400">
+                                              {jp.secondaryText}
+                                            </span>
+                                          )}
+                                          <span className="text-[11px] font-mono text-stone-400 dark:text-stone-500">
+                                            ({v.romaji})
+                                          </span>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      onClick={() => speakJapanese(jp.reading || jp.standardSpelling)}
+                                      className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-500 hover:text-red-500 transition shrink-0 active:scale-95 shadow-xs"
+                                      title="Listen Pronunciation"
+                                    >
+                                      <Volume2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </>
+                              );
+                            })()}
+
+                            {isRelearn && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 flex items-center gap-1 shadow-xs">
+                                <Zap className="w-3 h-3 text-amber-500" />
+                                <span>In Re-learn</span>
+                              </span>
+                            )}
+
+                            {isLearned && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 shadow-xs">
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <span>Learned</span>
+                              </span>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-stone-800 dark:text-stone-200">
-                            {v.english}
-                          </span>
+                        {/* Meaning & Part of Speech */}
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          {isHideShowActive && showJapaneseHideEnglish && !revealedCardIds.has(v.id) ? (
+                            <div
+                              onClick={() => toggleRevealCard(v.id)}
+                              className="py-1 px-2.5 rounded-lg bg-stone-100 dark:bg-stone-800/80 hover:bg-stone-200 border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 font-mono text-xs flex items-center gap-1.5 cursor-pointer w-fit select-none transition"
+                              title="Click to peek English meaning"
+                            >
+                              <EyeOff className="w-3 h-3 text-stone-400" />
+                              <span>[English Hidden — Click to peek]</span>
+                            </div>
+                          ) : (
+                            <span className="font-bold text-stone-800 dark:text-stone-200">
+                              {v.english}
+                            </span>
+                          )}
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-mono">
                             {v.partOfSpeech}
                           </span>
                         </div>
 
+                        {/* Example Sentence */}
                         {v.exampleSentence && (
-                          <div className="mt-1 pt-2 border-t border-stone-200 dark:border-stone-800/60 text-xs">
+                          <div className="mt-2 pt-2 border-t border-stone-200 dark:border-stone-800/60 text-xs">
                             <div className="flex items-center justify-between">
-                              <p className="font-japanese text-stone-700 dark:text-stone-300 font-medium">
-                                {v.exampleSentence.japanese}
-                              </p>
+                              {isHideShowActive && !showJapaneseHideEnglish && !revealedCardIds.has(v.id) ? (
+                                <p className="text-stone-400 italic text-[11px]">[Japanese sentence hidden]</p>
+                              ) : (
+                                <p className="font-japanese text-stone-700 dark:text-stone-300 font-medium">
+                                  {v.exampleSentence.japanese}
+                                </p>
+                              )}
                               <button
                                 onClick={() => speakJapanese(v.exampleSentence?.japanese || '')}
                                 className="text-stone-400 hover:text-red-500 p-1"
@@ -278,16 +785,68 @@ export function MinnaLessonDetailModal({
                                 <Volume2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            <p className="text-[11px] text-stone-500 italic mt-0.5">
-                              {v.exampleSentence.english}
-                            </p>
+                            {isHideShowActive && showJapaneseHideEnglish && !revealedCardIds.has(v.id) ? (
+                              <p className="text-stone-400 italic text-[11px] mt-0.5">[English sentence hidden]</p>
+                            ) : (
+                              <p className="text-[11px] text-stone-500 italic mt-0.5">
+                                {v.exampleSentence.english}
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* Interactive Status Badges & Quick Re-learn Actions */}
+                      <div className="pt-2 border-t border-stone-200/70 dark:border-stone-800/70 flex items-center justify-between gap-1.5 flex-wrap">
+                        {/* Re-learn Fast Recall Button */}
+                        <button
+                          onClick={() => handleSetVocabStatus(v.id, isRelearn ? null : 'not_sure')}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs active:scale-95 ${
+                            isRelearn
+                              ? 'bg-amber-600 text-white ring-2 ring-amber-400/50'
+                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-800'
+                          }`}
+                          title={isRelearn ? 'Word is active in Re-learn Hub. Click to unmark.' : 'Add to Re-learn Hub for fast recall'}
+                        >
+                          <Zap className={`w-3.5 h-3.5 ${isRelearn ? 'text-amber-200 fill-amber-200' : 'text-amber-500'}`} />
+                          <span>{isRelearn ? 'In Re-learn ✓' : '⚡ Re-learn'}</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {/* Learned Button */}
+                          <button
+                            onClick={() => handleSetVocabStatus(v.id, isLearned ? null : 'learned')}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95 ${
+                              isLearned
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+                            }`}
+                            title={isLearned ? 'Marked as Learned. Click to unmark.' : 'Mark as Learned (Mastered)'}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Learned</span>
+                          </button>
+
+                          {/* Not Learned Button */}
+                          <button
+                            onClick={() => handleSetVocabStatus(v.id, status === 'not_learned' ? null : 'not_learned')}
+                            className={`px-2 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95 ${
+                              status === 'not_learned'
+                                ? 'bg-rose-600 text-white shadow-xs'
+                                : 'text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                            }`}
+                            title="Mark as Not Learned (high priority in Re-learn)"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Not Learned</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            </div>
           )}
 
               {/* TAB 2: GRAMMAR */}
@@ -645,19 +1204,35 @@ export function MinnaLessonDetailModal({
                                   </div>
 
         {/* Footer */}
-                                <div className="px-6 py-3 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 flex items-center justify-between">
-                                  <span className="text-xs text-stone-500">
-                                    Minna no Nihongo Shokyu I (Lesson {lesson.lessonNumber})
-                                  </span>
-                                  <button
-                                    onClick={onClose}
-                                    className="px-4 py-1.5 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-bold hover:bg-stone-300 transition"
-                                  >
-                                    Close
-                                  </button>
-                                </div>
+        <div className="px-6 py-3 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 flex items-center justify-between">
+          <span className="text-xs text-stone-500">
+            Minna no Nihongo Shokyu I (Lesson {lesson.lessonNumber})
+          </span>
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-bold hover:bg-stone-300 transition"
+          >
+            Close
+          </button>
+        </div>
 
-                            </div>
-                          </div>
-                          );
+      </div>
+
+      {/* Interactive Flashcards Modal */}
+      {flashcardsOpen && (
+        <MinnaFlashcardsModal
+          title={`Lesson ${lesson.lessonNumber} Flashcards`}
+          subtitle={customFlashcardsCards ? `Fast Recall Session (${customFlashcardsCards.length} words)` : `Lesson ${lesson.lessonNumber} • ${lesson.title}`}
+          vocabularyList={customFlashcardsCards || (filteredVocab.length > 0 ? filteredVocab : lesson.vocabulary)}
+          onClose={() => {
+            setFlashcardsOpen(false);
+            setCustomFlashcardsCards(null);
+          }}
+          onRefreshData={() => {
+            onRefreshProgress();
+          }}
+        />
+      )}
+    </div>
+  );
 }

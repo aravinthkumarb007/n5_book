@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, Zap, Layers, AlertTriangle,
   Calendar, Search, BarChart3, Bot, Settings as SettingsIcon,
   Flame, Clock, Moon, Sun, Menu, X, Sparkles, CheckCircle2, Cloud, GraduationCap,
-  FileCheck, Calculator, RefreshCw, ShieldCheck
+  FileCheck, Calculator, RefreshCw, ShieldCheck, RotateCcw
 } from 'lucide-react';
 import { KanjiRecord, UserKanjiProgress, UserSettings, QuizQuestionType } from '@/types/kanji';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
@@ -28,6 +28,9 @@ import { AnalyticsView } from '@/components/AnalyticsView';
 import { AiTutorView } from '@/components/AiTutorView';
 import { SettingsView } from '@/components/SettingsView';
 import { MinnaDashboardView } from '@/components/minna/MinnaDashboardView';
+import { MarkedVocabBatchView } from '@/components/minna/MarkedVocabBatchView';
+import { VocabRelearningView } from '@/components/minna/VocabRelearningView';
+import { getMarkedVocabCount, getRelearnVocabCount } from '@/services/vocabStorage';
 import { MockExamHomeView } from '@/components/mockExam/MockExamHomeView';
 import { CountersDashboardView } from '@/components/counters/CountersDashboardView';
 
@@ -42,6 +45,8 @@ type NavView =
   | 'mock_exam'
   | 'counters'
   | 'minna'
+  | 'batch_vocab'
+  | 'relearn'
   | 'learn'
   | 'quiz'
   | 'flashcards'
@@ -76,12 +81,17 @@ export default function HomePage() {
     errorMessage?: string;
   } | null>(null);
 
+  const [markedVocabCount, setMarkedVocabCount] = useState(0);
+  const [relearnVocabCount, setRelearnVocabCount] = useState(0);
+
   // Load storage state on mount
   const refreshData = () => {
     const p = storage.getProgress();
     const s = storage.getSettings();
     setProgressList(p);
     setSettings(s);
+    setMarkedVocabCount(getMarkedVocabCount());
+    setRelearnVocabCount(getRelearnVocabCount());
   };
 
   const handleManualSync = async () => {
@@ -148,6 +158,7 @@ export default function HomePage() {
     window.addEventListener('level-completion-sync-warning', handleLevelSyncWarning);
     window.addEventListener('level-completion-verified', handleLevelSyncSuccess);
     window.addEventListener('project-data-refreshed', handleRefresh);
+    window.addEventListener('vocab-status-updated', handleRefresh);
 
     // 3. Automatically restore & merge progress from Supabase Cloud DB
     async function restoreCloud() {
@@ -166,6 +177,7 @@ export default function HomePage() {
       window.removeEventListener('level-completion-sync-warning', handleLevelSyncWarning);
       window.removeEventListener('level-completion-verified', handleLevelSyncSuccess);
       window.removeEventListener('project-data-refreshed', handleRefresh);
+      window.removeEventListener('vocab-status-updated', handleRefresh);
     };
   }, []);
 
@@ -209,6 +221,8 @@ export default function HomePage() {
     { id: 'mock_exam', label: 'N5 Mock Exam', icon: FileCheck, badge: '90m Exam', badgeColor: 'bg-emerald-600 text-white' },
     { id: 'counters', label: 'Counters & Numbers', icon: Calculator, badge: 'Counters & Time', badgeColor: 'bg-teal-600 text-white' },
     { id: 'minna', label: 'Minna Curriculum', icon: GraduationCap, badge: '25 Lessons', badgeColor: 'bg-red-600 text-white' },
+    { id: 'batch_vocab', label: 'Marked Vocab', icon: Layers, badge: markedVocabCount > 0 ? markedVocabCount : undefined, badgeColor: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300' },
+    { id: 'relearn', label: 'Vocab Re-learning', icon: RotateCcw, badge: relearnVocabCount > 0 ? relearnVocabCount : undefined, badgeColor: 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300' },
     { id: 'learn', label: 'Learn Kanji', icon: BookOpen, badge: `${learnedCount}/120`, badgeColor: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' },
     { id: 'quiz', label: 'Practice & Quiz', icon: Zap },
     { id: 'flashcards', label: 'Flashcards', icon: Layers, badge: dueCount > 0 ? dueCount : undefined, badgeColor: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' },
@@ -478,6 +492,22 @@ export default function HomePage() {
                                 <div className={currentView === 'minna' ? 'w-full max-w-full min-w-0 block' : 'hidden'}>
                                   <MinnaDashboardView
                                     onNavigateHome={() => setCurrentView('dashboard')}
+                                    onNavigateToBatch={() => setCurrentView('batch_vocab')}
+                                    onNavigateToRelearn={() => setCurrentView('relearn')}
+                                  />
+                                </div>
+
+                                <div className={currentView === 'batch_vocab' ? 'w-full max-w-full min-w-0 block' : 'hidden'}>
+                                  <MarkedVocabBatchView
+                                    onNavigateToMinna={() => setCurrentView('minna')}
+                                    onNavigateToRelearn={() => setCurrentView('relearn')}
+                                  />
+                                </div>
+
+                                <div className={currentView === 'relearn' ? 'w-full max-w-full min-w-0 block' : 'hidden'}>
+                                  <VocabRelearningView
+                                    onNavigateToMinna={() => setCurrentView('minna')}
+                                    onNavigateToBatch={() => setCurrentView('batch_vocab')}
                                   />
                                 </div>
 

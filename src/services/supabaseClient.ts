@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export function getSupabaseCredentials() {
   let url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  let key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  let key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 
   // In browser, if env vars were not present at build time, check localStorage cache
   if ((!url || !key) && typeof window !== 'undefined' && window.localStorage) {
