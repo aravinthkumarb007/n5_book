@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const body = await request.json();
     const { 
       progressList, 
@@ -225,7 +225,7 @@ export async function POST(request: Request) {
 // GET endpoint to restore/pull progress from Supabase on application startup
 export async function GET(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || '00000000-0000-0000-0000-000000000001';
 

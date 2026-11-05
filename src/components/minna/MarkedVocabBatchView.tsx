@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { MarkedVocabItemWithMeta, VocabLearningStatus, VocabStatusFilter } from '@/types/minna';
 import { speakJapanese } from '@/services/audio';
-import { setVocabStatus, batchSetVocabStatus } from '@/services/vocabStorage';
+import { setVocabStatus, batchSetVocabStatus, getStoredVocabStatuses, getMasterVocabItem } from '@/services/vocabStorage';
+import { getSupabaseHeaders } from '@/services/supabaseClient';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
 import { MinnaFlashcardsModal } from './MinnaFlashcardsModal';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
@@ -100,13 +101,49 @@ export function MarkedVocabBatchView({
     }
   };
 
+  const loadLocalFallback = (errText?: string) => {
+    const localStatuses = getStoredVocabStatuses();
+    const records = Object.values(localStatuses);
+    if (records.length > 0) {
+      const localItems: MarkedVocabItemWithMeta[] = [];
+      const c = { total: 0, learned: 0, notSure: 0, notLearned: 0 };
+      for (const rec of records) {
+        if (rec.status === 'learned') c.learned++;
+        else if (rec.status === 'not_sure') c.notSure++;
+        else if (rec.status === 'not_learned') c.notLearned++;
+        c.total++;
+
+        const base = getMasterVocabItem(rec.vocabId);
+        if (base) {
+          localItems.push({
+            ...base,
+            status: rec.status,
+            learningStatus: rec.status,
+            statusUpdatedAt: rec.updatedAt
+          });
+        }
+      }
+      localItems.sort((a, b) => {
+        if (a.lessonNumber !== b.lessonNumber) return a.lessonNumber - b.lessonNumber;
+        return a.id.localeCompare(b.id);
+      });
+      setItems(localItems);
+      setCounts(c);
+      setErrorMessage(null);
+    } else {
+      setErrorMessage(errText || 'Supabase URL and Anon Key are not configured');
+    }
+  };
+
   const fetchMarkedVocab = async (silent: boolean = false) => {
     if (!silent) setIsLoading(true);
     else setIsRefreshing(true);
     setErrorMessage(null);
 
     try {
-      const res = await fetch('/api/vocabulary/marked');
+      const res = await fetch('/api/vocabulary/marked', {
+        headers: getSupabaseHeaders()
+      });
       const data = await res.json();
 
       if (data.success && Array.isArray(data.items)) {
@@ -115,10 +152,10 @@ export function MarkedVocabBatchView({
           setCounts(data.counts);
         }
       } else {
-        setErrorMessage(data.error || 'Failed to load marked vocabulary from database.');
+        loadLocalFallback(data.error);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Network connection failed while fetching marked vocabulary.');
+      loadLocalFallback(err.message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -134,7 +171,11 @@ export function MarkedVocabBatchView({
     };
 
     window.addEventListener('vocab-status-updated', handleStatusUpdate);
-    return () => window.removeEventListener('vocab-status-updated', handleStatusUpdate);
+    window.addEventListener('project-data-refreshed', handleStatusUpdate);
+    return () => {
+      window.removeEventListener('vocab-status-updated', handleStatusUpdate);
+      window.removeEventListener('project-data-refreshed', handleStatusUpdate);
+    };
   }, []);
 
   // Filtered Items
@@ -343,38 +384,52 @@ export function MarkedVocabBatchView({
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 min-w-0 max-w-full">
-        {/* Search */}
-        <div className="relative flex-1 min-w-0 max-w-full lg:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+      {/* Filter & Search Bar - Clean Responsive Card Layout */}
+      <div className="bg-white dark:bg-stone-900 p-3 sm:p-4 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-sm space-y-3 w-full min-w-0">
+        {/* Row 1: Search Input (Full width, guaranteed non-collapsing) */}
+        <div className="relative w-full min-w-0">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search by hiragana, kanji, or meaning..."
+            placeholder="Search by hiragana, kanji, romaji, or meaning..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+            className="w-full pl-10 pr-10 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/50 text-xs sm:text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition shadow-inner"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
-          {/* Lesson Range Selector */}
-          <select
-            value={selectedLessonFilter}
-            onChange={(e) => setSelectedLessonFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-            className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs font-bold border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-          >
-            <option value="all">All Lessons (1–25)</option>
-            {ALL_MINNA_LESSONS.map(l => (
-              <option key={l.id} value={l.lessonNumber}>
-                Lesson {l.lessonNumber}: {l.title}
-              </option>
-            ))}
-          </select>
+        {/* Row 2: Controls Bar - Lesson Selector + Status Filters */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-stone-100 dark:border-stone-800/80">
+          {/* Lesson Selector */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0">
+              Lesson:
+            </span>
+            <select
+              value={selectedLessonFilter}
+              onChange={(e) => setSelectedLessonFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              className="w-full sm:w-auto max-w-full sm:max-w-[240px] md:max-w-[270px] truncate px-3 py-2 rounded-xl text-xs font-bold border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
+            >
+              <option value="all">All Lessons (1–25)</option>
+              {ALL_MINNA_LESSONS.map(l => (
+                <option key={l.id} value={l.lessonNumber}>
+                  Lesson {l.lessonNumber}: {l.title.replace(/^Lesson \d+:\s*/, '')}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Status Pills */}
-          <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800/80 p-1 rounded-xl overflow-x-auto max-w-full">
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${

@@ -14,21 +14,29 @@ export function getSupabaseCredentials() {
     } catch {}
   }
 
-  return { url, key };
+  return { url: url.trim(), key: key.trim() };
 }
 
 export function setClientSupabaseCredentials(url: string, key: string) {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       if (url && key) {
-        localStorage.setItem('supabase_runtime_url', url);
-        localStorage.setItem('supabase_runtime_anon_key', key);
+        localStorage.setItem('supabase_runtime_url', url.trim());
+        localStorage.setItem('supabase_runtime_anon_key', key.trim());
       } else {
         localStorage.removeItem('supabase_runtime_url');
         localStorage.removeItem('supabase_runtime_anon_key');
       }
     } catch {}
   }
+}
+
+export function getSupabaseHeaders(): Record<string, string> {
+  const { url, key } = getSupabaseCredentials();
+  const headers: Record<string, string> = {};
+  if (url) headers['x-supabase-url'] = url;
+  if (key) headers['x-supabase-key'] = key;
+  return headers;
 }
 
 export function isSupabaseConfigured(): boolean {

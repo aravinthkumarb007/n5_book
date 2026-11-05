@@ -9,6 +9,8 @@ import {
 import { UserSettings } from '@/types/kanji';
 import { storage, triggerAutoCloudSync } from '@/services/storage';
 import { setClientSupabaseCredentials } from '@/services/supabaseClient';
+import { restoreAndMergeCloudData } from '@/services/cloudSyncService';
+import { syncVocabStatusesFromBackend } from '@/services/vocabStorage';
 
 interface SettingsViewProps {
   settings: UserSettings;
@@ -210,8 +212,25 @@ export function SettingsView({
         setSupabaseSaveMessage('Supabase credentials securely saved and activated.');
         setTimeout(() => setSupabaseSaveMessage(null), 4000);
 
-        // Auto trigger cloud sync now that credentials are saved!
-        triggerAutoCloudSync();
+        // Auto fetch and sync cloud data into application state immediately without loss!
+        try {
+          setSupabaseSaveMessage('Supabase credentials saved. Automatically fetching all your progress and vocabulary data...');
+          const cloudResult = await restoreAndMergeCloudData();
+          const vocabResult = await syncVocabStatusesFromBackend();
+          onRefreshAllData();
+          window.dispatchEvent(new CustomEvent('project-data-refreshed'));
+          window.dispatchEvent(new CustomEvent('vocab-status-updated'));
+
+          const learnedCount = cloudResult?.learnedCount || 0;
+          const vocabCount = Object.keys(vocabResult || {}).length;
+          setSupabaseSaveMessage(
+            `✓ Supabase connected! Automatically retrieved ${learnedCount} learned Kanji and ${vocabCount} marked vocabulary items without data loss.`
+          );
+          setTimeout(() => setSupabaseSaveMessage(null), 6000);
+        } catch (fetchErr: any) {
+          console.warn('Post-save auto fetch warning:', fetchErr);
+          triggerAutoCloudSync();
+        }
       } else {
         setSupabaseSaveMessage(`Error saving: ${data.error || 'Failed'}`);
       }

@@ -18,7 +18,7 @@ for (const lesson of ALL_MINNA_LESSONS) {
 // GET: Fetch all vocabulary marked as "not_learned" or "not_sure"
 export async function GET(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || DEFAULT_USER_ID;
     const filterStatus = searchParams.get('status'); // 'not_learned' | 'not_sure' | 'all'

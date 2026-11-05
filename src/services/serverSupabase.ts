@@ -8,12 +8,14 @@ let runtimeSupabaseConfig: { url: string; key: string } = {
   key: ''
 };
 
-export function getServerSupabaseCredentials() {
-  let url = runtimeSupabaseConfig.url || 
+export function getServerSupabaseCredentials(req?: Request) {
+  let url = (req ? (req.headers.get('x-supabase-url') || '') : '') ||
+            runtimeSupabaseConfig.url || 
             process.env.NEXT_PUBLIC_SUPABASE_URL || 
             process.env.SUPABASE_URL || '';
 
-  let key = runtimeSupabaseConfig.key || 
+  let key = (req ? (req.headers.get('x-supabase-key') || req.headers.get('x-supabase-anon-key') || '') : '') ||
+            runtimeSupabaseConfig.key || 
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
             process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 
             process.env.SUPABASE_ANON_KEY || 
@@ -35,18 +37,30 @@ export function getServerSupabaseCredentials() {
     }
   }
 
-  return { url, key };
+  return { url: url.trim(), key: key.trim() };
 }
 
-export function isSupabaseConfigured(): boolean {
-  const { url, key } = getServerSupabaseCredentials();
+export function isSupabaseConfigured(req?: Request): boolean {
+  const { url, key } = getServerSupabaseCredentials(req);
   return Boolean(url && key);
 }
 
-export function getServerSupabaseClient(overrideUrl?: string, overrideKey?: string) {
-  const { url, key } = overrideUrl && overrideKey 
-    ? { url: overrideUrl, key: overrideKey } 
-    : getServerSupabaseCredentials();
+export function getServerSupabaseClient(reqOrUrl?: Request | string, overrideKey?: string) {
+  let url = '';
+  let key = '';
+
+  if (typeof reqOrUrl === 'string') {
+    url = reqOrUrl;
+    key = overrideKey || '';
+  } else if (reqOrUrl && (reqOrUrl instanceof Request || typeof (reqOrUrl as any).headers?.get === 'function')) {
+    const creds = getServerSupabaseCredentials(reqOrUrl as Request);
+    url = creds.url;
+    key = creds.key;
+  } else {
+    const creds = getServerSupabaseCredentials();
+    url = creds.url;
+    key = creds.key;
+  }
 
   if (!url || !key) {
     throw new Error('Supabase URL and Anon Key are not configured');
