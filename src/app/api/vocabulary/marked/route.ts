@@ -19,7 +19,7 @@ for (const lesson of ALL_MINNA_LESSONS) {
 // GET: Fetch all marked vocabulary items from the backend database
 export async function GET(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || DEFAULT_USER_ID;
     const filterStatus = searchParams.get('status') as VocabLearningStatus | 'all' | null;

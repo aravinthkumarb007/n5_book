@@ -8,7 +8,7 @@ const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 export async function POST(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const body = await request.json();
     const { updates, userId = DEFAULT_USER_ID } = body;
 
