@@ -5,6 +5,7 @@ import { loadMinnaProgress, saveMinnaProgress } from './minnaStorage';
 import { getExamHistory, saveExamResult } from './mockExamStorage';
 import { getCountersQuizHistory, saveCountersQuizResult } from './countersStorage';
 import { getStoredVocabStatuses, syncVocabStatusesFromBackend } from './vocabStorage';
+import { getSupabaseHeaders } from './supabaseClient';
 
 export interface SyncResult {
   success: boolean;
@@ -165,7 +166,7 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
 
     const res = await fetch('/api/supabase/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getSupabaseHeaders() },
       body: JSON.stringify(payload)
     });
 
@@ -262,7 +263,7 @@ export async function restoreAndMergeCloudData(): Promise<{
 
   try {
     window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'syncing' } }));
-    const res = await fetch('/api/supabase/sync');
+    const res = await fetch('/api/supabase/sync', { headers: getSupabaseHeaders() });
     const data = await res.json();
 
     if (!res.ok || !data.success) {

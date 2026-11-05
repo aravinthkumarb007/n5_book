@@ -9,7 +9,7 @@ const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 // GET: Retrieve all vocabulary statuses for a user (or filtered by lesson/status)
 export async function GET(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || DEFAULT_USER_ID;
     const lessonParam = searchParams.get('lessonNumber');
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
 // POST: Save or update a single vocabulary status
 export async function POST(request: Request) {
   try {
-    const supabase = getServerSupabaseClient();
+    const supabase = getServerSupabaseClient(request);
     const body = await request.json();
     const {
       vocabId,
