@@ -12,6 +12,7 @@ import { speakJapanese } from '@/services/audio';
 import { setVocabStatus, getVocabStatus, getStoredVocabStatuses } from '@/services/vocabStorage';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
 import { FuriganaText } from '@/components/common/FuriganaText';
+import { useSwipeCard } from '@/utils/useSwipeCard';
 
 interface MinnaFlashcardsModalProps {
   title: string;
@@ -152,6 +153,15 @@ export function MinnaFlashcardsModal({
     setIsFlipped(false);
     setSessionCompleted(false);
   };
+
+  // Swipe Gestures: Swipe Right -> Learned, Swipe Left -> Re-learn Hub, Tap -> Flip
+  const swipe = useSwipeCard({
+    onSwipeRight: () => handleRate('learned'),
+    onSwipeLeft: () => handleRate('not_sure'),
+    onTap: () => setIsFlipped(prev => !prev),
+    threshold: 75,
+    disabled: sessionCompleted || cards.length === 0
+  });
 
   // Session Statistics
   const sessionStats = useMemo(() => {
@@ -387,13 +397,37 @@ export function MinnaFlashcardsModal({
         {/* Modal Scrollable Body */}
         <div className="p-3 sm:p-5 pt-2 overflow-y-auto overscroll-contain flex-1 flex flex-col justify-between space-y-3 sm:space-y-4">
 
-          {/* 3D Flashcard Container */}
-          <div className="w-full perspective-1000">
+          {/* 3D Flashcard Container with Interactive Swipe Gestures */}
+          <div className="w-full perspective-1000 overflow-hidden py-1">
             <div
-              onClick={() => setIsFlipped(prev => !prev)}
-              className={`relative w-full rounded-3xl transition-transform duration-500 ease-out transform-style-preserve-3d cursor-pointer min-h-[270px] xs:min-h-[300px] sm:min-h-[350px] select-none ${isFlipped ? 'rotate-y-180' : ''
-                }`}
+              {...swipe.handlers}
+              style={swipe.cardStyle}
+              className="relative w-full cursor-grab active:cursor-grabbing select-none"
             >
+              {/* Swipe Right Overlay Badge: LEARNED */}
+              <div
+                className="absolute top-4 right-4 z-30 pointer-events-none transition-opacity duration-75 flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-emerald-600 text-white font-black text-xs sm:text-sm shadow-xl border-2 border-emerald-400 rotate-12"
+                style={{ opacity: swipe.rightOpacity }}
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>LEARNED</span>
+              </div>
+
+              {/* Swipe Left Overlay Badge: RE-LEARN HUB */}
+              <div
+                className="absolute top-4 left-4 z-30 pointer-events-none transition-opacity duration-75 flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-amber-500 text-stone-950 font-black text-xs sm:text-sm shadow-xl border-2 border-amber-300 -rotate-12"
+                style={{ opacity: swipe.leftOpacity }}
+              >
+                <Zap className="w-4 h-4 fill-stone-950 stroke-[2]" />
+                <span>RE-LEARN HUB</span>
+              </div>
+
+              {/* Inner 3D Flip Card */}
+              <div
+                className={`relative w-full rounded-3xl transition-transform duration-500 ease-out transform-style-preserve-3d min-h-[270px] xs:min-h-[300px] sm:min-h-[350px] ${
+                  isFlipped ? 'rotate-y-180' : ''
+                }`}
+              >
               {/* ==================== FRONT FACE: QUESTION ==================== */}
               <div
                 className={`absolute inset-0 w-full h-full rounded-3xl border border-stone-200 dark:border-stone-800 bg-gradient-to-b from-white to-stone-50/50 dark:from-stone-900 dark:to-stone-950/60 shadow-lg hover:shadow-xl p-4 sm:p-6 flex flex-col justify-between overflow-y-auto overscroll-contain backface-hidden ${isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
@@ -639,7 +673,23 @@ export function MinnaFlashcardsModal({
                       <RotateCw className="w-3 h-3" /> Tap to flip back
                     </span>
                   </div>
+                </div>
               </div>
+            </div>
+
+            {/* Swipe Gestures Visual Guide */}
+            <div className="flex items-center justify-between text-[11px] font-bold px-2 py-0.5 text-stone-400 select-none">
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                <span>←</span>
+                <span>Swipe Left: Re-learn Hub</span>
+              </span>
+              <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
+              <span className="text-[10px] text-stone-400 hidden sm:inline">Tap card to Flip</span>
+              <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span>Swipe Right: Learned</span>
+                <span>→</span>
+              </span>
             </div>
           </div>
 

@@ -19,6 +19,7 @@ import { setVocabStatus } from '@/services/vocabStorage';
 import { loadCustomLessons } from '@/services/minnaStorage';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
 import { FuriganaText } from '@/components/common/FuriganaText';
+import { useSwipeCard } from '@/utils/useSwipeCard';
 
 export type FlashcardDirection = 'en_to_ja' | 'ja_to_en';
 export type FlashcardStudyMode = 'en_to_ja' | 'ja_to_en' | 'combined';
@@ -364,6 +365,14 @@ export function FlashcardsView({
     if (currentCard.type === 'vocabulary') {
       const vocabId = currentCard.id.replace('vocab_', '');
       await setVocabStatus(vocabId, currentCard.lessonNumber, status);
+    } else if (currentCard.type === 'kanji') {
+      const match = kanjiList.find(k => k.character === currentCard.primaryJapanese || k.character === currentCard.kanji);
+      if (match) {
+        storage.updateKanjiProgress(match.id, {
+          learning_status: status === 'learned' ? 'learned' : 'needs_revision',
+          last_studied_at: new Date().toISOString()
+        });
+      }
     }
 
     setCardStatusToast({
@@ -374,6 +383,21 @@ export function FlashcardsView({
 
     onRefreshProgress?.();
   };
+
+  // Swipe Gestures: Swipe Right -> Learned, Swipe Left -> Re-learn Hub, Tap -> Flip
+  const swipe = useSwipeCard({
+    onSwipeRight: () => {
+      handleMarkStatus('learned');
+      handleNext();
+    },
+    onSwipeLeft: () => {
+      handleMarkStatus('not_sure');
+      handleNext();
+    },
+    onTap: () => setIsFlipped(prev => !prev),
+    threshold: 75,
+    disabled: phase !== 'active_player' || !currentCard
+  });
 
   // Keyboard navigation
   useEffect(() => {
@@ -1165,13 +1189,37 @@ export function FlashcardsView({
         </div>
       )}
 
-      {/* 3D Interactive Touch-Friendly Flashcard Container */}
-      <div className="w-full perspective-1000">
+      {/* 3D Interactive Touch-Friendly Flashcard Container with Swipe Gestures */}
+      <div className="w-full perspective-1000 overflow-hidden py-1">
         <div
-          onClick={() => setIsFlipped(prev => !prev)}
-          className={`relative w-full rounded-3xl transition-transform duration-500 ease-out transform-style-preserve-3d cursor-pointer min-h-[310px] xs:min-h-[350px] sm:min-h-[400px] md:min-h-[430px] select-none ${isFlipped ? 'rotate-y-180' : ''
-            }`}
+          {...swipe.handlers}
+          style={swipe.cardStyle}
+          className="relative w-full cursor-grab active:cursor-grabbing select-none"
         >
+          {/* Swipe Right Overlay Badge: LEARNED */}
+          <div
+            className="absolute top-4 right-4 z-30 pointer-events-none transition-opacity duration-75 flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-emerald-600 text-white font-black text-xs sm:text-sm shadow-xl border-2 border-emerald-400 rotate-12"
+            style={{ opacity: swipe.rightOpacity }}
+          >
+            <Check className="w-4 h-4 stroke-[3]" />
+            <span>LEARNED</span>
+          </div>
+
+          {/* Swipe Left Overlay Badge: RE-LEARN HUB */}
+          <div
+            className="absolute top-4 left-4 z-30 pointer-events-none transition-opacity duration-75 flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-amber-500 text-stone-950 font-black text-xs sm:text-sm shadow-xl border-2 border-amber-300 -rotate-12"
+            style={{ opacity: swipe.leftOpacity }}
+          >
+            <Zap className="w-4 h-4 fill-stone-950 stroke-[2]" />
+            <span>RE-LEARN HUB</span>
+          </div>
+
+          {/* Inner 3D Flip Card */}
+          <div
+            className={`relative w-full rounded-3xl transition-transform duration-500 ease-out transform-style-preserve-3d min-h-[310px] xs:min-h-[350px] sm:min-h-[400px] md:min-h-[430px] ${
+              isFlipped ? 'rotate-y-180' : ''
+            }`}
+          >
           {/* ==================== FRONT FACE: QUESTION ONLY ==================== */}
           <div
             className={`absolute inset-0 w-full h-full rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl p-4 sm:p-7 flex flex-col justify-between overflow-y-auto overscroll-contain backface-hidden ${isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
@@ -1450,14 +1498,30 @@ export function FlashcardsView({
                   </div>
                 </div>
 
-            {/* Back Footer */}
-              <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-100 dark:border-stone-800">
-                <span className="truncate max-w-[180px]">{currentCard.category || 'Minna no Nihongo'}</span>
-                <span className="shrink-0 flex items-center gap-1">
-                  <RotateCw className="w-3 h-3" /> Tap to flip back
-                </span>
+                {/* Back Footer */}
+                <div className="flex items-center justify-between text-[11px] text-stone-400 pt-2 border-t border-stone-100 dark:border-stone-800">
+                  <span className="truncate max-w-[180px]">{currentCard.category || 'Minna no Nihongo'}</span>
+                  <span className="shrink-0 flex items-center gap-1">
+                    <RotateCw className="w-3 h-3" /> Tap to flip back
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Swipe Gestures Visual Guide */}
+          <div className="flex items-center justify-between text-[11px] font-bold px-3 py-1 text-stone-400 select-none">
+            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <span>←</span>
+              <span>Swipe Left: Re-learn Hub</span>
+            </span>
+            <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
+            <span className="text-[10px] text-stone-400 hidden sm:inline">Tap card to Flip</span>
+            <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <span>Swipe Right: Learned</span>
+              <span>→</span>
+            </span>
           </div>
         </div>
 
