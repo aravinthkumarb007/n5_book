@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { callGroqChat } from '@/services/groqService';
+import { callUnifiedAi } from '@/services/aiRouter';
 import { evaluateExamResults } from '@/services/minnaQuizEngine';
 import { ExamAnswerLog } from '@/types/minna';
 
@@ -10,13 +10,14 @@ export async function POST(request: Request) {
       examTitle = 'Minna Japanese Assessment',
       lessonNumbers = [1],
       answers = [],
-      timeSpentSeconds = 60
+      timeSpentSeconds = 60,
+      provider
     } = body;
 
     // First, compute the deterministic diagnostic
     const localResult = evaluateExamResults(examTitle, lessonNumbers, answers, timeSpentSeconds);
 
-    // Call Groq AI for an advanced, personalized evaluation if errors exist
+    // Call Unified AI (Groq / Gemini) for an advanced, personalized evaluation if errors exist
     const incorrectAnswers = (answers as ExamAnswerLog[]).filter(a => !a.isCorrect);
 
     if (incorrectAnswers.length > 0) {
@@ -34,35 +35,39 @@ Output a JSON object with:
 Lessons tested: ${lessonNumbers.join(', ')}
 Incorrect answers sample:
 ${JSON.stringify(incorrectAnswers.slice(0, 5).map(a => ({
-  prompt: a.prompt,
-  userAnswer: a.userAnswer,
-  correctAnswer: a.correctAnswer,
-  category: a.category
-})))}
+          prompt: a.prompt,
+          userAnswer: a.userAnswer,
+          correctAnswer: a.correctAnswer,
+          category: a.category
+        })))}
 
 Provide insightful, actionable study recommendations for this student.`;
 
-        const response = await callGroqChat({
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 800,
-          response_format: { type: 'json_object' }
-        });
+          const response = await callUnifiedAi({
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            provider,
+            temperature: 0.3,
+            max_tokens: 800,
+          jsonMode: true,
+            allowFallback: true
+          });
 
-        const parsed = JSON.parse(response.content);
-        if (parsed.summary) {
-          localResult.aiDiagnostic = {
-            summary: parsed.summary,
-            strengths: parsed.strengths || localResult.aiDiagnostic?.strengths || [],
-            areasToImprove: parsed.areasToImprove || localResult.aiDiagnostic?.areasToImprove || [],
-            recommendations: parsed.recommendations || localResult.aiDiagnostic?.recommendations || []
-          };
+        if (response.success && response.content) {
+          const parsed = JSON.parse(response.content);
+          if (parsed.summary) {
+            localResult.aiDiagnostic = {
+              summary: parsed.summary,
+              strengths: parsed.strengths || localResult.aiDiagnostic?.strengths || [],
+              areasToImprove: parsed.areasToImprove || localResult.aiDiagnostic?.areasToImprove || [],
+              recommendations: parsed.recommendations || localResult.aiDiagnostic?.recommendations || []
+            };
+          }
         }
       } catch (aiErr) {
-        console.warn('AI evaluation Groq call failed, keeping deterministic diagnostic:', aiErr);
+        console.warn('AI evaluation unified call failed, keeping deterministic diagnostic:', aiErr);
       }
     }
 

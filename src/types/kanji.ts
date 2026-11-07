@@ -74,7 +74,7 @@ export interface UserKanjiProgress {
   incorrect_history: string[];
 }
 
-export type QuizQuestionType = 
+export type QuizQuestionType =
   | 'kanji_to_english'
   | 'english_to_kanji'
   | 'kanji_to_onyomi'
@@ -89,6 +89,7 @@ export interface QuizQuestion {
   id: string;
   kanjiId: number;
   type: QuizQuestionType;
+  difficulty?: 'easy' | 'medium' | 'hard';
   prompt: string;
   secondaryPrompt?: string;
   contextSentence?: string;
@@ -134,7 +135,7 @@ export interface UserSettings {
 }
 
 export interface ApiConfiguration {
-  provider: 'groq';
+  provider: 'groq' | 'gemini';
   apiKey: string;
   model: string;
   endpoint: string;
@@ -142,6 +143,11 @@ export interface ApiConfiguration {
   maskedKey?: string;
   status?: 'active' | 'error' | 'unconfigured';
   lastTestedAt?: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+  geminiMaskedKey?: string;
+  geminiEnabled?: boolean;
+  activeProvider?: 'groq' | 'gemini';
 }
 
 export type FlashcardRating = 'again' | 'hard' | 'good' | 'easy';
