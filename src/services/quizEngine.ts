@@ -61,10 +61,15 @@ export class QuizEngine {
    * Generates a standard practice quiz strictly from the learned kanji pool.
    * Unlearned kanji NEVER appear in questions or distractors.
    */
-  generateQuiz(type: QuizQuestionType, requestedCount: number = 10, customPool?: KanjiRecord[]): {
-    questions: QuizQuestion[];
-    error?: string;
-  } {
+    generateQuiz(
+      type: QuizQuestionType,
+      requestedCount: number = 10,
+      customPool?: KanjiRecord[],
+      difficulty: 'easy' | 'medium' | 'hard' = 'medium'
+    ): {
+      questions: QuizQuestion[];
+      error?: string;
+    } {
     const pool = customPool && customPool.length > 0 ? customPool : this.getEligibleKanjiPool();
 
     if (pool.length === 0) {
@@ -80,7 +85,7 @@ export class QuizEngine {
 
     for (let i = 0; i < count; i++) {
       const targetKanji = shuffledPool[i % shuffledPool.length];
-      const q = this.createSingleQuestion(targetKanji, type, pool, `q_${Date.now()}_${i}`);
+      const q = this.createSingleQuestion(targetKanji, type, pool, `q_${Date.now()}_${i}`, difficulty);
       if (q) {
         questions.push(q);
       }
@@ -159,7 +164,8 @@ export class QuizEngine {
     target: KanjiRecord,
     type: QuizQuestionType,
     pool: KanjiRecord[],
-    id: string
+    id: string,
+    difficulty: 'easy' | 'medium' | 'hard' = 'medium'
   ): QuizQuestion | null {
     const learnedChars = new Set(pool.map(k => k.character));
     let actualType = type;
@@ -352,7 +358,7 @@ export class QuizEngine {
           return this.createSingleQuestion(target, 'kanji_to_english', pool, id);
         }
         const sampleSentence = sentences[Math.floor(Math.random() * sentences.length)];
-        
+
         // STRICT SANITIZATION: Never expose unlearned kanji in the prompt!
         const sanitizedPrompt = sanitizeSentencePrompt(sampleSentence, target.character, learnedChars);
         const correctAnswer = target.character;

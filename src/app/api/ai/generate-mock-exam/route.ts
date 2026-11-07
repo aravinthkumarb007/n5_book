@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { callGroqChat } from '@/services/groqService';
-import { 
-  OFFICIAL_N5_EXAM_CONFIGS, 
-  SAMPLE_DEV_N5_QUESTION 
+import { callUnifiedAi } from '@/services/aiRouter';
+import {
+  OFFICIAL_N5_EXAM_CONFIGS,
+  SAMPLE_DEV_N5_QUESTION
 } from '@/services/mockExamAiEngine';
 import { MockExamMode, MockExamQuestion } from '@/types/mockExam';
 
@@ -12,8 +12,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const mode: MockExamMode = body.mode || 'full';
-    const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints) 
-      ? body.pastQuestionFingerprints 
+    const provider = body.provider === 'groq' || body.provider === 'gemini' ? body.provider : undefined;
+    const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints)
+      ? body.pastQuestionFingerprints
       : [];
 
     const examConfig = OFFICIAL_N5_EXAM_CONFIGS[mode] || OFFICIAL_N5_EXAM_CONFIGS.full;
@@ -78,7 +79,7 @@ Return a JSON object matching this schema:
   ]
 }`;
 
-    const requestedCategoriesDesc = targetSections.map(s => 
+    const requestedCategoriesDesc = targetSections.map(s =>
       `Section "${s.section}" (${s.titleEn}): ${s.categories.map(c => `${c.count} questions of category "${c.id}" (${c.nameEn})`).join(', ')}`
     ).join('\n');
 
@@ -92,18 +93,20 @@ ${JSON.stringify(pastFingerprints.slice(-10))}
 
 Return strictly valid JSON with the "questions" array.`;
 
-    const aiResult = await callGroqChat({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 3500,
-      response_format: { type: 'json_object' },
-      timeoutMs: 30000
-    });
+      const aiResult = await callUnifiedAi({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        provider,
+        temperature: 0.3,
+        max_tokens: 3500,
+      jsonMode: true,
+        timeoutMs: 30000,
+        allowFallback: true
+      });
 
-    if (aiResult.success) {
+        if (aiResult.success && aiResult.content) {
       try {
         const parsed = JSON.parse(aiResult.content);
         let rawQuestions: any[] = parsed.questions || [];
@@ -135,7 +138,8 @@ Return strictly valid JSON with the "questions" array.`;
         if (validQuestions.length >= 5) {
           return NextResponse.json({
             success: true,
-            source: 'groq_ai',
+            source: aiResult.fallbackOccurred ? `${aiResult.providerUsed}_fallback` : `${aiResult.providerUsed}_ai`,
+            providerUsed: aiResult.providerUsed,
             model: aiResult.modelUsed,
             examConfig,
             questions: validQuestions
@@ -275,8 +279,8 @@ Return strictly valid JSON with the "questions" array.`;
     ];
 
     // Filter fallback according to mode
-    const filteredFallback = mode === 'full' 
-      ? fallbackQuestions 
+    const filteredFallback = mode === 'full'
+      ? fallbackQuestions
       : fallbackQuestions.filter(q => q.section === mode);
 
     return NextResponse.json({

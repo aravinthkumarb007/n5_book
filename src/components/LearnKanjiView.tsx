@@ -143,7 +143,7 @@ export function LearnKanjiView({
       <div className="space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
         {/* Top Banner & Quick Office Study Trigger */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-rose-700 to-stone-900 p-4 sm:p-6 md:p-8 text-white shadow-xl w-full max-w-full min-w-0">
-            <div className="absolute right-0 top-0 -mt-6 -mr-6 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="absolute right-0 top-0 -mt-6 mr-0 h-48 w-48 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                   <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 w-full min-w-0">
                     <div className="min-w-0 flex-1">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] sm:text-xs font-medium tracking-wide uppercase mb-2 sm:mb-3 max-w-full">
@@ -353,11 +353,11 @@ export function LearnKanjiView({
                                                     return (
                                                       <div
                                                         key={lvl.level}
-              className={`rounded-2xl border transition-all w-full max-w-full min-w-0 overflow-hidden ${isUnlocked
+                                                        className={`rounded-2xl border transition-all w-full max-w-full min-w-0 overflow-hidden ${isUnlocked
                                                           ? 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 shadow-sm'
                                                           : 'bg-stone-50/70 dark:bg-stone-950/40 border-stone-200/60 dark:border-stone-900 opacity-90'
-                } p - 3 sm:p-5 md:p-6`}
-            >
+                                                        } p-3.5 sm:p-5 md:p-6`}
+                                                      >
                                                   {/* Level Header */}
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-stone-100 dark:border-stone-800 w-full min-w-0">
                                                       <div className="min-w-0 flex-1">

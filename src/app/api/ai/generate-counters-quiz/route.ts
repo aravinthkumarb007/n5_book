@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { callGroqChat } from '@/services/groqService';
+import { callUnifiedAi } from '@/services/aiRouter';
 import { CountersTestCategory, CountersTestQuestion } from '@/types/counters';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +9,10 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const category: CountersTestCategory = body.category || 'mixed';
     const count: number = Math.min(20, Math.max(5, body.count || 8));
-    const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints) 
-      ? body.pastQuestionFingerprints 
+    const difficulty: 'easy' | 'medium' | 'hard' = body.difficulty || 'medium';
+    const provider = body.provider === 'groq' || body.provider === 'gemini' ? body.provider : undefined;
+    const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints)
+      ? body.pastQuestionFingerprints
       : [];
 
     const categoryNames: Record<CountersTestCategory, string> = {
@@ -57,19 +59,43 @@ Return valid JSON with a "questions" array matching:
   ]
 }`;
 
-    const userPrompt = `Generate ${count} questions for category "${categoryNames[category]}".
-Avoid these recent prompts:
-${JSON.stringify(pastFingerprints.slice(-10))}`;
+    let difficultyRules = '';
+    if (difficulty === 'easy') {
+      difficultyRules = `DIFFICULTY: EASY (初級)
+      - Focus on basic regular numbers(1 - 100) or regular counters without complex sound changes(e.g.枚 for flat objects, 台 for machines, 人 for 3 + people).
+- Keep context sentences short and direct.`;
+    } else if (difficulty === 'hard') {
+      difficultyRules = `DIFFICULTY: HARD(上級) - MANDATORY RULES:
+    - DO NOT generate simple straightforward numbers or easy regular counters!
+      - Focus intensely on deceptive irregular readings and pronunciation traps:
+  * Irregular dates: 4日(よっか vs よんにち), 8日(ようか vs はちのひ), 14日(じゅうよっか), 20日(はつか), 24日(にじゅうよっか).
+  * Counters with rendaku / gemination: 3本(さんぼん), 1本(いっぽん), 3匹(さんびき), 6匹(ろっぴき), 3階(さんがい), 1足(いっそく), 20歳(はたち).
+  * Time traps: 4時(よじ, NOT よんじ / しじ), 9時(くじ, NOT きゅうじ), 30分(さんじゅっぷん / はん).
+  * Duration vs Clock time: 2時間(2 hours) vs 2時(2:00).
+- Distractors MUST be plausible pronunciation traps that students typically confuse.`;
+    } else {
+      difficultyRules = `DIFFICULTY: MEDIUM(中級)
+      - Focus on standard N5 sound changes: 1本(いっぽん), 3本(さんぼん), 8本(はっぽん), 1分(いっぷん), 3分(さんぷん), 4月(しがつ), 9月(くがつ).`;
+    }
 
-    const aiResult = await callGroqChat({
+    const userPrompt = `Generate ${ count } questions strictly at ${ difficulty.toUpperCase() } difficulty for category "${categoryNames[category]}".
+
+      ${ difficultyRules }
+
+Avoid these recent prompts:
+${ JSON.stringify(pastFingerprints.slice(-10)) } `;
+
+    const aiResult = await callUnifiedAi({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.25,
-      max_tokens: 2200,
-      response_format: { type: 'json_object' },
-      timeoutMs: 25000
+      provider,
+      temperature: difficulty === 'hard' ? 0.35 : 0.25,
+      max_tokens: 2500,
+      jsonMode: true,
+      timeoutMs: 25000,
+      allowFallback: true
     });
 
     if (aiResult.success) {
@@ -84,7 +110,7 @@ ${JSON.stringify(pastFingerprints.slice(-10))}`;
             return true;
           })
           .map((q, idx) => ({
-            id: `counters_q_${Date.now()}_${idx + 1}`,
+            id: `counters_q_${ Date.now() }_${ idx + 1 } `,
             category,
             categoryName: categoryNames[category],
             prompt: q.prompt,
@@ -98,7 +124,10 @@ ${JSON.stringify(pastFingerprints.slice(-10))}`;
         if (validQuestions.length >= 4) {
           return NextResponse.json({
             success: true,
-            source: 'groq_ai',
+            source: aiResult.fallbackOccurred ? `${ aiResult.providerUsed } _fallback` : `${ aiResult.providerUsed } _ai`,
+            providerUsed: aiResult.providerUsed,
+            model: aiResult.modelUsed,
+            difficulty,
             questions: validQuestions
           });
         }
