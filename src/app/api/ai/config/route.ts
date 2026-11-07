@@ -1,40 +1,52 @@
 import { NextResponse } from 'next/server';
-import { getEffectiveGroqConfig, maskApiKey, updateRuntimeGroqConfig } from '@/services/groqService';
+import { updateRuntimeGroqConfig } from '@/services/groqService';
+import { updateRuntimeGeminiConfig } from '@/services/geminiService';
+import { getAllAiProviderStatuses, setActiveAiProvider, AiProvider } from '@/services/aiRouter';
 
 export async function GET() {
-  const config = getEffectiveGroqConfig();
+  const statuses = getAllAiProviderStatuses();
   return NextResponse.json({
-    configured: Boolean(config.apiKey),
-    maskedKey: maskApiKey(config.apiKey),
-    model: config.model,
-    endpoint: config.endpoint,
-    enabled: config.enabled,
-    provider: 'groq'
+    ...statuses,
+    // backward-compatibility fields for legacy callers
+    configured: statuses.groq.configured || statuses.gemini.configured,
+    model: statuses.activeProvider === 'gemini' ? statuses.gemini.model : statuses.groq.model,
+    maskedKey: statuses.activeProvider === 'gemini' ? statuses.gemini.maskedKey : statuses.groq.maskedKey
   });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { apiKey, model, endpoint, enabled } = body;
+    const { provider = 'groq', apiKey, model, endpoint, enabled, activeProvider } = body;
 
-    const updates: any = {};
-    if (apiKey !== undefined) updates.apiKey = apiKey.trim();
-    if (model !== undefined) updates.model = model.trim();
-    if (endpoint !== undefined) updates.endpoint = endpoint.trim();
-    if (enabled !== undefined) updates.enabled = Boolean(enabled);
+    if (activeProvider && (activeProvider === 'groq' || activeProvider === 'gemini')) {
+      setActiveAiProvider(activeProvider as AiProvider);
+    }
 
-    updateRuntimeGroqConfig(updates);
-    const updated = getEffectiveGroqConfig();
+    if (provider === 'gemini') {
+      const updates: any = {};
+      if (apiKey !== undefined) updates.apiKey = apiKey.trim();
+      if (model !== undefined) updates.model = model.trim();
+      if (endpoint !== undefined) updates.endpoint = endpoint.trim();
+      if (enabled !== undefined) updates.enabled = Boolean(enabled);
+
+      updateRuntimeGeminiConfig(updates);
+    } else {
+      const updates: any = {};
+      if (apiKey !== undefined) updates.apiKey = apiKey.trim();
+      if (model !== undefined) updates.model = model.trim();
+      if (endpoint !== undefined) updates.endpoint = endpoint.trim();
+      if (enabled !== undefined) updates.enabled = Boolean(enabled);
+
+      updateRuntimeGroqConfig(updates);
+    }
+
+    const statuses = getAllAiProviderStatuses();
 
     return NextResponse.json({
       success: true,
-      message: 'API configuration updated successfully.',
-      configured: Boolean(updated.apiKey),
-      maskedKey: maskApiKey(updated.apiKey),
-      model: updated.model,
-      endpoint: updated.endpoint,
-      enabled: updated.enabled
+      message: `${provider === 'gemini' ? 'Google Gemini' : 'Groq AI'} configuration updated successfully.`,
+      ...statuses
     });
   } catch (err: any) {
     return NextResponse.json(
@@ -44,10 +56,35 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
-  updateRuntimeGroqConfig({ apiKey: '', enabled: false });
-  return NextResponse.json({
-    success: true,
-    message: 'API key removed from server memory.'
-  });
-}
+  export async function DELETE(request: Request) {
+    try {
+      const { searchParams } = new URL(request.url);
+      const provider = searchParams.get('provider');
+
+      if (provider === 'gemini') {
+        updateRuntimeGeminiConfig({ apiKey: '', enabled: false });
+        return NextResponse.json({
+          success: true,
+          message: 'Google Gemini API key removed from server memory.'
+        });
+      } else if (provider === 'groq') {
+        updateRuntimeGroqConfig({ apiKey: '', enabled: false });
+        return NextResponse.json({
+          success: true,
+          message: 'Groq API key removed from server memory.'
+        });
+      } else {
+        updateRuntimeGroqConfig({ apiKey: '', enabled: false });
+        updateRuntimeGeminiConfig({ apiKey: '', enabled: false });
+        return NextResponse.json({
+          success: true,
+          message: 'All AI provider keys removed from server memory.'
+        });
+      }
+    } catch (err: any) {
+      return NextResponse.json(
+        { success: false, error: err.message || 'Failed to clear key' },
+        { status: 500 }
+      );
+    }
+  }

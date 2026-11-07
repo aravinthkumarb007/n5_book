@@ -21,6 +21,21 @@ import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
 import { FuriganaText } from '@/components/common/FuriganaText';
 import { useSwipeCard } from '@/utils/useSwipeCard';
 
+/**
+ * Fisher-Yates (Knuth) Unbiased Shuffle Algorithm
+ * Ensures truly uniform randomized distribution without omissions or duplicates
+ */
+export function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = result[i];
+    result[i] = result[j];
+    result[j] = temp;
+  }
+  return result;
+}
+
 export type FlashcardDirection = 'en_to_ja' | 'ja_to_en';
 export type FlashcardStudyMode = 'en_to_ja' | 'ja_to_en' | 'combined';
 export type FlashcardContentType = 'both' | 'vocab' | 'kanji';
@@ -299,23 +314,34 @@ export function FlashcardsView({
     setPhase('select_mode');
   };
 
-  // Launch flashcards with chosen mode
+  // Launch flashcards with chosen mode - automatically randomized with Fisher-Yates shuffle
   const handleStartSession = (mode: FlashcardStudyMode) => {
     setStudyMode(mode);
-    const deck = generateFlashcardDeck(selectedLessons, contentType, mode);
-    setSessionCards(deck);
+    const rawDeck = generateFlashcardDeck(selectedLessons, contentType, mode);
+    // Apply Fisher-Yates shuffle so vocabulary is never memorized sequentially
+    const shuffledDeck = shuffleArray(rawDeck);
+    setSessionCards(shuffledDeck);
     setCurrentIndex(0);
     setIsFlipped(false);
     setContentFilter('all');
     setPhase('active_player');
   };
 
-  // Shuffle current cards
+  // Re-shuffle current session cards using Fisher-Yates algorithm
   const handleShuffle = () => {
-    const shuffled = [...sessionCards].sort(() => Math.random() - 0.5);
-    setSessionCards(shuffled);
+    setSessionCards(prev => shuffleArray(prev));
     setCurrentIndex(0);
     setIsFlipped(false);
+  };
+
+  // Restart practice session with brand new Fisher-Yates shuffled order
+  const handleRestartSession = () => {
+    const rawDeck = generateFlashcardDeck(selectedLessons, contentType, studyMode);
+    const freshShuffledDeck = shuffleArray(rawDeck);
+    setSessionCards(freshShuffledDeck);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setPhase('active_player');
   };
 
   // Switch study mode on the fly during session
@@ -1018,15 +1044,12 @@ export function FlashcardsView({
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 justify-center pt-2">
           <button
-            onClick={() => {
-              setCurrentIndex(0);
-              setIsFlipped(false);
-              setPhase('active_player');
-            }}
+            onClick={handleRestartSession}
             className="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition shadow-md flex items-center justify-center gap-1.5 active:scale-95"
+            title="Start new practice session with a freshly randomized shuffle order"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Study Again</span>
+            <span>Study Again (New Shuffle)</span>
           </button>
 
           <button
@@ -1157,10 +1180,11 @@ export function FlashcardsView({
 
           <button
             onClick={handleShuffle}
-            className="p-1.5 min-h-[32px] min-w-[32px] hidden sm:flex items-center justify-center rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition"
-            title="Shuffle Cards (S)"
+            className="px-2 py-1 min-h-[28px] rounded-lg text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200/60 dark:border-amber-900/40 transition flex items-center gap-1 text-[10px] xs:text-[11px] font-bold shrink-0"
+            title="Fisher-Yates Shuffle active. Click to re-randomize cards."
           >
-            <Shuffle className="w-4 h-4" />
+            <Shuffle className="w-3 h-3 text-amber-500" />
+            <span className="hidden xs:inline">Shuffled</span>
           </button>
 
           <span className="font-mono font-bold text-stone-500 text-[11px] xs:text-xs">

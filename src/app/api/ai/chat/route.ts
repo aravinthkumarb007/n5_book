@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { callGroqChat } from '@/services/groqService';
+import { callUnifiedAi } from '@/services/aiRouter';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { messages, userContext } = body;
+    const { messages, userContext, provider } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages array is required.' }, { status: 400 });
@@ -33,34 +33,37 @@ TEACHING GUIDELINES:
       ...messages.slice(-8) // keep recent 8 messages for context
     ];
 
-    const result = await callGroqChat({
-      messages: formattedMessages,
-      temperature: 0.7,
-      max_tokens: 1024
-    });
+      const result = await callUnifiedAi({
+        messages: formattedMessages,
+        provider,
+        temperature: 0.7,
+      max_tokens: 1024,
+        allowFallback: true
+      });
 
-    if (!result.success) {
-      const isAuth = result.error?.toLowerCase().includes('invalid api key') || 
-                     result.error?.toLowerCase().includes('not configured');
-      return NextResponse.json({
-        success: false,
-        error: isAuth 
-          ? 'Invalid Groq API Key. Please verify or re-copy your key from console.groq.com/keys.' 
-          : (result.error || 'Failed to generate response from Groq AI.'),
-        isAuthError: isAuth
-      }, { status: isAuth ? 401 : 502 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      reply: result.content,
-      modelUsed: result.modelUsed,
-      tokensUsed: result.tokensUsed
-    });
-  } catch (err: any) {
+      if(!result.success) {
+        const isAuth = result.error?.toLowerCase().includes('invalid api key') ||
+        result.error?.toLowerCase().includes('not configured');
     return NextResponse.json({
       success: false,
-      error: err.message || 'Server error in AI Japanese Tutor route.'
-    }, { status: 500 });
+      error: isAuth
+          ?'Invalid AI API Key. Please verify your Groq or Gemini key in Settings.'
+        : (result.error || 'Failed to generate response from AI Tutor.'),
+      isAuthError: isAuth
+    }, { status: isAuth ? 401 : 502 });
   }
+
+    return NextResponse.json({
+    success: true,
+    reply: result.content,
+    providerUsed: result.providerUsed,
+    modelUsed: result.modelUsed,
+    tokensUsed: result.tokensUsed
+  });
+} catch (err: any) {
+  return NextResponse.json({
+    success: false,
+      error: err.message || 'Error communicating with AI service.'
+  }, { status: 500 });
+}
 }

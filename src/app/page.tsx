@@ -5,7 +5,8 @@ import {
   LayoutDashboard, BookOpen, Zap, Layers, AlertTriangle,
   Calendar, Search, BarChart3, Bot, Settings as SettingsIcon,
   Flame, Clock, Moon, Sun, Menu, X, Sparkles, CheckCircle2, Cloud, GraduationCap,
-  FileCheck, Calculator, RefreshCw, ShieldCheck, RotateCcw
+  FileCheck, Calculator, RefreshCw, ShieldCheck, RotateCcw,
+  PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { KanjiRecord, UserKanjiProgress, UserSettings, QuizQuestionType } from '@/types/kanji';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
@@ -60,6 +61,41 @@ type NavView =
 export default function HomePage() {
   const [currentView, setCurrentView] = useState<NavView>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Load and persist desktop sidebar collapsed preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('n5_sidebar_collapsed');
+      if (saved !== null) {
+        setSidebarCollapsed(saved === 'true');
+      }
+    } catch {}
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('n5_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Keyboard shortcut Ctrl+B / Cmd+B for desktop sidebar expand/collapse
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        // Only if not typing in input or textarea
+        if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // App Data State
   const [progressList, setProgressList] = useState<UserKanjiProgress[]>([]);
@@ -249,14 +285,30 @@ export default function HomePage() {
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans flex flex-col selection:bg-red-500 selection:text-white w-full max-w-full overflow-x-hidden">
         {/* Top Application Header */}
             <header className="sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 w-full overflow-hidden">
-              <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
-                {/* Logo / Brand */}
+              <div className="max-w-[1720px] 2xl:max-w-[1880px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
+                {/* Logo / Brand & Desktop Sidebar Toggle */}
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    {/* Mobile Menu Drawer Button */}
                     <button
                       onClick={() => setMobileMenuOpen(prev => !prev)}
                       className="lg:hidden p-1.5 sm:p-2 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 shrink-0"
                     >
                       {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+
+                    {/* Desktop Sidebar Expand/Collapse Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={toggleSidebar}
+                      className="hidden lg:flex items-center justify-center p-2 rounded-xl text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer shrink-0"
+                      title={sidebarCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
+                      aria-label={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                    >
+                      {sidebarCollapsed ? (
+                        <PanelLeftOpen className="w-5 h-5 text-stone-600 dark:text-stone-300" />
+                      ) : (
+                        <PanelLeftClose className="w-5 h-5 text-stone-600 dark:text-stone-300" />
+                      )}
                     </button>
 
                     <div
@@ -269,8 +321,9 @@ export default function HomePage() {
                       <div className="min-w-0">
                           <span className="font-black text-xs sm:text-base md:text-lg tracking-tight flex items-center gap-1.5 truncate">
                             N5 漢字マスター
-                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 shrink-0 hidden xs:inline">
-                                Groq AI
+                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 shrink-0 hidden sm:inline-flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                                AI Powered
                               </span>
                             </span>
                             <span className="text-[10px] text-stone-400 hidden sm:block font-medium -mt-0.5 truncate">
@@ -347,7 +400,7 @@ export default function HomePage() {
                         ? 'bg-rose-600 text-white'
                         : 'bg-stone-900/90 dark:bg-stone-800/90 text-white'
                     }`}>
-                    <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
+                    <div className="max-w-[1720px] 2xl:max-w-[1880px] mx-auto w-full flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         {syncToastMessage.type === 'success' ? (
                           <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
@@ -369,37 +422,97 @@ export default function HomePage() {
                 )}
 
                 {/* Main Layout Body */}
-                  <div className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 flex flex-col lg:flex-row gap-0 lg:gap-6 min-w-0 overflow-x-hidden">
-                    {/* Desktop Sidebar Navigation */}
-                    <aside className="hidden lg:block w-64 shrink-0 space-y-1 select-none">
-                      <div className="sticky top-24 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-3 shadow-sm space-y-1">
-                        {navItems.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = currentView === item.id;
+                  <div className="flex-1 max-w-[1720px] 2xl:max-w-[1880px] mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 flex flex-col lg:flex-row gap-0 lg:gap-6 min-w-0 overflow-x-hidden">
+                    {/* Desktop Sidebar Navigation (Expandable & Collapsible) */}
+                    <aside
+                      className={`hidden lg:block shrink-0 select-none transition-all duration-300 ease-in-out ${
+                        sidebarCollapsed ? 'w-[74px]' : 'w-64'
+                      }`}
+                    >
+                      <div className="sticky top-20 bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-2 sm:p-2.5 shadow-sm space-y-1">
+                        {/* Sidebar Header & Toggle */}
+                        <div className={`flex items-center pb-2 mb-1 border-b border-stone-100 dark:border-stone-800 ${
+                          sidebarCollapsed ? 'justify-center' : 'justify-between px-2'
+                        }`}>
+                          {!sidebarCollapsed && (
+                            <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                              Navigation Menu
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={toggleSidebar}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
+                            title={sidebarCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
+                            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                          >
+                            {sidebarCollapsed ? (
+                              <PanelLeftOpen className="w-4 h-4" />
+                            ) : (
+                              <PanelLeftClose className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
 
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => setCurrentView(item.id)}
-                              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${isActive
-                                ? 'bg-red-600 text-white shadow-md'
-                                : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                        {/* Navigation Items List */}
+                        <div className="space-y-1">
+                          {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = currentView === item.id;
+                            const tooltipText = `${item.label}${item.badge ? ` (${item.badge})` : ''}`;
+
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => setCurrentView(item.id)}
+                                title={sidebarCollapsed ? tooltipText : undefined}
+                                className={`w-full flex items-center rounded-xl text-xs font-bold transition group relative ${
+                                  sidebarCollapsed
+                                    ? 'justify-center p-3 h-11'
+                                    : 'justify-between px-3 py-2.5'
+                                } ${
+                                  isActive
+                                    ? 'bg-red-600 text-white shadow-md'
+                                    : 'text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
                                 }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-stone-400'}`} />
-                                <span>{item.label}</span>
-                              </div>
+                              >
+                                <div className={`flex items-center ${sidebarCollapsed ? 'justify-center relative' : 'gap-3 min-w-0'}`}>
+                                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-200'}`} />
+                                  
+                                  {!sidebarCollapsed && (
+                                    <span className="truncate">{item.label}</span>
+                                  )}
 
-                              {item.badge && (
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${isActive ? 'bg-white/20 text-white' : item.badgeColor || 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
+                                  {/* Notification Dot when collapsed */}
+                                  {sidebarCollapsed && item.badge && (
+                                    <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-stone-900" />
+                                  )}
+                                </div>
+
+                                {/* Detailed Badge when expanded */}
+                                {!sidebarCollapsed && item.badge && (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold shrink-0 ${
+                                    isActive ? 'bg-white/20 text-white' : item.badgeColor || 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'
                                   }`}>
-                                  {item.badge}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                                    {item.badge}
+                                  </span>
+                                )}
+
+                                {/* Hover Floating Tooltip when collapsed */}
+                                {sidebarCollapsed && (
+                                  <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-bold rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap flex items-center gap-1.5">
+                                    <span>{item.label}</span>
+                                    {item.badge && (
+                                      <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[9px] font-mono">
+                                        {item.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </aside>
 

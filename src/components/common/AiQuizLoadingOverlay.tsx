@@ -45,7 +45,7 @@ export const AiQuizLoadingOverlay: React.FC<AiQuizLoadingOverlayProps> = ({
       <div className="relative w-full max-w-md bg-stone-900 border border-stone-800 rounded-3xl p-8 shadow-2xl text-center space-y-6 overflow-hidden">
         {/* Ambient glow */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-red-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 right-0 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
 
         {/* Central Animated Spinner Icon */}
         <div className="relative mx-auto w-24 h-24 flex items-center justify-center">

@@ -160,7 +160,7 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
 
         {/* Hero Banner */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-900 to-red-950 text-white p-6 sm:p-10 border border-stone-800 shadow-2xl w-full max-w-full min-w-0">
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 right-0 -mt-10 mr-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 right-1/4 -mb-10 w-64 h-64 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 max-w-3xl space-y-4">
