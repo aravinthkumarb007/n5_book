@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   RotateCw, Volume2, Sparkles, CheckCircle2, AlertTriangle,
   ChevronRight, ChevronLeft, Shuffle, Check, X, HelpCircle,
-  BookOpen, Layers, ArrowRight, ShieldCheck, RefreshCw, Zap
+  BookOpen, Layers, ArrowRight, ArrowUp, ShieldCheck, RefreshCw, Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MinnaVocabularyItem, VocabLearningStatus } from '@/types/minna';
@@ -154,10 +154,11 @@ export function MinnaFlashcardsModal({
     setSessionCompleted(false);
   };
 
-  // Swipe Gestures: Swipe Right -> Learned, Swipe Left -> Re-learn Hub, Tap -> Flip
+  // Swipe Gestures: Swipe Right -> Learned, Swipe Left -> Re-learn Hub, Swipe Up -> Next Card, Tap -> Flip
   const swipe = useSwipeCard({
     onSwipeRight: () => handleRate('learned'),
     onSwipeLeft: () => handleRate('not_sure'),
+    onSwipeUp: () => handleNext(),
     onTap: () => setIsFlipped(prev => !prev),
     threshold: 75,
     disabled: sessionCompleted || cards.length === 0
@@ -422,6 +423,15 @@ export function MinnaFlashcardsModal({
                 <span>RE-LEARN HUB</span>
               </div>
 
+              {/* Swipe Up Overlay Badge: NEXT CARD */}
+              <div
+                className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-opacity duration-75 flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-sky-600 text-white font-black text-xs sm:text-sm shadow-xl border-2 border-sky-400"
+                style={{ opacity: swipe.upOpacity }}
+              >
+                <ArrowUp className="w-4 h-4 stroke-[3]" />
+                <span>NEXT CARD</span>
+              </div>
+
               {/* Inner 3D Flip Card */}
               <div
                 className={`relative w-full rounded-3xl transition-transform duration-500 ease-out transform-style-preserve-3d min-h-[270px] xs:min-h-[300px] sm:min-h-[350px] ${
@@ -678,16 +688,21 @@ export function MinnaFlashcardsModal({
             </div>
 
             {/* Swipe Gestures Visual Guide */}
-            <div className="flex items-center justify-between text-[11px] font-bold px-2 py-0.5 text-stone-400 select-none">
+            <div className="flex items-center justify-between text-[10px] xs:text-[11px] font-bold px-2 py-0.5 text-stone-400 select-none flex-wrap gap-y-1">
               <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                 <span>←</span>
-                <span>Swipe Left: Re-learn Hub</span>
+                <span>Re-learn Hub</span>
               </span>
               <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
-              <span className="text-[10px] text-stone-400 hidden sm:inline">Tap card to Flip</span>
+              <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400 font-extrabold">
+                <span>↑</span>
+                <span>Swipe Up: Next</span>
+              </span>
+              <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
+              <span className="text-[10px] text-stone-400 hidden sm:inline">Tap: Flip</span>
               <span className="text-stone-300 dark:text-stone-700 hidden xs:inline">•</span>
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <span>Swipe Right: Learned</span>
+                <span>Learned</span>
                 <span>→</span>
               </span>
             </div>
