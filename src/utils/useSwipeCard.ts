@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 export interface UseSwipeCardOptions {
   onSwipeRight: () => void; // Swipe right -> Learned
   onSwipeLeft: () => void;  // Swipe left -> Vocabulary Re-learning Hub
+  onSwipeUp?: () => void;   // Swipe up -> Move to next card
   onTap?: () => void;       // Tap -> Flip card
   threshold?: number;       // Pixels needed to trigger swipe action (default: 75)
   disabled?: boolean;
@@ -14,28 +15,30 @@ export interface UseSwipeCardOptions {
  * Custom hook to enable mobile & desktop swipe gestures on flashcards:
  * - Swipe Right -> Mark as Learned & advance to next card
  * - Swipe Left  -> Add to Vocabulary Re-learning Hub & advance to next card
+ * - Swipe Up    -> Move directly to the next card
  * - Clean Tap   -> Flip card between question and answer
  */
 export function useSwipeCard({
   onSwipeRight,
   onSwipeLeft,
+  onSwipeUp,
   onTap,
   threshold = 75,
   disabled = false
 }: UseSwipeCardOptions) {
-  const [dragOffset, setDragOffset] = useState(0);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [flyOut, setFlyOut] = useState<'left' | 'right' | null>(null);
+  const [flyOut, setFlyOut] = useState<'left' | 'right' | 'up' | null>(null);
 
   const startPos = useRef<{ x: number; y: number; time: number } | null>(null);
-  const isHorizontalGesture = useRef<boolean | null>(null);
-  const currentDragOffset = useRef(0);
+  const gestureType = useRef<'horizontal' | 'up' | null>(null);
+  const currentDragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   currentDragOffset.current = dragOffset;
 
   useEffect(() => {
     if (disabled) {
-      setDragOffset(0);
+      setDragOffset({ x: 0, y: 0 });
       setIsDragging(false);
       setFlyOut(null);
     }
@@ -47,7 +50,7 @@ export function useSwipeCard({
       return;
     }
     startPos.current = { x: clientX, y: clientY, time: Date.now() };
-    isHorizontalGesture.current = null;
+    gestureType.current = null;
     setIsDragging(true);
   };
 
@@ -57,17 +60,27 @@ export function useSwipeCard({
     const deltaX = clientX - startPos.current.x;
     const deltaY = clientY - startPos.current.y;
 
-    // Detect horizontal swipe vs vertical scroll
-    if (isHorizontalGesture.current === null) {
+    // Detect gesture direction once displacement exceeds 8px
+    if (gestureType.current === null) {
       if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
-        isHorizontalGesture.current = Math.abs(deltaX) >= Math.abs(deltaY);
+        if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+          gestureType.current = 'horizontal';
+        } else if (deltaY < -8 && onSwipeUp) {
+          gestureType.current = 'up';
+        }
       }
     }
 
-    if (isHorizontalGesture.current === true) {
+    if (gestureType.current === 'horizontal') {
       // Damped horizontal movement for pleasant drag feel
-      const damped = Math.sign(deltaX) * Math.pow(Math.abs(deltaX), 0.94);
-      setDragOffset(damped);
+      const dampedX = Math.sign(deltaX) * Math.pow(Math.abs(deltaX), 0.94);
+      setDragOffset({ x: dampedX, y: 0 });
+    } else if (gestureType.current === 'up') {
+      // Damped vertical movement for upward swipe
+      const dampedY = deltaY < 0 
+        ? -Math.pow(Math.abs(deltaY), 0.94) 
+        : Math.pow(deltaY, 0.8) * 0.25;
+      setDragOffset({ x: 0, y: dampedY });
     }
   };
 
@@ -76,41 +89,52 @@ export function useSwipeCard({
 
     const offset = currentDragOffset.current;
     const duration = Date.now() - startPos.current.time;
-    const isQuickFlick = duration < 240 && Math.abs(offset) > 35;
-    const isTap = Math.abs(offset) < 8 && duration < 300;
+    const totalDist = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+    const isQuickFlickX = duration < 240 && Math.abs(offset.x) > 35;
+    const isQuickFlickY = duration < 240 && offset.y < -35;
+    const isTap = totalDist < 8 && duration < 300;
 
     startPos.current = null;
-    isHorizontalGesture.current = null;
+    gestureType.current = null;
     setIsDragging(false);
 
     // Clean tap without drag triggers flip
     if (isTap) {
-      setDragOffset(0);
+      setDragOffset({ x: 0, y: 0 });
       onTap?.();
       return;
     }
 
-    // Swipe Right -> Learned
-    if (offset > threshold || (isQuickFlick && offset > 0)) {
+    // 1. Swipe Up -> Move to next card
+    if (onSwipeUp && (offset.y < -threshold || (isQuickFlickY && Math.abs(offset.y) > Math.abs(offset.x)))) {
+      setFlyOut('up');
+      setTimeout(() => {
+        setFlyOut(null);
+        setDragOffset({ x: 0, y: 0 });
+        onSwipeUp();
+      }, 230);
+    }
+    // 2. Swipe Right -> Learned
+    else if (offset.x > threshold || (isQuickFlickX && offset.x > 0)) {
       setFlyOut('right');
       setTimeout(() => {
         setFlyOut(null);
-        setDragOffset(0);
+        setDragOffset({ x: 0, y: 0 });
         onSwipeRight();
       }, 230);
     }
-    // Swipe Left -> Vocabulary Re-learning Hub
-    else if (offset < -threshold || (isQuickFlick && offset < 0)) {
+    // 3. Swipe Left -> Vocabulary Re-learning Hub
+    else if (offset.x < -threshold || (isQuickFlickX && offset.x < 0)) {
       setFlyOut('left');
       setTimeout(() => {
         setFlyOut(null);
-        setDragOffset(0);
+        setDragOffset({ x: 0, y: 0 });
         onSwipeLeft();
       }, 230);
     }
-    // Release without reaching threshold -> Snap back smoothly
+    // 4. Release without reaching threshold -> Snap back smoothly
     else {
-      setDragOffset(0);
+      setDragOffset({ x: 0, y: 0 });
     }
   };
 
@@ -157,28 +181,40 @@ export function useSwipeCard({
   };
 
   // Dynamic visual styling
-  let transform = 'translateX(0px) rotate(0deg)';
+  let transform = 'translate(0px, 0px) rotate(0deg) scale(1)';
   let transition = 'transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.22s ease';
 
-  if (flyOut === 'right') {
+  if (flyOut === 'up') {
+    transform = 'translateY(-130%) scale(0.88) rotate(-3deg)';
+    transition = 'transform 0.22s ease-out, opacity 0.22s ease-out';
+  } else if (flyOut === 'right') {
     transform = 'translateX(120%) rotate(16deg)';
     transition = 'transform 0.22s ease-out, opacity 0.22s ease-out';
   } else if (flyOut === 'left') {
     transform = 'translateX(-120%) rotate(-16deg)';
     transition = 'transform 0.22s ease-out, opacity 0.22s ease-out';
   } else if (isDragging) {
-    const rotation = dragOffset * 0.05;
-    transform = `translateX(${dragOffset}px) rotate(${rotation}deg)`;
+    if (dragOffset.y < 0) {
+      const scale = Math.max(0.92, 1 - Math.abs(dragOffset.y) * 0.0006);
+      transform = `translateY(${dragOffset.y}px) scale(${scale})`;
+    } else {
+      const rotation = dragOffset.x * 0.05;
+      transform = `translateX(${dragOffset.x}px) rotate(${rotation}deg)`;
+    }
     transition = 'none';
   }
 
-  const rightOpacity = dragOffset > 15
-    ? Math.min((dragOffset - 15) / (threshold - 15), 1)
+  const rightOpacity = dragOffset.x > 15
+    ? Math.min((dragOffset.x - 15) / (threshold - 15), 1)
     : flyOut === 'right' ? 1 : 0;
 
-  const leftOpacity = dragOffset < -15
-    ? Math.min((-dragOffset - 15) / (threshold - 15), 1)
+  const leftOpacity = dragOffset.x < -15
+    ? Math.min((-dragOffset.x - 15) / (threshold - 15), 1)
     : flyOut === 'left' ? 1 : 0;
+
+  const upOpacity = dragOffset.y < -15
+    ? Math.min((-dragOffset.y - 15) / (threshold - 15), 1)
+    : flyOut === 'up' ? 1 : 0;
 
   return {
     handlers: {
@@ -191,13 +227,14 @@ export function useSwipeCard({
       transform,
       transition,
       opacity: flyOut ? 0 : 1,
-      touchAction: 'pan-y' as const,
+      touchAction: 'none' as const,
       willChange: 'transform, opacity' as const,
     },
     isDragging,
     dragOffset,
     rightOpacity,
     leftOpacity,
+    upOpacity,
     flyOut
   };
 }
