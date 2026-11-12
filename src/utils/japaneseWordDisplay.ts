@@ -248,6 +248,11 @@ export function parseFurigana(kanjiText?: string, readingText?: string): Furigan
 
   // If there are no non-kanji chunks, the whole word is kanji (e.g. 学生, 先生, 病院)
   if (!chunks.some(c => !c.isKanji)) {
+    // Safety check: if kanji is 1-2 chars but reading is disproportionately long or contains sentence spaces/punctuation
+    if (cleanK.length <= 2 && cleanR.length > 5 && (/[\s、。]/.test(cleanR) || cleanR.length > cleanK.length * 4)) {
+      const firstWord = cleanR.split(/[\s、。]/)[0];
+      return [{ ruby: cleanK, rt: firstWord || cleanR }];
+    }
     return [{ ruby: cleanK, rt: cleanR }];
   }
 

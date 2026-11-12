@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   RotateCw, Volume2, Sparkles, CheckCircle2, AlertTriangle,
   ChevronRight, ChevronLeft, Shuffle, Check, X, HelpCircle,
-  BookOpen, Layers, ArrowRight, ArrowUp, ShieldCheck, RefreshCw, Zap
+  BookOpen, Layers, ArrowRight, ArrowUp, Copy, ShieldCheck, RefreshCw, Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MinnaVocabularyItem, VocabLearningStatus } from '@/types/minna';
@@ -20,6 +20,40 @@ interface MinnaFlashcardsModalProps {
   vocabularyList: MinnaVocabularyItem[];
   onClose: () => void;
   onRefreshData?: () => void;
+}
+
+
+// Dynamic responsive font size helper for Japanese flashcard text
+function getJapaneseTextClass(text: string): string {
+  const len = text ? text.length : 0;
+  if (len <= 4) {
+    return 'text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2';
+  }
+  if (len <= 8) {
+    return 'text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2';
+  }
+  if (len <= 14) {
+    return 'text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2 leading-snug';
+  }
+  if (len <= 20) {
+    return 'text-xl xs:text-2xl sm:text-3xl md:text-4xl font-extrabold font-japanese text-stone-900 dark:text-white tracking-normal break-words px-2 leading-relaxed';
+  }
+  return 'text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold font-japanese text-stone-900 dark:text-white tracking-normal break-words px-2 leading-relaxed';
+}
+
+// Dynamic responsive font size helper for English flashcard text
+function getEnglishTextClass(text: string): string {
+  const len = text ? text.length : 0;
+  if (len <= 16) {
+    return 'text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black text-stone-900 dark:text-white leading-tight break-words px-2';
+  }
+  if (len <= 32) {
+    return 'text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-stone-900 dark:text-white leading-snug break-words px-2';
+  }
+  if (len <= 55) {
+    return 'text-lg xs:text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-relaxed break-words px-2';
+  }
+  return 'text-base xs:text-lg sm:text-xl md:text-2xl font-bold text-stone-900 dark:text-white leading-relaxed break-words px-2';
 }
 
 export function MinnaFlashcardsModal({
@@ -38,6 +72,8 @@ export function MinnaFlashcardsModal({
   const [localStatuses, setLocalStatuses] = useState<Record<string, VocabLearningStatus>>({});
   const [savingStatus, setSavingStatus] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState<{ vocabId: string; status: VocabLearningStatus } | null>(null);
+  const [copiedFace, setCopiedFace] = useState<'front' | 'back' | null>(null);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
 
   // Initialize local statuses from storage on mount
   useEffect(() => {
@@ -56,6 +92,75 @@ export function MinnaFlashcardsModal({
   const currentCard = cards[currentIndex];
   const currentStatus = currentCard ? (localStatuses[currentCard.id] || getVocabStatus(currentCard.id)) : null;
   const isEnToJa = studyMode === 'en_to_ja' || (studyMode === 'combined' && (currentIndex % 2 === 1));
+
+  const fallbackCopyModalText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '-9999px';
+      textArea.style.left = '-9999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    } catch (e) {
+      console.error('Fallback copy failed', e);
+      return false;
+    }
+  };
+
+  const handleCopyCard = (face: 'front' | 'back') => {
+    if (!currentCard) return;
+
+    let textToCopy = '';
+    let label = '';
+
+    if (face === 'front') {
+      if (isEnToJa) {
+        textToCopy = currentCard.english;
+        label = 'English';
+      } else {
+        textToCopy = currentCard.kanji || currentCard.hiragana || '';
+        label = 'Japanese';
+      }
+    } else {
+      if (isEnToJa) {
+        textToCopy = currentCard.kanji || currentCard.hiragana || '';
+        label = 'Japanese';
+      } else {
+        textToCopy = currentCard.english;
+        label = 'English';
+      }
+    }
+
+    const cleaned = textToCopy.replace(/[（(].*?[)）]/g, '').trim();
+    if (!cleaned) return;
+
+    const onCopied = () => {
+      setCopiedFace(face);
+      const preview = cleaned.length > 25 ? cleaned.slice(0, 22) + '...' : cleaned;
+      setCopyToast(`Copied ${label}: "${preview}"`);
+      setTimeout(() => {
+        setCopiedFace(null);
+        setCopyToast(null);
+      }, 1800);
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cleaned)
+        .then(onCopied)
+        .catch(() => {
+          fallbackCopyModalText(cleaned);
+          onCopied();
+        });
+    } else {
+      fallbackCopyModalText(cleaned);
+      onCopied();
+    }
+  };
 
   // Keyboard shortcut support (Space = flip, Left/Right = nav, 1 = Not Learned, 2 = Not Sure, 3 = Learned)
   useEffect(() => {
@@ -462,6 +567,23 @@ export function MinnaFlashcardsModal({
 
                   <div className="flex items-center gap-1 shrink-0">
                     <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyCard('front');
+                      }}
+                      className={`p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg transition active:scale-95 ${
+                        copiedFace === 'front'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                          : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
+                      }`}
+                      title={isEnToJa ? 'Copy English prompt' : 'Copy Japanese prompt'}
+                      aria-label="Copy prompt"
+                    >
+                      {copiedFace === 'front' ? <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" /> : <Copy className="w-4 h-4" />}
+                    </button>
+
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         speakJapanese(currentCard.kanji || currentCard.hiragana);
@@ -493,7 +615,7 @@ export function MinnaFlashcardsModal({
                       <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-stone-400 block">
                         What is the Japanese for:
                       </span>
-                      <div className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black text-stone-900 dark:text-white leading-tight break-words px-2">
+                      <div className={getEnglishTextClass(currentCard.english)}>
                         {currentCard.english}
                       </div>
                     </div>
@@ -507,7 +629,7 @@ export function MinnaFlashcardsModal({
                     kanji={currentCard.kanji || currentCard.hiragana}
                     reading={currentCard.hiragana}
                     showFurigana={showFurigana}
-                    className="font-japanese text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black text-stone-900 dark:text-white drop-shadow-xs break-words px-2 tracking-wide"
+                    className={getJapaneseTextClass(currentCard.kanji || currentCard.hiragana)}
                   />
                 </div>
                   )}
@@ -557,6 +679,23 @@ export function MinnaFlashcardsModal({
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyCard('back');
+                    }}
+                    className={`p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center rounded-lg transition active:scale-95 ${
+                      copiedFace === 'back'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+                        : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 hover:text-stone-900 dark:hover:text-stone-200'
+                    }`}
+                    title={isEnToJa ? 'Copy Japanese answer' : 'Copy English answer'}
+                    aria-label="Copy answer"
+                  >
+                    {copiedFace === 'back' ? <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" /> : <Copy className="w-4 h-4" />}
+                  </button>
+
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       speakJapanese(currentCard.kanji || currentCard.hiragana);
@@ -597,7 +736,7 @@ export function MinnaFlashcardsModal({
                               kanji={currentCard.kanji || currentCard.hiragana}
                               reading={currentCard.hiragana}
                               showFurigana={showFurigana}
-                              className="font-japanese text-2xl xs:text-3xl sm:text-4xl font-black text-stone-900 dark:text-white break-words"
+                              className={getJapaneseTextClass(currentCard.kanji || currentCard.hiragana)}
                             />
                           </div>
                           {jp.secondaryText && (
