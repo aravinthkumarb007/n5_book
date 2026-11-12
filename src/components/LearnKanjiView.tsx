@@ -217,7 +217,7 @@ export function LearnKanjiView({
                                                 </span>
                                             </div>
                                               <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed break-words">
-                                                Restore your 10 completed Kanji (#1 一 through #10 十), immediately unlock Level 2, and verify & save the completion to Supabase.
+                                                Restore your 10 completed Kanji (#1 人 through #10 八), immediately unlock Level 2, and verify & save the completion to Supabase.
                                               </p>
                                           </div>
                                       </div>
