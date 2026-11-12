@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   RotateCw, Volume2, Sparkles, CheckCircle2, AlertTriangle,
-  Clock, ArrowRight, ArrowLeft, ArrowUp, Layers, Eye, BookOpen, ChevronRight,
+  Clock, ArrowRight, ArrowLeft, ArrowUp, Copy, Layers, Eye, BookOpen, ChevronRight,
   ChevronLeft, Shuffle, Check, X, Zap, CheckSquare, Square,
   Filter, Globe, ArrowLeftRight, HelpCircle, Trophy, RotateCcw,
   ShieldCheck, Search
@@ -17,7 +17,7 @@ import { storage } from '@/services/storage';
 import { speakJapanese } from '@/services/audio';
 import { setVocabStatus } from '@/services/vocabStorage';
 import { loadCustomLessons } from '@/services/minnaStorage';
-import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
+import { getJapaneseWordDisplay, parseFurigana } from '@/utils/japaneseWordDisplay';
 import { FuriganaText } from '@/components/common/FuriganaText';
 import { useSwipeCard } from '@/utils/useSwipeCard';
 
@@ -75,6 +75,144 @@ interface FlashcardsViewProps {
   onNavigateToLearn: () => void;
 }
 
+
+// Common Minna no Nihongo Kanji outside the base 120 Kanji list
+const COMMON_EXTRA_KANJI: Record<string, { reading: string; romaji: string; meaning: string; onyomi?: string[]; kunyomi?: string[] }> = {
+  '号': { reading: 'ごう', romaji: 'gō', meaning: 'number, signal, sign', onyomi: ['ゴウ'] },
+  '信': { reading: 'しん', romaji: 'shin', meaning: 'trust, faith, signal', onyomi: ['シン'] },
+  '曲': { reading: 'ま', romaji: 'ma', meaning: 'bend, turn, music', kunyomi: ['ま・がる', 'ま・げる'], onyomi: ['キョク'] },
+  '開': { reading: 'あ', romaji: 'a', meaning: 'open, unlock', kunyomi: ['あ・ける', 'ひら・く'], onyomi: ['カイ'] },
+  '閉': { reading: 'し', romaji: 'shi', meaning: 'close, shut', kunyomi: ['し・める', 'と・じる'], onyomi: ['ヘイ'] },
+  '急': { reading: 'いそ', romaji: 'iso', meaning: 'hurry, urgent', kunyomi: ['いそ・ぐ'], onyomi: ['キュウ'] },
+  '消': { reading: 'け', romaji: 'ke', meaning: 'extinguish, turn off, erase', kunyomi: ['け・す', 'き・える'], onyomi: ['ショウ'] },
+  '待': { reading: 'ま', romaji: 'ma', meaning: 'wait', kunyomi: ['ま・つ'], onyomi: ['タイ'] },
+  '止': { reading: 'と', romaji: 'to', meaning: 'stop, halt', kunyomi: ['と・める', 'と・まる'], onyomi: ['シ'] },
+  '持': { reading: 'も', romaji: 'mo', meaning: 'hold, have', kunyomi: ['も・つ'], onyomi: ['ジ'] },
+  '取': { reading: 'と', romaji: 'to', meaning: 'take, fetch', kunyomi: ['と・る'], onyomi: ['シュ'] },
+  '伝': { reading: 'つた', romaji: 'tsuta', meaning: 'transmit, help', kunyomi: ['つた・える', 'つた・わる'], onyomi: ['デン'] },
+  '呼': { reading: 'よ', romaji: 'yo', meaning: 'call, invite', kunyomi: ['よ・ぶ'], onyomi: ['コ'] },
+  '降': { reading: 'ふ', romaji: 'fu', meaning: 'fall (rain), descend', kunyomi: ['ふ・る', 'お・りる'], onyomi: ['コウ'] },
+  '使': { reading: 'つか', romaji: 'tsuka', meaning: 'use', kunyomi: ['つか・う'], onyomi: ['シ'] },
+  '作': { reading: 'つく', romaji: 'tsuku', meaning: 'make, produce', kunyomi: ['つく・る'], onyomi: ['サク', 'サ'] },
+  '知': { reading: 'し', romaji: 'shi', meaning: 'know', kunyomi: ['し・る'], onyomi: ['チ'] },
+  '住': { reading: 'す', romaji: 'su', meaning: 'live, reside', kunyomi: ['す・む'], onyomi: ['ジュウ'] },
+  '置': { reading: 'お', romaji: 'o', meaning: 'put, place', kunyomi: ['お・く'], onyomi: ['チ'] },
+  '洗': { reading: 'あら', romaji: 'ara', meaning: 'wash', kunyomi: ['あら・う'], onyomi: ['セン'] },
+  '借': { reading: 'か', romaji: 'ka', meaning: 'borrow, rent', kunyomi: ['か・りる'], onyomi: ['シャク'] },
+  '貸': { reading: 'か', romaji: 'ka', meaning: 'lend, loan', kunyomi: ['か・す'], onyomi: ['タイ'] },
+  '返': { reading: 'かえ', romaji: 'kae', meaning: 'return', kunyomi: ['かえ・す'], onyomi: ['ヘン'] },
+  '払': { reading: 'はら', romaji: 'hara', meaning: 'pay', kunyomi: ['はら・う'], onyomi: ['フツ'] },
+  '脱': { reading: 'ぬ', romaji: 'nu', meaning: 'take off (clothes)', kunyomi: ['ぬ・ぐ'], onyomi: ['ダツ'] },
+  '残': { reading: 'のこ', romaji: 'noko', meaning: 'remain, leave behind', kunyomi: ['のこ・る'], onyomi: ['ザン'] },
+  '忘': { reading: 'わす', romaji: 'wasu', meaning: 'forget', kunyomi: ['わす・れる'], onyomi: ['ボウ'] },
+  '送': { reading: 'おく', romaji: 'oku', meaning: 'send, escort', kunyomi: ['おく・る'], onyomi: ['ソウ'] },
+  '切': { reading: 'き', romaji: 'ki', meaning: 'cut', kunyomi: ['き・る'], onyomi: ['セツ'] },
+  '覚': { reading: 'おぼ', romaji: 'obo', meaning: 'memorize, remember', kunyomi: ['おぼ・える'], onyomi: ['カク'] },
+  '答': { reading: 'こた', romaji: 'kota', meaning: 'answer, reply', kunyomi: ['こた・える'], onyomi: ['トウ'] },
+  '問': { reading: 'もん', romaji: 'mon', meaning: 'question, problem', onyomi: ['モン'] },
+  '題': { reading: 'だい', romaji: 'dai', meaning: 'topic, subject, problem', onyomi: ['ダイ'] },
+  '宿': { reading: 'しゅく', romaji: 'shuku', meaning: 'inn, lodge', onyomi: ['シュク'] },
+  '試': { reading: 'し', romaji: 'shi', meaning: 'test, try', onyomi: ['シ'] },
+  '験': { reading: 'けん', romaji: 'ken', meaning: 'verify, test', onyomi: ['ケン'] },
+  '練': { reading: 'れん', romaji: 'ren', meaning: 'practice, train', onyomi: ['レン'] },
+  '習': { reading: 'しゅう', romaji: 'shū', meaning: 'learn, practice', kunyomi: ['なら・う'], onyomi: ['シュウ'] },
+  '教': { reading: 'おし', romaji: 'oshi', meaning: 'teach', kunyomi: ['おし・える'], onyomi: ['キョウ'] },
+  '室': { reading: 'しつ', romaji: 'shitsu', meaning: 'room', onyomi: ['シツ'] },
+  '堂': { reading: 'どう', romaji: 'dō', meaning: 'hall, public room', onyomi: ['ドウ'] },
+  '所': { reading: 'ところ', romaji: 'tokoro', meaning: 'place', kunyomi: ['ところ'], onyomi: ['ショ'] },
+  '屋': { reading: 'や', romaji: 'ya', meaning: 'shop, roof', kunyomi: ['や'], onyomi: ['オク'] },
+  '銀': { reading: 'ぎん', romaji: 'gin', meaning: 'silver', onyomi: ['ギン'] },
+  '病': { reading: 'びょう', romaji: 'byō', meaning: 'illness, sick', onyomi: ['ビョウ'] },
+  '院': { reading: 'いん', romaji: 'in', meaning: 'institution', onyomi: ['イン'] },
+  '医': { reading: 'い', romaji: 'i', meaning: 'doctor, medicine', onyomi: ['イ'] },
+  '者': { reading: 'しゃ', romaji: 'sha', meaning: 'person', onyomi: ['シャ'] },
+  '研': { reading: 'けん', romaji: 'ken', meaning: 'study, sharpen', onyomi: ['ケン'] },
+  '究': { reading: 'きゅう', romaji: 'kyū', meaning: 'research, investigate', onyomi: ['キュウ'] },
+  '誰': { reading: 'だれ', romaji: 'dare', meaning: 'who', kunyomi: ['だれ'] },
+  '私': { reading: 'わたし', romaji: 'watashi', meaning: 'I, me', kunyomi: ['わたし'], onyomi: ['シ'] },
+  '彼': { reading: 'かれ', romaji: 'kare', meaning: 'he, that', kunyomi: ['かれ'] },
+  '兄': { reading: 'あに', romaji: 'ani', meaning: 'older brother', kunyomi: ['あに'], onyomi: ['ケイ'] },
+  '姉': { reading: 'あね', romaji: 'ane', meaning: 'older sister', kunyomi: ['あね'], onyomi: ['シ'] },
+  '弟': { reading: 'おとうと', romaji: 'otōto', meaning: 'younger brother', kunyomi: ['おとうと'], onyomi: ['テイ'] },
+  '妹': { reading: 'いもうと', romaji: 'imōto', meaning: 'younger sister', kunyomi: ['いもうと'], onyomi: ['マイ'] },
+  '夫': { reading: 'おっと', romaji: 'otto', meaning: 'husband', kunyomi: ['おっと'], onyomi: ['フ'] },
+  '妻': { reading: 'つま', romaji: 'tsuma', meaning: 'wife', kunyomi: ['つま'], onyomi: ['サイ'] },
+  '服': { reading: 'ふく', romaji: 'fuku', meaning: 'clothing, clothes', onyomi: ['フク'] },
+  '色': { reading: 'いろ', romaji: 'iro', meaning: 'color', kunyomi: ['いろ'], onyomi: ['ショク'] },
+  '茶': { reading: 'ちゃ', romaji: 'cha', meaning: 'tea', onyomi: ['チャ', 'サ'] },
+  '酒': { reading: 'さけ', romaji: 'sake', meaning: 'alcohol, sake', kunyomi: ['さけ'], onyomi: ['シュ'] },
+  '肉': { reading: 'にく', romaji: 'niku', meaning: 'meat', onyomi: ['ニク'] },
+  '魚': { reading: 'さかな', romaji: 'sakana', meaning: 'fish', kunyomi: ['さかな'], onyomi: ['ギョ'] },
+  '物': { reading: 'もの', romaji: 'mono', meaning: 'thing, object', kunyomi: ['もの'], onyomi: ['ブツ'] },
+  '鳥': { reading: 'とり', romaji: 'tori', meaning: 'bird', kunyomi: ['とり'], onyomi: ['チョウ'] },
+  '犬': { reading: 'いぬ', romaji: 'inu', meaning: 'dog', kunyomi: ['いぬ'], onyomi: ['ケン'] },
+  '猫': { reading: 'ねこ', romaji: 'neko', meaning: 'cat', kunyomi: ['ねこ'], onyomi: ['ビョウ'] },
+  '道': { reading: 'みち', romaji: 'michi', meaning: 'road, way', kunyomi: ['みち'], onyomi: ['ドウ'] },
+  '橋': { reading: 'はし', romaji: 'hashi', meaning: 'bridge', kunyomi: ['はし'], onyomi: ['キョウ'] },
+  '角': { reading: 'かど', romaji: 'kado', meaning: 'corner', kunyomi: ['かど'], onyomi: ['カク'] },
+  '門': { reading: 'もん', romaji: 'mon', meaning: 'gate', onyomi: ['モン'] },
+  '風': { reading: 'かぜ', romaji: 'kaze', meaning: 'wind', kunyomi: ['かぜ'], onyomi: ['フウ'] },
+  '雨': { reading: 'あめ', romaji: 'ame', meaning: 'rain', kunyomi: ['あめ'], onyomi: ['ウ'] },
+  '雪': { reading: 'ゆき', romaji: 'yuki', meaning: 'snow', kunyomi: ['ゆき'], onyomi: ['セツ'] },
+  '春': { reading: 'はる', romaji: 'haru', meaning: 'spring', kunyomi: ['はる'], onyomi: ['シュン'] },
+  '夏': { reading: 'なつ', romaji: 'natsu', meaning: 'summer', kunyomi: ['なつ'], onyomi: ['カ'] },
+  '秋': { reading: 'あき', romaji: 'aki', meaning: 'autumn', kunyomi: ['あき'], onyomi: ['シュウ'] },
+  '冬': { reading: 'ふゆ', romaji: 'fuyu', meaning: 'winter', kunyomi: ['ふゆ'], onyomi: ['トウ'] },
+  '音': { reading: 'おと', romaji: 'oto', meaning: 'sound', kunyomi: ['おと'], onyomi: ['オン'] },
+  '字': { reading: 'じ', romaji: 'ji', meaning: 'character, letter', onyomi: ['ジ'] },
+  '文': { reading: 'ぶん', romaji: 'bun', meaning: 'sentence, text', onyomi: ['ブン'] },
+  '紙': { reading: 'かみ', romaji: 'kami', meaning: 'paper', kunyomi: ['かみ'], onyomi: ['シ'] },
+  '手': { reading: 'て', romaji: 'te', meaning: 'hand', kunyomi: ['て'], onyomi: ['シュ'] },
+  '頭': { reading: 'あたま', romaji: 'atama', meaning: 'head', kunyomi: ['あたま'], onyomi: ['トウ', 'ズ'] },
+  '顔': { reading: 'かお', romaji: 'kao', meaning: 'face', kunyomi: ['かお'], onyomi: ['ガン'] },
+  '体': { reading: 'からだ', romaji: 'karada', meaning: 'body', kunyomi: ['からだ'], onyomi: ['タイ'] },
+  '心': { reading: 'こころ', romaji: 'kokoro', meaning: 'heart, spirit', kunyomi: ['こころ'], onyomi: ['シン'] },
+  '力': { reading: 'ちから', romaji: 'chikara', meaning: 'power, strength', kunyomi: ['ちから'], onyomi: ['リョク'] },
+  '写': { reading: 'しゃ', romaji: 'sha', meaning: 'copy, photograph', onyomi: ['シャ'] },
+  '真': { reading: 'しん', romaji: 'shin', meaning: 'true, truth', onyomi: ['シン'] },
+  '旅': { reading: 'りょ', romaji: 'ryo', meaning: 'travel, trip', kunyomi: ['たび'], onyomi: ['リョ'] },
+  '自': { reading: 'じ', romaji: 'ji', meaning: 'oneself', onyomi: ['ジ'] },
+  '動': { reading: 'どう', romaji: 'dō', meaning: 'move, motion', kunyomi: ['うご・く'], onyomi: ['ドウ'] },
+  '運': { reading: 'うん', romaji: 'un', meaning: 'carry, transport, fortune', kunyomi: ['はこ・ぶ'], onyomi: ['ウン'] },
+  '転': { reading: 'てん', romaji: 'ten', meaning: 'revolve, turn', onyomi: ['テン'] }
+};
+
+// Dynamic responsive font size helper for Japanese flashcard text
+function getJapaneseTextClass(text: string, isKanjiChar = false): string {
+  if (isKanjiChar) {
+    return 'text-5xl xs:text-6xl sm:text-7xl md:text-8xl font-black font-japanese text-stone-900 dark:text-white drop-shadow-xs';
+  }
+  const len = text ? text.length : 0;
+  if (len <= 4) {
+    return 'text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2';
+  }
+  if (len <= 8) {
+    return 'text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2';
+  }
+  if (len <= 14) {
+    return 'text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2 leading-snug';
+  }
+  if (len <= 20) {
+    return 'text-xl xs:text-2xl sm:text-3xl md:text-4xl font-extrabold font-japanese text-stone-900 dark:text-white tracking-normal break-words px-2 leading-relaxed';
+  }
+  return 'text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold font-japanese text-stone-900 dark:text-white tracking-normal break-words px-2 leading-relaxed';
+}
+
+// Dynamic responsive font size helper for English flashcard text
+function getEnglishTextClass(text: string): string {
+  const len = text ? text.length : 0;
+  if (len <= 16) {
+    return 'text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black text-stone-900 dark:text-white leading-tight break-words px-2';
+  }
+  if (len <= 32) {
+    return 'text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-stone-900 dark:text-white leading-snug break-words px-2';
+  }
+  if (len <= 55) {
+    return 'text-lg xs:text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-900 dark:text-white leading-relaxed break-words px-2';
+  }
+  return 'text-base xs:text-lg sm:text-xl md:text-2xl font-bold text-stone-900 dark:text-white leading-relaxed break-words px-2';
+}
+
 export function FlashcardsView({
   kanjiList,
   progressMap,
@@ -100,6 +238,7 @@ export function FlashcardsView({
   const [contentFilter, setContentFilter] = useState<'all' | 'vocab' | 'kanji'>('all');
   const [showFurigana, setShowFurigana] = useState(true);
   const [cardStatusToast, setCardStatusToast] = useState<{ id: string; message: string } | null>(null);
+  const [copiedFace, setCopiedFace] = useState<'front' | 'back' | null>(null);
 
   // Legacy SRS State (Preserved for Spaced Repetition Due Queue)
   const [srsFilterMode, setSrsFilterMode] = useState<'due' | 'weak' | 'all'>('due');
@@ -286,19 +425,53 @@ export function FlashcardsView({
               mnemonic: match120.mnemonic
             });
           } else {
-            const parentVocab = lesson.vocabulary.find(v => v.kanji.includes(char));
+            // Prioritize shortest vocabulary word containing this Kanji character
+            const matchingVocabs = lesson.vocabulary.filter(v => v.kanji && v.kanji.includes(char));
+            const parentVocab = matchingVocabs.sort((a, b) => a.kanji.length - b.kanji.length)[0];
+            const extraMatch = COMMON_EXTRA_KANJI[char];
+
+            let kanjiReading = extraMatch?.reading || '';
+            let kanjiRomaji = extraMatch?.romaji || '';
+            let kanjiMeaning = extraMatch?.meaning || '';
+            let kanjiContext = '';
+
+            if (parentVocab) {
+              const segs = parseFurigana(parentVocab.kanji, parentVocab.hiragana);
+              const targetSeg = segs.find(s => s.ruby.includes(char));
+              if (targetSeg) {
+                if (!kanjiReading) {
+                  kanjiReading = targetSeg.rt || targetSeg.ruby;
+                }
+                if (targetSeg.ruby.length > 1) {
+                  kanjiContext = `${targetSeg.ruby} (${targetSeg.rt || ''})`;
+                }
+              }
+            }
+
+            if (!kanjiReading) {
+              kanjiReading = parentVocab?.hiragana ? parentVocab.hiragana.split(/[\s、。]/)[0] : '';
+            }
+
+            if (!kanjiMeaning) {
+              kanjiMeaning = parentVocab ? `Kanji in "${parentVocab.kanji}" (${parentVocab.english})` : 'Kanji character';
+            } else if (kanjiContext) {
+              kanjiMeaning = `${kanjiMeaning} • In: ${kanjiContext}`;
+            }
+
             cards.push({
               id,
               type: 'kanji',
               lessonNumber: lessonNum,
               direction: cardDirection,
               primaryJapanese: char,
-              secondaryJapanese: parentVocab?.hiragana,
-              hiragana: parentVocab?.hiragana || '',
+              secondaryJapanese: extraMatch?.onyomi?.concat(extraMatch?.kunyomi || []).join('、') || kanjiContext || parentVocab?.hiragana,
+              hiragana: kanjiReading,
               kanji: char,
-              romaji: parentVocab?.romaji || '',
-              english: parentVocab ? `Kanji from: ${parentVocab.english}` : 'Kanji character',
-              category: parentVocab?.category
+              romaji: kanjiRomaji || parentVocab?.romaji || '',
+              english: kanjiMeaning,
+              category: parentVocab?.category || 'Kanji',
+              onyomi: extraMatch?.onyomi,
+              kunyomi: extraMatch?.kunyomi
             });
           }
         });
@@ -365,6 +538,79 @@ export function FlashcardsView({
   }, [sessionCards, contentFilter]);
 
   const currentCard: FlashcardItem | undefined = filteredSessionCards[currentIndex];
+
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '-9999px';
+      textArea.style.left = '-9999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    } catch (e) {
+      console.error('Fallback copy failed', e);
+      return false;
+    }
+  };
+
+  const handleCopyCard = (face: 'front' | 'back') => {
+    if (!currentCard) return;
+
+    let textToCopy = '';
+    let label = '';
+
+    const isCurrentEnToJa = currentCard.direction === 'en_to_ja';
+    if (face === 'front') {
+      if (isCurrentEnToJa) {
+        textToCopy = currentCard.english;
+        label = 'English';
+      } else {
+        textToCopy = currentCard.kanji || currentCard.primaryJapanese || currentCard.hiragana || '';
+        label = 'Japanese';
+      }
+    } else {
+      if (isCurrentEnToJa) {
+        textToCopy = currentCard.kanji || currentCard.primaryJapanese || currentCard.hiragana || '';
+        label = 'Japanese';
+      } else {
+        textToCopy = currentCard.english;
+        label = 'English';
+      }
+    }
+
+    const cleaned = textToCopy.replace(/[（(].*?[)）]/g, '').trim();
+    if (!cleaned) return;
+
+    const onCopied = () => {
+      setCopiedFace(face);
+      const preview = cleaned.length > 25 ? cleaned.slice(0, 22) + '...' : cleaned;
+      setCardStatusToast({
+        id: currentCard.id,
+        message: `Copied ${label}: "${preview}"`
+      });
+      setTimeout(() => {
+        setCopiedFace(null);
+        setCardStatusToast(null);
+      }, 1800);
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cleaned)
+        .then(onCopied)
+        .catch(() => {
+          fallbackCopyText(cleaned);
+          onCopied();
+        });
+    } else {
+      fallbackCopyText(cleaned);
+      onCopied();
+    }
+  };
 
   // Navigation handlers
   const handleNext = () => {
@@ -1261,7 +1507,7 @@ export function FlashcardsView({
             className={`absolute inset-0 w-full h-full rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl p-4 sm:p-7 flex flex-col justify-between overflow-y-auto overscroll-contain backface-hidden ${isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
               }`}
           >
-            {/* Top Badges Bar */}
+            {/* Top Badges Bar with Copy Control */}
             <div className="flex items-center justify-between text-xs text-stone-400 gap-1.5 flex-wrap">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isEnToJa
@@ -1276,20 +1522,49 @@ export function FlashcardsView({
                 </span>
               </div>
 
-              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-500">
-                Lesson {currentCard.lessonNumber}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyCard('front');
+                  }}
+                  className={`px-2 py-1 min-h-[28px] rounded-lg transition flex items-center gap-1 text-[11px] font-bold active:scale-95 ${
+                    copiedFace === 'front'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                      : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300'
+                  }`}
+                  title={isEnToJa ? 'Copy English prompt' : 'Copy Japanese prompt'}
+                  aria-label="Copy prompt"
+                >
+                  {copiedFace === 'front' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
+                      <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">Copy</span>
+                    </>
+                  )}
+                </button>
+
+                <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-500">
+                  Lesson {currentCard.lessonNumber}
+                </span>
+              </div>
             </div>
 
             {/* Front Center Question */}
-            <div className="my-auto text-center space-y-3 py-3">
+            <div className="my-auto text-center space-y-3 py-3 w-full max-w-full overflow-hidden">
               {isEnToJa ? (
                 /* EN to JA Front: English Word as Question */
                 <div className="space-y-2 sm:space-y-3">
                   <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-stone-400 block">
                     What is the Japanese for:
                   </span>
-                  <div className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black text-stone-900 dark:text-white leading-tight break-words px-2">
+                  <div className={getEnglishTextClass(currentCard.english)}>
                     {currentCard.english}
                   </div>
                   {currentCard.partOfSpeech && (
@@ -1306,20 +1581,20 @@ export function FlashcardsView({
                   </span>
 
                   {currentCard.type === 'vocabulary' ? (
-                    < FuriganaText
+                    <FuriganaText
                       kanji={currentCard.kanji || currentCard.primaryJapanese}
-                  reading={currentCard.hiragana || currentCard.primaryJapanese}
-                  showFurigana={showFurigana}
-                  className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words px-2"
+                      reading={currentCard.hiragana || currentCard.primaryJapanese}
+                      showFurigana={showFurigana}
+                      className={getJapaneseTextClass(currentCard.kanji || currentCard.primaryJapanese, false)}
                     />
                   ) : (
                     /* Kanji Character with Furigana */
-                  <FuriganaText
-                    kanji={currentCard.primaryJapanese}
-                    reading={currentCard.hiragana || currentCard.secondaryJapanese}
-                    showFurigana={showFurigana}
-                    className="text-5xl xs:text-6xl sm:text-7xl md:text-8xl font-black font-japanese text-stone-900 dark:text-white drop-shadow-xs"
-                  />
+                    <FuriganaText
+                      kanji={currentCard.primaryJapanese}
+                      reading={currentCard.hiragana || currentCard.secondaryJapanese}
+                      showFurigana={showFurigana}
+                      className={getJapaneseTextClass(currentCard.primaryJapanese, true)}
+                    />
                   )}
 
                   <button
@@ -1354,7 +1629,7 @@ export function FlashcardsView({
             className={`absolute inset-0 w-full h-full rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl p-4 sm:p-7 flex flex-col justify-between overflow-y-auto overscroll-contain backface-hidden rotate-y-180 ${!isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
               }`}
           >
-            {/* Top Badges Bar */}
+            {/* Top Badges Bar with Copy Control */}
             <div className="flex items-center justify-between text-xs text-stone-400 gap-1.5 flex-wrap">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
@@ -1366,13 +1641,42 @@ export function FlashcardsView({
                 </span>
               </div>
 
-              <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-500">
-                Lesson {currentCard.lessonNumber}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyCard('back');
+                  }}
+                  className={`px-2 py-1 min-h-[28px] rounded-lg transition flex items-center gap-1 text-[11px] font-bold active:scale-95 ${
+                    copiedFace === 'back'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                      : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300'
+                  }`}
+                  title={isEnToJa ? 'Copy Japanese translation' : 'Copy English meaning'}
+                  aria-label="Copy answer"
+                >
+                  {copiedFace === 'back' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
+                      <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">Copy</span>
+                    </>
+                  )}
+                </button>
+
+                <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-500">
+                  Lesson {currentCard.lessonNumber}
+                </span>
+              </div>
             </div>
 
             {/* Back Center Answer */}
-            <div className="my-auto space-y-3 py-2 text-center">
+            <div className="my-auto space-y-3 py-2 text-center w-full max-w-full overflow-hidden">
               {isEnToJa ? (
                 /* EN to JA Back: Japanese Answer Revealed */
                 <div className="space-y-2 sm:space-y-2.5">
@@ -1391,7 +1695,7 @@ export function FlashcardsView({
                                 kanji={currentCard.kanji || currentCard.primaryJapanese}
                                 reading={currentCard.hiragana || currentCard.primaryJapanese}
                                 showFurigana={showFurigana}
-                                className="text-3xl xs:text-4xl sm:text-5xl font-black font-japanese text-stone-900 dark:text-white tracking-wide break-words"
+                                className={getJapaneseTextClass(currentCard.kanji || currentCard.primaryJapanese, false)}
                               />
                             </div>
                             {/* Secondary reading underneath if distinct Kanji */}
@@ -1463,7 +1767,7 @@ export function FlashcardsView({
                         ✓ English Meaning:
                       </span>
 
-                      <div className="text-2xl xs:text-3xl sm:text-4xl font-black text-stone-900 dark:text-white leading-tight break-words px-2">
+                      <div className={getEnglishTextClass(currentCard.english)}>
                         {currentCard.english}
                       </div>
 

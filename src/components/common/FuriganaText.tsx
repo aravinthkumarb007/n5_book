@@ -34,13 +34,13 @@ export function FuriganaText({
   const segments = parseFurigana(kanji, reading);
 
   return (
-    <span className={`inline-flex flex-wrap items-baseline justify-center ${className}`}>
+    <span className={`inline-flex flex-wrap items-baseline justify-center max-w-full text-center ${className}`}>
       {segments.map((seg, idx) => {
         if (!seg.rt) {
-          return <span key={idx}>{seg.ruby}</span>;
+          return <span key={idx} className="break-words">{seg.ruby}</span>;
         }
         return (
-          <ruby key={idx} className={`ruby-position-over ${rubyClassName}`}>
+          <ruby key={idx} className={`ruby-position-over max-w-full ${rubyClassName}`}>
             {seg.ruby}
             <rt className={`text-[0.45em] leading-tight font-normal text-stone-500 dark:text-stone-400 select-none ${rtClassName}`}>
               {seg.rt}
