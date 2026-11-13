@@ -4,7 +4,8 @@ import {
   QuizResultRecord,
   StudySessionRecord,
   UserKanjiProgress,
-  UserSettings
+  UserSettings,
+  KanjiLevelTestResult
 } from '../types/kanji';
 import { ALL_120_KANJI, LEVEL_METADATA } from '../data/kanjiDatabase';
 
@@ -13,7 +14,8 @@ const STORAGE_KEYS = {
   SETTINGS: 'n5_kanji_settings_v2',
   QUIZ_HISTORY: 'n5_kanji_quiz_history_v2',
   SESSIONS: 'n5_kanji_sessions_v2',
-  AI_CACHE: 'n5_kanji_ai_cache_v2'
+  AI_CACHE: 'n5_kanji_ai_cache_v2',
+  LEVEL_TESTS: 'n5_kanji_level_test_results_v2'
 };
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -267,6 +269,42 @@ class StorageService {
         .map(p => p.kanji_id)
     );
     return ALL_120_KANJI.filter(k => learnedIds.has(k.id));
+  }
+
+  /**
+   * Retrieves all Kanji that the user has either learned or unlocked.
+   * Locked Kanji are strictly excluded.
+   */
+  getLearnedOrUnlockedKanjiPool(): KanjiRecord[] {
+    const progress = this.getProgress();
+    const eligibleIds = new Set(
+      progress
+        .filter(p => p.learning_status !== 'locked')
+        .map(p => p.kanji_id)
+    );
+    return ALL_120_KANJI.filter(k => eligibleIds.has(k.id));
+  }
+
+  getKanjiLevelTestResults(): KanjiLevelTestResult[] {
+    if (!this.isClient()) return [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.LEVEL_TESTS);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  recordKanjiLevelTestResult(result: KanjiLevelTestResult) {
+    if (!this.isClient()) return;
+    try {
+      const existing = this.getKanjiLevelTestResults();
+      const updated = [result, ...existing].slice(0, 100);
+      localStorage.setItem(STORAGE_KEYS.LEVEL_TESTS, JSON.stringify(updated));
+      triggerAutoCloudSync();
+    } catch (e) {
+      console.error('Error saving level test result:', e);
+    }
   }
 
   getWeakKanjiRecords(): { kanji: KanjiRecord; progress: UserKanjiProgress }[] {
