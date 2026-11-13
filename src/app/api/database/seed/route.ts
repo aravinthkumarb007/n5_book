@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
-import { getServerSupabaseClient } from '@/services/serverSupabase';
+import { getDatabase, cloudAuthorized } from '@/services/serverDatabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient();
+    const db = getDatabase();
 
     // 1. Bulk upsert all 120 master kanji
     const kanjiRecords = ALL_120_KANJI.map(k => ({
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       mnemonic: k.mnemonic
     }));
 
-    const { error: kanjiErr } = await supabase
+    const { error: kanjiErr } = await db
       .from('kanji')
       .upsert(kanjiRecords, { onConflict: 'id' });
 
@@ -93,7 +94,8 @@ export async function POST(request: Request) {
 
     // Upsert in clean chunks
     if (allStrokes.length > 0) {
-      await supabase.from('kanji_stroke_data').upsert(allStrokes, { onConflict: 'kanji_id' });
+      const { error } = await db.from('kanji_stroke_data').upsert(allStrokes, { onConflict: 'kanji_id' });
+      if (error) throw error;
     }
 
     return NextResponse.json({
@@ -109,7 +111,7 @@ export async function POST(request: Request) {
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      error: err.message || 'Failed to seed kanji data to Supabase.'
+      error: err.message || 'Failed to seed kanji data to Neon.'
     }, { status: 500 });
   }
 }

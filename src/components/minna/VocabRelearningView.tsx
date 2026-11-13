@@ -9,7 +9,6 @@ import {
 import { MarkedVocabItemWithMeta, VocabLearningStatus } from '@/types/minna';
 import { speakJapanese } from '@/services/audio';
 import { setVocabStatus, batchSetVocabStatus, getStoredVocabStatuses, getMasterVocabItem } from '@/services/vocabStorage';
-import { getSupabaseHeaders } from '@/services/supabaseClient';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
 import { MinnaFlashcardsModal } from './MinnaFlashcardsModal';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
@@ -127,7 +126,7 @@ export function VocabRelearningView({
       setCounts(c);
       setErrorMessage(null);
     } else {
-      setErrorMessage(errText || 'Supabase URL and Anon Key are not configured');
+      setErrorMessage(errText || 'Neon URL and Anon Key are not configured');
     }
   };
 
@@ -138,7 +137,7 @@ export function VocabRelearningView({
 
     try {
       const res = await fetch('/api/vocabulary/relearn', {
-        headers: getSupabaseHeaders()
+        headers: {}
       });
       const data = await res.json();
 

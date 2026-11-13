@@ -132,14 +132,14 @@ export default function HomePage() {
 
   const handleManualSync = async () => {
     setCloudSyncStatus('syncing');
-    setSyncToastMessage({ type: 'info', text: 'Synchronizing complete project to Supabase Cloud...' });
+    setSyncToastMessage({ type: 'info', text: 'Synchronizing complete project to Neon Cloud...' });
 
     const result = await syncFullProjectToCloud();
     if (result.success) {
       setCloudSyncStatus('saved');
       setSyncToastMessage({
         type: 'success',
-        text: `✓ Complete Project Synced! ${result.syncedProgressCount ?? 120} Kanji records, levels, lessons, and tests verified in Supabase.`
+        text: `✓ Complete Project Synced! ${result.syncedProgressCount ?? 120} Kanji records, levels, lessons, and tests verified in Neon.`
       });
       refreshData();
     } else {
@@ -196,7 +196,7 @@ export default function HomePage() {
     window.addEventListener('project-data-refreshed', handleRefresh);
     window.addEventListener('vocab-status-updated', handleRefresh);
 
-    // 3. Automatically restore & merge progress from Supabase Cloud DB
+    // 3. Automatically restore & merge progress from Neon Cloud DB
     async function restoreCloud() {
       try {
         const res = await restoreAndMergeCloudData();
@@ -346,7 +346,7 @@ export default function HomePage() {
                               ? 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300'
                               : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'
                           }`}
-                        title="Click to synchronize your entire project (all completed levels, kanji, lessons, quizzes) with Supabase Cloud Database"
+                        title="Click to synchronize your entire project (all completed levels, kanji, lessons, quizzes) with Neon Cloud Database"
                       >
                         <Cloud className={`w-3.5 h-3.5 ${cloudSyncStatus === 'saved'
                             ? 'text-emerald-500'

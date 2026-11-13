@@ -5,7 +5,6 @@ import { loadMinnaProgress, saveMinnaProgress } from './minnaStorage';
 import { getExamHistory, saveExamResult } from './mockExamStorage';
 import { getCountersQuizHistory, saveCountersQuizResult } from './countersStorage';
 import { getStoredVocabStatuses, syncVocabStatusesFromBackend } from './vocabStorage';
-import { getSupabaseHeaders } from './supabaseClient';
 
 export interface SyncResult {
   success: boolean;
@@ -166,9 +165,9 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
       vocabUpdates
     };
 
-    const res = await fetch('/api/supabase/sync', {
+    const res = await fetch('/api/database/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSupabaseHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -250,7 +249,7 @@ export async function verifyAndSaveLevelCompletion(
 }
 
 /**
- * Restores project progress from Supabase Cloud on application startup.
+ * Restores project progress from Neon Cloud on application startup.
  * Uses smart non-destructive merging to ensure no local progress is ever lost.
  */
 export async function restoreAndMergeCloudData(): Promise<{
@@ -265,7 +264,7 @@ export async function restoreAndMergeCloudData(): Promise<{
 
   try {
     window.dispatchEvent(new CustomEvent('cloud-sync-status', { detail: { status: 'syncing' } }));
-    const res = await fetch('/api/supabase/sync', { headers: getSupabaseHeaders() });
+    const res = await fetch('/api/database/sync', { headers: {} });
     const data = await res.json();
 
     if (!res.ok || !data.success) {
@@ -336,7 +335,7 @@ export async function restoreAndMergeCloudData(): Promise<{
 
 /**
  * 1-Click Recovery for Kanji Level 1 (Kanji #1 to #10):
- * Restores Level 1 kanji as learned, unlocks Level 2, saves locally, and immediately verifies with Supabase.
+ * Restores Level 1 kanji as learned, unlocks Level 2, saves locally, and immediately verifies with Neon.
  */
 export async function recoverCompletedLevel1(): Promise<{ success: boolean; progress: UserKanjiProgress[]; error?: string }> {
   const current = storage.getProgress();

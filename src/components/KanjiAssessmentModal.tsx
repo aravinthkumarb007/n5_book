@@ -98,7 +98,11 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
     }
   };
 
+  const autoNextTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const resetTestState = () => {
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    autoNextTimerRef.current = null;
     setCurrentIndex(0);
     setSelectedOption(null);
     setIsAnswerSubmitted(false);
@@ -113,6 +117,12 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
     }
   }, [isOpen, kanji.id]);
 
+  useEffect(() => {
+    return () => {
+      if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    };
+  }, [isOpen, kanji.id]);
+
   if (!isOpen || questions.length === 0) return null;
 
   const currentQ = questions[currentIndex];
@@ -120,73 +130,41 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
   const scorePercent = Math.round((correctAnswersCount / totalCount) * 100);
   const passed = scorePercent >= 80;
 
-  // Auto-advance Timer Ref
-  const autoNextTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
-    };
-  }, []);
-
-  const handleSelectOption = (opt: string) => {
+  const handleSelectOption = (option: string) => {
     if (isAnswerSubmitted) return;
-    setSelectedOption(opt);
+    setSelectedOption(option);
     setIsAnswerSubmitted(true);
-    const isCorrect = opt === currentQ.correctAnswer;
 
-    if (isCorrect) {
-      setCorrectAnswersCount(prev => prev + 1);
-    } else {
-      // RULE: Incorrect answers MUST increase revision frequency!
-      const prog = storage.getProgress().find(p => p.kanji_id === currentQ.kanjiId);
-      const newMistakes = (prog?.mistake_count || 0) + 1;
+    const isCorrect = option === currentQ.correctAnswer;
+    const submittedCorrectCount = correctAnswersCount + (isCorrect ? 1 : 0);
+    setCorrectAnswersCount(submittedCorrectCount);
+
+    if (!isCorrect) {
+      // Incorrect answers increase revision frequency.
+      const progress = storage.getProgress().find(p => p.kanji_id === currentQ.kanjiId);
       storage.updateSingleKanjiProgress(currentQ.kanjiId, {
-        mistake_count: newMistakes,
+        mistake_count: (progress?.mistake_count || 0) + 1,
         learning_status: 'needs_revision',
         srs_repetitions: 0,
-        srs_interval: 1, // SRS interval reset to 1 day
+        srs_interval: 1,
         last_studied_at: new Date().toISOString()
       });
       onProgressUpdated?.();
     }
 
-    // Automatic smooth navigation to next question after 800ms
     if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
     autoNextTimerRef.current = setTimeout(() => {
-      handleNext();
+      handleNext(submittedCorrectCount);
     }, 800);
   };
 
   const handleSubmitAnswer = () => {
-    if (!selectedOption || isAnswerSubmitted) return;
-    setIsAnswerSubmitted(true);
-    const isCorrect = selectedOption === currentQ.correctAnswer;
-
-    if (isCorrect) {
-      setCorrectAnswersCount(prev => prev + 1);
-    } else {
-      // RULE: Incorrect answers MUST increase revision frequency!
-      const prog = storage.getProgress().find(p => p.kanji_id === currentQ.kanjiId);
-      const newMistakes = (prog?.mistake_count || 0) + 1;
-      storage.updateSingleKanjiProgress(currentQ.kanjiId, {
-        mistake_count: newMistakes,
-        learning_status: 'needs_revision',
-        srs_repetitions: 0,
-        srs_interval: 1, // SRS interval reset to 1 day
-        last_studied_at: new Date().toISOString()
-      });
-      onProgressUpdated?.();
-    }
-
-    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
-    autoNextTimerRef.current = setTimeout(() => {
-      handleNext();
-    }, 800);
+    if (selectedOption) handleSelectOption(selectedOption);
   };
 
-  const handleNext = () => {
+  const handleNext = (submittedCorrectCount: number) => {
     if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    autoNextTimerRef.current = null;
     if (currentIndex + 1 < totalCount) {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
@@ -194,7 +172,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
       setShowEnglishMeaning(false);
     } else {
       // Completed all questions
-      const finalScore = Math.round(((correctAnswersCount + (selectedOption === currentQ.correctAnswer ? 0 : 0)) / totalCount) * 100);
+      const finalScore = Math.round((submittedCorrectCount / totalCount) * 100);
       setIsCompleted(true);
 
       if (finalScore >= 80) {
@@ -428,7 +406,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                   ) : (
                     <button
                       type="button"
-                      onClick={handleNext}
+                      onClick={() => handleNext(correctAnswersCount)}
                       className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-md transition-all cursor-pointer"
                     >
                       <span>{currentIndex + 1 < totalCount ? 'Next Question' : 'View Results'}</span>

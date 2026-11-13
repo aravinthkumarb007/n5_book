@@ -1,6 +1,5 @@
 import { VocabLearningStatus, VocabStatusRecord, MinnaVocabularyItem } from '@/types/minna';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
-import { getSupabaseHeaders } from './supabaseClient';
 
 const VOCAB_STATUS_STORAGE_KEY = 'n5_vocab_statuses_v1';
 const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
@@ -153,7 +152,7 @@ export async function setVocabStatus(
   try {
     const res = await fetch('/api/vocabulary/status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSupabaseHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         vocabId,
         lessonNumber,
@@ -208,7 +207,7 @@ export async function batchSetVocabStatus(
   try {
     const res = await fetch('/api/vocabulary/status/batch', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getSupabaseHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ updates, userId })
     });
 
@@ -221,12 +220,12 @@ export async function batchSetVocabStatus(
 }
 
 /**
- * Fetch and merge vocabulary statuses from the backend Supabase database.
+ * Fetch and merge vocabulary statuses from the backend Neon database.
  */
 export async function syncVocabStatusesFromBackend(userId: string = DEFAULT_USER_ID): Promise<Record<string, VocabStatusRecord>> {
   try {
     const res = await fetch(`/api/vocabulary/status?userId=${encodeURIComponent(userId)}`, {
-      headers: getSupabaseHeaders()
+      headers: {}
     });
     if (!res.ok) return getStoredVocabStatuses();
 

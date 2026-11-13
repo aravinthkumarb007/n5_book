@@ -1,6 +1,14 @@
 import { CustomLesson, ExamResultRecord, MinnaUserLessonProgress } from '@/types/minna';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+async function syncMinna(action: string, value: unknown) {
+  if (typeof window === 'undefined') return;
+  const response = await fetch('/api/database/minna', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, value }),
+  });
+  if (!response.ok && response.status !== 401) throw new Error('Minna cloud sync failed');
+}
 
 const MINNA_STORAGE_KEYS = {
   PROGRESS: 'minna_user_progress_v1',
@@ -64,16 +72,15 @@ export function saveMinnaProgress(progress: MinnaUserLessonProgress[]): void {
     console.error('Error saving minna progress to localStorage:', err);
   }
 
-  // Asynchronous background sync to Supabase if configured
-  if (isSupabaseConfigured()) {
-    syncMinnaProgressToSupabase(progress).catch(err => {
-      console.warn('Supabase minna progress sync background error:', err);
+  // Asynchronous background sync to Neon if configured
+  if (typeof window !== 'undefined') {
+    syncMinnaProgressToNeon(progress).catch(err => {
+      console.warn('Neon minna progress sync background error:', err);
     });
   }
 }
 
-async function syncMinnaProgressToSupabase(progress: MinnaUserLessonProgress[]): Promise<void> {
-  if (!isSupabaseConfigured()) return;
+async function syncMinnaProgressToNeon(progress: MinnaUserLessonProgress[]): Promise<void> {
   try {
     const rows = progress.map(p => ({
       user_id: DEFAULT_USER_ID,
@@ -89,7 +96,7 @@ async function syncMinnaProgressToSupabase(progress: MinnaUserLessonProgress[]):
       updated_at: new Date().toISOString()
     }));
 
-    await supabase.from('minna_user_progress').upsert(rows, { onConflict: 'user_id,lesson_number' });
+    await syncMinna('progress', rows);
   } catch (e) {
     // Graceful fallback for offline / unauthenticated states
   }
@@ -193,10 +200,10 @@ export function saveCustomLesson(lesson: CustomLesson): CustomLesson[] {
     localStorage.setItem(MINNA_STORAGE_KEYS.CUSTOM_LESSONS, JSON.stringify(next));
   }
 
-  // Sync to Supabase
-  if (isSupabaseConfigured()) {
+  // Sync to Neon
+  if (typeof window !== 'undefined') {
     Promise.resolve(
-      supabase.from('custom_lessons').upsert({
+      syncMinna('lesson', {
         id: lesson.id,
         user_id: DEFAULT_USER_ID,
         title: lesson.title,
@@ -208,7 +215,7 @@ export function saveCustomLesson(lesson: CustomLesson): CustomLesson[] {
         is_user_created: lesson.isUserCreated,
         updated_at: new Date().toISOString()
       })
-    ).catch(e => console.warn('Supabase custom lesson sync error:', e));
+    ).catch(e => console.warn('Neon custom lesson sync error:', e));
   }
 
   return next;
@@ -220,9 +227,9 @@ export function deleteCustomLesson(id: string): CustomLesson[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(MINNA_STORAGE_KEYS.CUSTOM_LESSONS, JSON.stringify(next));
   }
-  if (isSupabaseConfigured()) {
+  if (typeof window !== 'undefined') {
     Promise.resolve(
-      supabase.from('custom_lessons').delete().eq('id', id)
+      syncMinna('deleteLesson', id)
     ).catch(e => console.warn(e));
   }
   return next;
@@ -266,10 +273,10 @@ export function saveExamResult(result: ExamResultRecord): ExamResultRecord[] {
     }
   }
 
-  // Sync to Supabase
-  if (isSupabaseConfigured()) {
+  // Sync to Neon
+  if (typeof window !== 'undefined') {
     Promise.resolve(
-      supabase.from('minna_exam_results').insert({
+      syncMinna('exam', {
         id: result.id,
         user_id: DEFAULT_USER_ID,
         exam_title: result.examTitle,
@@ -284,7 +291,7 @@ export function saveExamResult(result: ExamResultRecord): ExamResultRecord[] {
         weak_vocab: result.weakVocab,
         ai_diagnostic: result.aiDiagnostic || {}
       })
-    ).catch(e => console.warn('Supabase exam result sync error:', e));
+    ).catch(e => console.warn('Neon exam result sync error:', e));
   }
 
   return next;
