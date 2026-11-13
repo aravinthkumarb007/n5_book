@@ -147,6 +147,7 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
     const minnaProgress = loadMinnaProgress();
     const mockExamResults = getExamHistory();
     const countersQuizResults = getCountersQuizHistory();
+    const kanjiLevelTestResults = storage.getKanjiLevelTestResults();
     const vocabStatuses = getStoredVocabStatuses();
     const vocabUpdates = Object.values(vocabStatuses).map(s => ({
       vocabId: s.vocabId,
@@ -161,6 +162,7 @@ export async function syncFullProjectToCloud(): Promise<SyncResult> {
       minnaProgress,
       mockExamResults,
       countersQuizResults,
+      kanjiLevelTestResults,
       vocabUpdates
     };
 

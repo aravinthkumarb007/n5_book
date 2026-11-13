@@ -120,9 +120,42 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
   const scorePercent = Math.round((correctAnswersCount / totalCount) * 100);
   const passed = scorePercent >= 80;
 
+  // Auto-advance Timer Ref
+  const autoNextTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    };
+  }, []);
+
   const handleSelectOption = (opt: string) => {
     if (isAnswerSubmitted) return;
     setSelectedOption(opt);
+    setIsAnswerSubmitted(true);
+    const isCorrect = opt === currentQ.correctAnswer;
+
+    if (isCorrect) {
+      setCorrectAnswersCount(prev => prev + 1);
+    } else {
+      // RULE: Incorrect answers MUST increase revision frequency!
+      const prog = storage.getProgress().find(p => p.kanji_id === currentQ.kanjiId);
+      const newMistakes = (prog?.mistake_count || 0) + 1;
+      storage.updateSingleKanjiProgress(currentQ.kanjiId, {
+        mistake_count: newMistakes,
+        learning_status: 'needs_revision',
+        srs_repetitions: 0,
+        srs_interval: 1, // SRS interval reset to 1 day
+        last_studied_at: new Date().toISOString()
+      });
+      onProgressUpdated?.();
+    }
+
+    // Automatic smooth navigation to next question after 800ms
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    autoNextTimerRef.current = setTimeout(() => {
+      handleNext();
+    }, 800);
   };
 
   const handleSubmitAnswer = () => {
@@ -145,9 +178,15 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
       });
       onProgressUpdated?.();
     }
+
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+    autoNextTimerRef.current = setTimeout(() => {
+      handleNext();
+    }, 800);
   };
 
   const handleNext = () => {
+    if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
     if (currentIndex + 1 < totalCount) {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);

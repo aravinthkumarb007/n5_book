@@ -151,3 +151,28 @@ export interface ApiConfiguration {
 }
 
 export type FlashcardRating = 'again' | 'hard' | 'good' | 'easy';
+
+export interface KanjiLevelTestResult {
+  id: string;
+  user_id?: string;
+  test_type: 'level_hardcoded' | 'level_ai' | 'all_unlocked_ai';
+  level?: number;
+  title: string;
+  score_percent: number;
+  total_questions: number;
+  correct_count: number;
+  incorrect_count: number;
+  is_passed: boolean;
+  generation_mode: string;
+  kanji_ids_tested: number[];
+  answers: {
+    questionId: string;
+    kanjiId: number;
+    prompt: string;
+    selectedAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+  }[];
+  time_spent_seconds: number;
+  created_at: string;
+}
