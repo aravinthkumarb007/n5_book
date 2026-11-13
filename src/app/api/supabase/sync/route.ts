@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       mockExamResults,
       countersQuizResult,
       countersQuizResults,
+      kanjiLevelTestResults,
       vocabUpdates,
       userId = '00000000-0000-0000-0000-000000000001' 
     } = body;
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     let syncedMinnaCount = 0;
     let syncedMockExam = false;
     let syncedCountersQuiz = false;
+    let syncedKanjiLevelTests = false;
 
     // 1. Sync User Kanji Progress
     if (progressList && Array.isArray(progressList) && progressList.length > 0) {
@@ -204,6 +206,37 @@ export async function POST(request: Request) {
       }
     }
 
+    // 7. Sync Kanji Level Test & AI Test Results
+    if (kanjiLevelTestResults && Array.isArray(kanjiLevelTestResults) && kanjiLevelTestResults.length > 0) {
+      try {
+        const testRows = kanjiLevelTestResults.map((r: any) => ({
+          id: r.id,
+          user_id: userId,
+          test_type: r.test_type,
+          level: r.level || null,
+          title: r.title,
+          score_percent: r.score_percent,
+          total_questions: r.total_questions,
+          correct_count: r.correct_count,
+          incorrect_count: r.incorrect_count,
+          is_passed: r.is_passed,
+          generation_mode: r.generation_mode,
+          kanji_ids_tested: r.kanji_ids_tested || [],
+          answers: r.answers || [],
+          time_spent_seconds: r.time_spent_seconds || 0,
+          created_at: r.created_at || new Date().toISOString()
+        }));
+
+        const { error: tErr } = await supabase
+          .from('kanji_level_test_results')
+          .upsert(testRows, { onConflict: 'id' });
+
+        if (!tErr) syncedKanjiLevelTests = true;
+      } catch (e) {
+        console.warn('kanji_level_test_results table might not exist yet:', e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       syncedProgressCount,
@@ -211,6 +244,7 @@ export async function POST(request: Request) {
       syncedMinnaCount,
       syncedMockExam,
       syncedCountersQuiz,
+      syncedKanjiLevelTests,
       syncedVocabCount,
       timestamp: new Date().toISOString()
     });
@@ -268,6 +302,18 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
       .limit(20);
 
+    // 6. Fetch Kanji Level Test results
+    let kanjiLevelTestsData: any[] = [];
+    try {
+      const { data: testsData } = await supabase
+        .from('kanji_level_test_results')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (testsData) kanjiLevelTestsData = testsData;
+    } catch {}
+
     const hasLearnedKanji = Boolean(
       progress && progress.some((p: any) => p.learning_status === 'learned' || p.learning_status === 'needs_revision')
     );
@@ -279,6 +325,7 @@ export async function GET(request: Request) {
       minnaProgress: minnaData || [],
       mockExams: mockExamData || [],
       countersResults: countersData || [],
+      kanjiLevelTests: kanjiLevelTestsData,
       hasCloudData: Boolean(progress && progress.length > 0),
       hasLearnedKanji
     });

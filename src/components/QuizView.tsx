@@ -353,7 +353,7 @@ export function QuizView({
         <div className="mt-4 p-4 rounded-xl bg-stone-50 dark:bg-stone-800/60 text-xs text-stone-600 dark:text-stone-300 text-left border border-stone-200 dark:border-stone-700">
           <p className="font-semibold text-stone-800 dark:text-stone-100 mb-1">To unlock the test engine:</p>
           <ol className="list-decimal list-inside space-y-1">
-            <li>Open <strong>Learn Kanji</strong> and select Level 1 (Numbers 1-10).</li>
+            <li>Open <strong>Learn Kanji</strong> and select Level 1 (Kanji 1-10: 人 to 八).</li>
             <li>Study any kanji and take its 4-step assessment.</li>
             <li>Score 80%+ to earn the <span className="text-emerald-600 font-bold">Learned</span> status.</li>
             <li>Return here to test yourself across all 9 adaptive test modes!</li>

@@ -9,6 +9,7 @@ import { KanjiRecord, UserKanjiProgress } from '@/types/kanji';
 import { LEVEL_METADATA, LevelInfo } from '@/data/kanjiDatabase';
 import { AudioButton } from './AudioButton';
 import { recoverCompletedLevel1 } from '@/services/cloudSyncService';
+import { KanjiLevelTestModal, TestScopeMode } from './KanjiLevelTestModal';
 
 interface LearnKanjiViewProps {
   kanjiList: KanjiRecord[];
@@ -32,6 +33,22 @@ export function LearnKanjiView({
   const [searchQuery, setSearchQuery] = useState('');
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+
+  // Level & AI Test Modal State
+  const [isLevelTestModalOpen, setIsLevelTestModalOpen] = useState(false);
+  const [modalScopeMode, setModalScopeMode] = useState<TestScopeMode>('level_test');
+  const [modalInitialLevel, setModalInitialLevel] = useState<number>(1);
+
+  const handleOpenLevelTest = (level: number) => {
+    setModalScopeMode('level_test');
+    setModalInitialLevel(level);
+    setIsLevelTestModalOpen(true);
+  };
+
+  const handleOpenAiTest = () => {
+    setModalScopeMode('all_unlocked_ai');
+    setIsLevelTestModalOpen(true);
+  };
 
   const handleRecoverLevel1 = async () => {
     setIsRecovering(true);
@@ -101,6 +118,14 @@ export function LearnKanjiView({
     return Object.values(progressMap).filter(p => p.learning_status === 'learned' || p.learning_status === 'needs_revision').length;
   }, [progressMap]);
 
+  // All eligible learned or unlocked kanji pool for AI test (Requirement 4)
+  const allLearnedOrUnlockedPool = useMemo(() => {
+    return kanjiList.filter(k => {
+      const p = progressMap[k.id];
+      return p ? p.learning_status !== 'locked' : levelUnlockStatus[k.level];
+    });
+  }, [kanjiList, progressMap, levelUnlockStatus]);
+
   // Filter kanji based on level, search, and status
   const filteredLevels = useMemo(() => {
     let levels = LEVEL_METADATA;
@@ -159,6 +184,17 @@ export function LearnKanjiView({
                         </div>
 
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto shrink-0 min-w-0">
+                            {/* AI Test for All Learned / Unlocked Kanji (Requirement 4) */}
+                            <button
+                              onClick={handleOpenAiTest}
+                              disabled={allLearnedOrUnlockedPool.length === 0}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-800 text-white font-bold transition shadow-lg shrink-0 text-xs sm:text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                              title={`Dynamic AI Test strictly covering all your ${allLearnedOrUnlockedPool.length} learned and unlocked kanji`}
+                            >
+                              <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                              <span className="truncate">AI Test ({allLearnedOrUnlockedPool.length} Kanji)</span>
+                            </button>
+
                             {totalLearnedAllLevels > 0 && (
                               <button
                                 onClick={() => {
@@ -217,7 +253,7 @@ export function LearnKanjiView({
                                                 </span>
                                             </div>
                                               <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed break-words">
-                                                Restore your 10 completed Kanji (#1 一 through #10 十), immediately unlock Level 2, and verify & save the completion to Supabase.
+                                                Restore your 10 completed Kanji (#1 人 through #10 八), immediately unlock Level 2, and verify & save the completion to Supabase.
                                               </p>
                                           </div>
                                       </div>
@@ -350,6 +386,13 @@ export function LearnKanjiView({
                                                     const stat = levelStats[lvl.level];
                                                     const kanjis = getFilteredKanjiForLevel(lvl);
 
+                                                    // Requirement 1: Check if all kanji in this level have been studied
+                                                    const studiedCount = lvl.kanjiIds.filter(id => {
+                                                      const p = progressMap[id];
+                                                      return p && (p.learning_status === 'learned' || p.learning_status === 'learning' || p.learning_status === 'needs_revision' || p.last_studied_at);
+                                                    }).length;
+                                                    const isLevelStudied = isUnlocked && studiedCount === lvl.kanjiIds.length;
+
                                                     return (
                                                       <div
                                                         key={lvl.level}
@@ -384,11 +427,11 @@ export function LearnKanjiView({
                                                         </p>
                                                       </div>
 
-                                                        {/* Progress Bar & Counter */}
+                                                        {/* Progress Bar & Common Start Test Button (Requirement 1) */}
                                                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
-                                                          <div className="flex-1 w-full sm:w-48 min-w-0">
+                                                          <div className="flex-1 w-full sm:w-44 min-w-0">
                                                             <div className="flex justify-between text-xs font-semibold mb-1">
-                                                              <span className="text-stone-600 dark:text-stone-300">Mastery Progress</span>
+                                                              <span className="text-stone-600 dark:text-stone-300">Mastery</span>
                                                               <span className="text-red-600 dark:text-red-400">{stat?.learned || 0}/10 ({stat?.pct || 0}%)</span>
                                                             </div>
                                                             <div className="h-2 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden">
@@ -399,17 +442,24 @@ export function LearnKanjiView({
                                                             </div>
                                                           </div>
 
-                                                      {stat && stat.learned > 0 && (
+                                                      {/* Common Test Button for Each Level */}
+                                                      {isLevelStudied ? (
                                                         <button
-                                                          onClick={() => {
-                                                            const firstLevelLearned = kanjis.find(k => progressMap[k.id]?.learning_status === 'learned' || progressMap[k.id]?.learning_status === 'needs_revision');
-                                                            if (firstLevelLearned) onStartAssessment(firstLevelLearned, true);
-                                                          }}
-                                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition shadow-xs shrink-0 cursor-pointer w-full sm:w-auto"
-                                                          title={`Re-test all ${stat.learned} learned kanji in Level ${lvl.level}`}
+                                                          onClick={() => handleOpenLevelTest(lvl.level)}
+                                                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm hover:shadow-md cursor-pointer shrink-0 w-full sm:w-auto active:scale-95"
+                                                          title={`Start Level ${lvl.level} Test (All 10 Kanji Studied)`}
                                                         >
-                                                          <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                                                          <span>Re-Test Level ({stat.learned})</span>
+                                                          <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                                                          <span>Start Test</span>
+                                                        </button>
+                                                      ) : (
+                                                        <button
+                                                          disabled
+                                                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 dark:text-stone-500 text-xs font-semibold shrink-0 cursor-not-allowed border border-stone-200/80 dark:border-stone-700/60 w-full sm:w-auto"
+                                                          title={`Study all 10 kanji in Level ${lvl.level} to unlock this test (${studiedCount}/10 studied)`}
+                                                        >
+                                                          <Lock className="w-3 h-3 shrink-0" />
+                                                          <span>Start Test ({studiedCount}/10)</span>
                                                         </button>
                                                       )}
                                                     </div>
@@ -555,6 +605,19 @@ export function LearnKanjiView({
                                                 );
         })}
                                           </div>
+
+                                          {/* Kanji Level & AI Test Modal */}
+                                          <KanjiLevelTestModal
+                                            isOpen={isLevelTestModalOpen}
+                                            onClose={() => setIsLevelTestModalOpen(false)}
+                                            scopeMode={modalScopeMode}
+                                            initialLevel={modalInitialLevel}
+                                            kanjiList={kanjiList}
+                                            progressMap={progressMap}
+                                            onTestCompleted={() => {
+                                              onRefreshProgress?.();
+                                            }}
+                                          />
                                         </div>
                                         );
 }
