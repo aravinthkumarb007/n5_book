@@ -1,28 +1,27 @@
 import { NextResponse } from 'next/server';
-import { getServerSupabaseClient } from '@/services/serverSupabase';
+import { getDatabase, cloudAuthorized, OWNER_ID } from '@/services/serverDatabase';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
+    const db = getDatabase();
     const body = await request.json();
+    const userId = OWNER_ID;
     const { 
       progressList, 
       settings, 
       quizHistory, 
       sessions, 
       minnaProgress,
-      customLessons,
-      minnaExamResults,
       mockExamResult, 
       mockExamResults,
       countersQuizResult,
       countersQuizResults,
       kanjiLevelTestResults,
       vocabUpdates,
-      userId = '00000000-0000-0000-0000-000000000001' 
     } = body;
 
     let syncedProgressCount = 0;
@@ -35,7 +34,7 @@ export async function POST(request: Request) {
     // 1. Sync User Kanji Progress
     if (progressList && Array.isArray(progressList) && progressList.length > 0) {
       // Ensure master kanji exist first to guarantee foreign key constraint never fails
-      const { count: masterCount } = await supabase
+      const { count: masterCount } = await db
         .from('kanji')
         .select('*', { count: 'exact', head: true });
 
@@ -50,7 +49,8 @@ export async function POST(request: Request) {
           radicals: k.radicals,
           mnemonic: k.mnemonic
         }));
-        await supabase.from('kanji').upsert(kanjiRecords, { onConflict: 'id' });
+        const { error } = await db.from('kanji').upsert(kanjiRecords, { onConflict: 'id' });
+        if (error) throw error;
       }
 
       const records = progressList.map((p: any) => ({
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString()
       }));
 
-      const { error: pErr } = await supabase
+      const { error: pErr } = await db
         .from('user_kanji_progress')
         .upsert(records, { onConflict: 'user_id,kanji_id' });
 
@@ -104,13 +104,11 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString()
       };
 
-      const { error: sErr } = await supabase
+      const { error: sErr } = await db
         .from('user_settings')
         .upsert(settingsRecord, { onConflict: 'user_id' });
 
-      if (sErr) {
-        console.warn('user_settings sync warning:', sErr.message);
-      }
+      if (sErr) throw sErr;
     }
 
     // 3. Sync Quiz History
@@ -126,8 +124,9 @@ export async function POST(request: Request) {
         created_at: q.date || new Date().toISOString()
       }));
 
-      const { error: qErr } = await supabase.from('quiz_history').insert(quizRecords);
-      if (!qErr) syncedQuizzesCount = quizRecords.length;
+      const { error: qErr } = await db.from('quiz_history').insert(quizRecords);
+      if (qErr) throw qErr;
+      syncedQuizzesCount = quizRecords.length;
     }
 
     // 4. Sync Minna Lesson Progress
@@ -146,11 +145,12 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString()
       }));
 
-      const { error: mErr } = await supabase
+      const { error: mErr } = await db
         .from('minna_user_progress')
         .upsert(minnaRecords, { onConflict: 'user_id,lesson_number' });
 
-      if (!mErr) syncedMinnaCount = minnaRecords.length;
+      if (mErr) throw mErr;
+      syncedMinnaCount = minnaRecords.length;
     }
 
     // 5. Sync Mock Exam Results (single or batch)
@@ -161,10 +161,11 @@ export async function POST(request: Request) {
       : [];
 
     if (mockList.length > 0) {
-      const { error: meErr } = await supabase
+      const { error: meErr } = await db
         .from('mock_exam_results')
-        .upsert(mockList, { onConflict: 'id' });
-      if (!meErr) syncedMockExam = true;
+        .upsert(mockList.map((row: Record<string, unknown>) => ({ ...row, user_id: userId })), { onConflict: 'id' });
+      if (meErr) throw meErr;
+      syncedMockExam = true;
     }
 
     // 6. Sync Counters Quiz Results (single or batch)
@@ -175,10 +176,11 @@ export async function POST(request: Request) {
       : [];
 
     if (countersList.length > 0) {
-      const { error: cqErr } = await supabase
+      const { error: cqErr } = await db
         .from('counters_quiz_results')
-        .upsert(countersList, { onConflict: 'id' });
-      if (!cqErr) syncedCountersQuiz = true;
+        .upsert(countersList.map((row: Record<string, unknown>) => ({ ...row, user_id: userId })), { onConflict: 'id' });
+      if (cqErr) throw cqErr;
+      syncedCountersQuiz = true;
     }
 
     // 7. Sync Vocabulary Learning Statuses
@@ -199,42 +201,40 @@ export async function POST(request: Request) {
       }));
 
       if (cacheRows.length > 0) {
-        const { error: vErr } = await supabase
+        const { error: vErr } = await db
           .from('content_cache')
           .upsert(cacheRows, { onConflict: 'cache_key' });
-        if (!vErr) syncedVocabCount = cacheRows.length;
+        if (vErr) throw vErr;
+        syncedVocabCount = cacheRows.length;
       }
     }
 
     // 7. Sync Kanji Level Test & AI Test Results
     if (kanjiLevelTestResults && Array.isArray(kanjiLevelTestResults) && kanjiLevelTestResults.length > 0) {
-      try {
-        const testRows = kanjiLevelTestResults.map((r: any) => ({
-          id: r.id,
-          user_id: userId,
-          test_type: r.test_type,
-          level: r.level || null,
-          title: r.title,
-          score_percent: r.score_percent,
-          total_questions: r.total_questions,
-          correct_count: r.correct_count,
-          incorrect_count: r.incorrect_count,
-          is_passed: r.is_passed,
-          generation_mode: r.generation_mode,
-          kanji_ids_tested: r.kanji_ids_tested || [],
-          answers: r.answers || [],
-          time_spent_seconds: r.time_spent_seconds || 0,
-          created_at: r.created_at || new Date().toISOString()
-        }));
+      const testRows = kanjiLevelTestResults.map((r: any) => ({
+        id: r.id,
+        user_id: userId,
+        test_type: r.test_type,
+        level: r.level || null,
+        title: r.title,
+        score_percent: r.score_percent,
+        total_questions: r.total_questions,
+        correct_count: r.correct_count,
+        incorrect_count: r.incorrect_count,
+        is_passed: r.is_passed,
+        generation_mode: r.generation_mode,
+        kanji_ids_tested: r.kanji_ids_tested || [],
+        answers: r.answers || [],
+        time_spent_seconds: r.time_spent_seconds || 0,
+        created_at: r.created_at || new Date().toISOString()
+      }));
 
-        const { error: tErr } = await supabase
-          .from('kanji_level_test_results')
-          .upsert(testRows, { onConflict: 'id' });
+      const { error: tErr } = await db
+        .from('kanji_level_test_results')
+        .upsert(testRows, { onConflict: 'id' });
 
-        if (!tErr) syncedKanjiLevelTests = true;
-      } catch (e) {
-        console.warn('kanji_level_test_results table might not exist yet:', e);
-      }
+      if (tErr) throw tErr;
+      syncedKanjiLevelTests = true;
     }
 
     return NextResponse.json({
@@ -251,20 +251,20 @@ export async function POST(request: Request) {
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      error: err.message || 'Failed to sync progress to Supabase.'
+      error: err.message || 'Failed to sync progress to Neon.'
     }, { status: 500 });
   }
 }
 
-// GET endpoint to restore/pull progress from Supabase on application startup
+// GET endpoint to restore/pull progress from Neon on application startup
 export async function GET(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || '00000000-0000-0000-0000-000000000001';
+    const db = getDatabase();
+    const userId = OWNER_ID;
 
     // 1. Fetch user kanji progress
-    const { data: progress, error: pErr } = await supabase
+    const { data: progress, error: pErr } = await db
       .from('user_kanji_progress')
       .select('*')
       .eq('user_id', userId)
@@ -273,21 +273,21 @@ export async function GET(request: Request) {
     if (pErr) throw pErr;
 
     // 2. Fetch user settings & streaks
-    const { data: settingsData } = await supabase
+    const { data: settingsData, error: settingsDataError } = await db
       .from('user_settings')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
     // 3. Fetch Minna lesson progress
-    const { data: minnaData } = await supabase
+    const { data: minnaData, error: minnaDataError } = await db
       .from('minna_user_progress')
       .select('*')
       .eq('user_id', userId)
       .order('lesson_number', { ascending: true });
 
     // 4. Fetch Mock Exam results
-    const { data: mockExamData } = await supabase
+    const { data: mockExamData, error: mockExamDataError } = await db
       .from('mock_exam_results')
       .select('*')
       .eq('user_id', userId)
@@ -295,7 +295,7 @@ export async function GET(request: Request) {
       .limit(20);
 
     // 5. Fetch Counters quiz results
-    const { data: countersData } = await supabase
+    const { data: countersData, error: countersDataError } = await db
       .from('counters_quiz_results')
       .select('*')
       .eq('user_id', userId)
@@ -303,16 +303,16 @@ export async function GET(request: Request) {
       .limit(20);
 
     // 6. Fetch Kanji Level Test results
-    let kanjiLevelTestsData: any[] = [];
-    try {
-      const { data: testsData } = await supabase
+    const { data: kanjiLevelTestsData, error: testError } = await db
         .from('kanji_level_test_results')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
-      if (testsData) kanjiLevelTestsData = testsData;
-    } catch {}
+    if (testError) throw testError;
+
+    const readError = settingsDataError || minnaDataError || mockExamDataError || countersDataError;
+    if (readError) throw readError;
 
     const hasLearnedKanji = Boolean(
       progress && progress.some((p: any) => p.learning_status === 'learned' || p.learning_status === 'needs_revision')
@@ -332,7 +332,7 @@ export async function GET(request: Request) {
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      error: err.message || 'Failed to fetch progress from Supabase.',
+      error: err.message || 'Failed to fetch progress from Neon.',
       progress: [],
       hasCloudData: false,
       hasLearnedKanji: false

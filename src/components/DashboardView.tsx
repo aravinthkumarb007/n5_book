@@ -151,7 +151,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     Completed Kanji Level 1 yesterday?
                   </h4>
                   <p className="text-xs text-stone-600 dark:text-stone-300">
-                    Click here to immediately restore your completed Level 1 kanji (#1 人 to #10 八), unlock Level 2, and save to Supabase.
+                    Click here to immediately restore your completed Level 1 kanji (#1 人 to #10 八), unlock Level 2, and save to Neon.
                   </p>
                 </div>
               </div>

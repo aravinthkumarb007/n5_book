@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSupabaseClient } from '@/services/serverSupabase';
+import { getDatabase, cloudAuthorized, OWNER_ID } from '@/services/serverDatabase';
 import { VocabLearningStatus, VocabStatusRecord } from '@/types/minna';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 // GET: Retrieve all vocabulary statuses for a user (or filtered by lesson/status)
 export async function GET(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
+    const db = getDatabase();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || DEFAULT_USER_ID;
+    const userId = OWNER_ID;
     const lessonParam = searchParams.get('lessonNumber');
     const statusParam = searchParams.get('status') as VocabLearningStatus | null;
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
     // 1. Try reading from dedicated vocabulary_learning_status table first
     try {
-      const { data: vlsData, error: vlsErr } = await supabase
+      const { data: vlsData, error: vlsErr } = await db
         .from('vocabulary_learning_status')
         .select('*')
         .eq('user_id', userId);
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
     // 2. Fallback to content_cache
     const prefix = `vocab_status_${userId}_`;
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('content_cache')
       .select('cache_key, payload, updated_at')
       .eq('content_type', 'vocabulary_status')
@@ -114,14 +114,15 @@ export async function GET(request: Request) {
 
 // POST: Save or update a single vocabulary status
 export async function POST(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
+    const db = getDatabase();
     const body = await request.json();
+    const userId = OWNER_ID;
     const {
       vocabId,
       lessonNumber,
       status, // 'learned' | 'not_sure' | 'not_learned' | null (to delete)
-      userId = DEFAULT_USER_ID
     } = body;
 
     if (!vocabId) {
@@ -137,14 +138,14 @@ export async function POST(request: Request) {
 
     // 1. If status is null or 'unmarked', delete the status entry
     if (!status || status === 'unmarked') {
-      await supabase
+      await db
         .from('content_cache')
         .delete()
         .eq('cache_key', cacheKey);
 
       // Also delete from vocabulary_learning_status table if it exists
       try {
-        await supabase
+        await db
           .from('vocabulary_learning_status')
           .delete()
           .eq('user_id', userId)
@@ -154,7 +155,7 @@ export async function POST(request: Request) {
       // Also clean up from minna_user_progress if it corresponds to standard lesson
       if (lNum >= 1 && lNum <= 50) {
         try {
-          const { data: existingProg } = await supabase
+          const { data: existingProg } = await db
             .from('minna_user_progress')
             .select('*')
             .eq('user_id', userId)
@@ -164,7 +165,7 @@ export async function POST(request: Request) {
           if (existingProg) {
             const nextLearned = (existingProg.learned_vocab_ids || []).filter((id: string) => id !== vocabId);
             const nextWeak = (existingProg.weak_vocab_ids || []).filter((id: string) => id !== vocabId);
-            await supabase
+            await db
               .from('minna_user_progress')
               .update({
                 learned_vocab_ids: nextLearned,
@@ -205,7 +206,7 @@ export async function POST(request: Request) {
       userId
     };
 
-    await supabase
+    await db
       .from('content_cache')
       .upsert({
         cache_key: cacheKey,
@@ -216,7 +217,7 @@ export async function POST(request: Request) {
 
     // 4. Also upsert into vocabulary_learning_status table if created
     try {
-      await supabase
+      await db
         .from('vocabulary_learning_status')
         .upsert({
           user_id: userId,
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
     // 5. Also synchronize minna_user_progress for consistency
     if (lNum >= 1 && lNum <= 50) {
       try {
-        const { data: existingProg } = await supabase
+        const { data: existingProg } = await db
           .from('minna_user_progress')
           .select('*')
           .eq('user_id', userId)
@@ -258,7 +259,7 @@ export async function POST(request: Request) {
           updated_at: updatedAt
         };
 
-        await supabase
+        await db
           .from('minna_user_progress')
           .upsert(progRow, { onConflict: 'user_id,lesson_number' });
       } catch (e) {

@@ -30,3 +30,10 @@ If you are developing a production application, we recommend enabling type-aware
 ```
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+
+## Neon cloud sync
+
+Set `DATABASE_URL` and `CLOUD_ACCESS_KEY` in the server environment or in a Git-ignored `.env.local` for local development. Use the pooled Neon URL for the restricted application role. Set a random access key and enter it in Settings to unlock cloud sync on a trusted device. The browser receives an HTTP-only session cookie.
+
+The restored cloud records use one legacy owner ID. This configuration is for a single owner across their devices. A public multi-user deployment requires individual identities and verified ownership before access is granted. Use a separate database role for backup and schema changes.
