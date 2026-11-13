@@ -32,7 +32,7 @@ export function LevelCompletionModal({
         setErrorMessage(undefined);
         onRetrySuccess?.();
       } else {
-        setErrorMessage(res.error || 'Failed to save to cloud database. Please check your Supabase configuration.');
+        setErrorMessage(res.error || 'Failed to save to cloud database. Please check your Neon configuration.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Network error occurred while contacting database.');
@@ -65,7 +65,7 @@ export function LevelCompletionModal({
                 Level {level} Conquered! 🎉
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
-                All 10 Kanji have been mastered and successfully recorded in your <strong>Supabase Cloud Database</strong>. Level {level + 1} is now unlocked!
+                All 10 Kanji have been mastered and successfully recorded in your <strong>Neon Cloud Database</strong>. Level {level + 1} is now unlocked!
               </p>
             </div>
 

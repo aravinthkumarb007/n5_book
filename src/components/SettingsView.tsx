@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { UserSettings } from '@/types/kanji';
 import { storage, triggerAutoCloudSync } from '@/services/storage';
-import { setClientSupabaseCredentials } from '@/services/supabaseClient';
 import { restoreAndMergeCloudData } from '@/services/cloudSyncService';
 import { syncVocabStatusesFromBackend } from '@/services/vocabStorage';
 
@@ -71,33 +70,25 @@ export function SettingsView({
 
   const [geminiSaveMessage, setGeminiSaveMessage] = useState<string | null>(null);
 
-  // Supabase Cloud State
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
-  const [showSupabaseKey, setShowSupabaseKey] = useState(false);
-  const [supabaseStatus, setSupabaseStatus] = useState<{
-    configured: boolean;
-    url?: string;
-    maskedKey?: string;
-    hasKey?: boolean;
-  } | null>(null);
+  const [cloudAccessKey, setCloudAccessKey] = useState('');
+  const [neonStatus, setNeonStatus] = useState<{ configured: boolean; authorized: boolean } | null>(null);
 
-  // Supabase Test Connection State
-  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
-  const [supabaseTestResult, setSupabaseTestResult] = useState<{
+  // Neon Test Connection State
+  const [isTestingNeon, setIsTestingNeon] = useState(false);
+  const [neonTestResult, setNeonTestResult] = useState<{
     success: boolean;
     message: string;
     latencyMs?: number;
     error?: string;
   } | null>(null);
 
-  // Supabase Save Status message
-  const [supabaseSaveMessage, setSupabaseSaveMessage] = useState<string | null>(null);
+  // Neon Save Status message
+  const [neonSaveMessage, setNeonSaveMessage] = useState<string | null>(null);
 
   const [isSeedingKanji, setIsSeedingKanji] = useState(false);
   const [isSyncingProgress, setIsSyncingProgress] = useState(false);
   const [isRestoringProgress, setIsRestoringProgress] = useState(false);
-  const [supabaseMessage, setSupabaseMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [neonMessage, setNeonMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Load existing server config on mount
   useEffect(() => {
@@ -121,45 +112,45 @@ export function SettingsView({
       })
       .catch(() => { });
 
-    fetch('/api/supabase/status')
+    fetch('/api/database/status')
       .then(res => res.json())
-      .then(data => setSupabaseStatus(data))
+      .then(data => setNeonStatus(data))
       .catch(() => { });
   }, []);
 
-  const handleSeedKanjiToSupabase = async () => {
+  const handleSeedKanjiToNeon = async () => {
     setIsSeedingKanji(true);
-    setSupabaseMessage(null);
+    setNeonMessage(null);
     try {
-      const res = await fetch('/api/supabase/seed', { method: 'POST' });
+      const res = await fetch('/api/database/seed', { method: 'POST' });
       const data = await res.json();
       if (res.ok && data.success) {
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'success',
-          text: `✓ Success! Seeded all 120 Kanji, ${data.summary.readingsInserted} readings, and ${data.summary.vocabInserted} vocabulary items to Supabase!`
+          text: `✓ Success! Seeded all 120 Kanji, ${data.summary.readingsPrepared} readings, and ${data.summary.vocabPrepared} vocabulary items to Neon!`
         });
       } else {
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'error',
           text: `Error seeding: ${data.error || 'Failed'}`
         });
       }
     } catch (err: any) {
-      setSupabaseMessage({ type: 'error', text: `Connection error: ${err.message}` });
+      setNeonMessage({ type: 'error', text: `Connection error: ${err.message}` });
     } finally {
       setIsSeedingKanji(false);
     }
   };
 
-  const handleSyncProgressToSupabase = async () => {
+  const handleSyncProgressToNeon = async () => {
     setIsSyncingProgress(true);
-    setSupabaseMessage(null);
+    setNeonMessage(null);
     try {
       const progressList = storage.getProgress();
       const quizHistory = storage.getQuizHistory();
       const currentSettings = storage.getSettings();
 
-      const res = await fetch('/api/supabase/sync', {
+      const res = await fetch('/api/database/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,165 +162,104 @@ export function SettingsView({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'success',
-          text: `✓ Backed up! ${data.syncedProgressCount} Kanji progress records and ${data.syncedQuizzesCount} quiz logs synced to Supabase cloud.`
+          text: `✓ Backed up! ${data.syncedProgressCount} Kanji progress records and ${data.syncedQuizzesCount} quiz logs synced to Neon cloud.`
         });
       } else {
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'error',
           text: `Sync error: ${data.error || 'Failed'}`
         });
       }
     } catch (err: any) {
-      setSupabaseMessage({ type: 'error', text: `Connection error: ${err.message}` });
+      setNeonMessage({ type: 'error', text: `Connection error: ${err.message}` });
     } finally {
       setIsSyncingProgress(false);
     }
   };
 
-  const handleRestoreProgressFromSupabase = async () => {
+  const handleRestoreProgressFromNeon = async () => {
     setIsRestoringProgress(true);
-    setSupabaseMessage(null);
+    setNeonMessage(null);
     try {
-      const res = await fetch('/api/supabase/sync');
+      const res = await fetch('/api/database/sync');
       const data = await res.json();
       if (res.ok && data.success && data.progress && data.progress.length > 0) {
         storage.saveProgress(data.progress);
         onRefreshAllData();
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'success',
-          text: `✓ Restored! Successfully pulled ${data.progress.length} Kanji progress records from Supabase into your browser.`
+          text: `✓ Restored! Successfully pulled ${data.progress.length} Kanji progress records from Neon into your browser.`
         });
       } else {
-        setSupabaseMessage({
+        setNeonMessage({
           type: 'error',
-          text: data.error || 'No progress records found in Supabase for this user.'
+          text: data.error || 'No progress records found in Neon for this user.'
         });
       }
     } catch (err: any) {
-      setSupabaseMessage({ type: 'error', text: `Restore error: ${err.message}` });
+      setNeonMessage({ type: 'error', text: `Restore error: ${err.message}` });
     } finally {
       setIsRestoringProgress(false);
     }
   };
 
-  const handleSaveSupabaseConfig = async () => {
-    setSupabaseSaveMessage(null);
-    setSupabaseTestResult(null);
-
-    const targetUrl = supabaseUrl.trim();
-    const targetKey = supabaseAnonKey.trim();
-
+  const handleSaveNeonConfig = async () => {
+    setNeonSaveMessage(null);
     try {
-      const res = await fetch('/api/supabase/status', {
+      const response = await fetch('/api/database/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: targetUrl || undefined,
-          anonKey: targetKey || undefined
-        })
+        body: JSON.stringify({ accessKey: cloudAccessKey }),
       });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSupabaseStatus({
-          configured: data.configured,
-          url: data.url,
-          maskedKey: data.maskedKey,
-          hasKey: Boolean(data.maskedKey)
-        });
-
-        if (targetUrl && targetKey) {
-          setClientSupabaseCredentials(targetUrl, targetKey);
-        }
-
-        setSupabaseUrl('');
-        setSupabaseAnonKey('');
-        setSupabaseSaveMessage('Supabase credentials securely saved and activated.');
-        setTimeout(() => setSupabaseSaveMessage(null), 4000);
-
-        // Auto fetch and sync cloud data into application state immediately without loss!
-        try {
-          setSupabaseSaveMessage('Supabase credentials saved. Automatically fetching all your progress and vocabulary data...');
-          const cloudResult = await restoreAndMergeCloudData();
-          const vocabResult = await syncVocabStatusesFromBackend();
-          onRefreshAllData();
-          window.dispatchEvent(new CustomEvent('project-data-refreshed'));
-          window.dispatchEvent(new CustomEvent('vocab-status-updated'));
-
-          const learnedCount = cloudResult?.learnedCount || 0;
-          const vocabCount = Object.keys(vocabResult || {}).length;
-          setSupabaseSaveMessage(
-            `✓ Supabase connected! Automatically retrieved ${learnedCount} learned Kanji and ${vocabCount} marked vocabulary items without data loss.`
-          );
-          setTimeout(() => setSupabaseSaveMessage(null), 6000);
-        } catch (fetchErr: any) {
-          console.warn('Post-save auto fetch warning:', fetchErr);
-          triggerAutoCloudSync();
-        }
-      } else {
-        setSupabaseSaveMessage(`Error saving: ${data.error || 'Failed'}`);
-      }
-    } catch (err: any) {
-      setSupabaseSaveMessage(`Network error: ${err.message}`);
+      if (!response.ok) throw new Error('Cloud access key was not accepted.');
+      setNeonStatus({ configured: true, authorized: true });
+      setCloudAccessKey('');
+      await syncVocabStatusesFromBackend();
+      await handleRestoreProgressFromNeon();
+    } catch (error) {
+      setNeonSaveMessage(error instanceof Error ? error.message : 'Could not unlock cloud access.');
     }
   };
 
-  const handleTestSupabaseConnection = async () => {
-    setIsTestingSupabase(true);
-    setSupabaseTestResult(null);
+  const handleTestNeonConnection = async () => {
+    setIsTestingNeon(true);
+    setNeonTestResult(null);
 
     try {
-      const res = await fetch('/api/supabase/test-connection', {
+      const res = await fetch('/api/database/test-connection', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: supabaseUrl.trim() || undefined,
-          anonKey: supabaseAnonKey.trim() || undefined
-        })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSupabaseTestResult({
+        setNeonTestResult({
           success: true,
           message: data.message,
           latencyMs: data.latencyMs
         });
       } else {
-        setSupabaseTestResult({
+        setNeonTestResult({
           success: false,
           message: 'Connection failed',
-          error: data.error || 'Check your Supabase URL and Anon Key.'
+          error: data.error || 'Check the server database configuration.'
         });
       }
     } catch (err: any) {
-      setSupabaseTestResult({
+      setNeonTestResult({
         success: false,
         message: 'Network error',
         error: err.message
       });
     } finally {
-      setIsTestingSupabase(false);
+      setIsTestingNeon(false);
     }
   };
 
-  const handleClearSupabaseConfig = async () => {
-    try {
-      await fetch('/api/supabase/status', { method: 'DELETE' });
-      setClientSupabaseCredentials('', '');
-      setSupabaseStatus({
-        configured: false,
-        url: '',
-        maskedKey: '',
-        hasKey: false
-      });
-      setSupabaseUrl('');
-      setSupabaseAnonKey('');
-      setSupabaseSaveMessage('Supabase credentials removed from server.');
-      setTimeout(() => setSupabaseSaveMessage(null), 3000);
-    } catch { }
+  const handleClearNeonConfig = async () => {
+    const response = await fetch('/api/database/status', { method: 'DELETE' });
+    if (response.ok) setNeonStatus({ configured: true, authorized: false });
   };
 
   const handleSaveGroqConfig = async () => {
@@ -1122,7 +1052,7 @@ export function SettingsView({
         </div>
       </div>
 
-      {/* Supabase Cloud Database & Backup Card */}
+      {/* Neon Cloud Database & Backup Card */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-6 md:p-8 shadow-sm space-y-6">
         <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
           <div className="flex items-center gap-3">
@@ -1131,14 +1061,14 @@ export function SettingsView({
             </div>
             <div>
               <h2 className="text-base font-bold text-stone-900 dark:text-white flex items-center gap-2">
-                Supabase Cloud Database & Storage
-                {supabaseStatus?.configured ? (
+                Neon Cloud Database & Storage
+                {neonStatus?.authorized ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                     <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Connected
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
-                    <AlertTriangle className="w-3 h-3 text-amber-500" /> Credentials Required
+                    <AlertTriangle className="w-3 h-3 text-amber-500" /> Cloud Access Locked
                   </span>
                 )}
               </h2>
@@ -1156,129 +1086,49 @@ export function SettingsView({
             Server-Side Database Isolation & Backup
           </div>
           <p className="opacity-90 leading-relaxed text-[11px]">
-            Your Supabase credentials are authenticated through secure Next.js server endpoints (<code className="font-mono">/api/supabase/...</code>) and saved in <code className="font-mono">.env.local</code> so your study progress remains completely private and encrypted.
+            The server stores the database connection. Unlock cloud access to synchronize or restore your study progress.
           </p>
         </div>
 
-        {/* Current Active Connection Status Display */}
-        {supabaseStatus?.configured && (
-          <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-            <div className="space-y-1">
-              <div>
-                <span className="text-stone-400 font-medium inline-block w-24">Project URL:</span>
-                <span className="font-mono font-bold text-stone-900 dark:text-white">
-                  {supabaseStatus.url || 'Configured'}
-                </span>
-              </div>
-              <div>
-                <span className="text-stone-400 font-medium inline-block w-24">Anon Key:</span>
-                <span className="font-mono font-bold text-stone-900 dark:text-white">
-                  {supabaseStatus.maskedKey || '••••••••••••••••'}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={handleClearSupabaseConfig}
-              className="text-xs text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Disconnect Supabase
-            </button>
-          </div>
-        )}
-
-        {/* Credentials Form Inputs */}
         <div className="space-y-4">
-          {/* Supabase URL */}
-          <div>
-            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1.5">
-              Supabase Project URL (e.g. `https://your-project.supabase.co`)
-            </label>
-            <div className="relative">
-              <Globe className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-              <input
-                type="text"
-                placeholder={supabaseStatus?.configured ? 'Enter new URL to update...' : 'https://your-project.supabase.co'}
-                value={supabaseUrl}
-                onChange={(e) => setSupabaseUrl(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <p className="text-[11px] text-stone-400 mt-1">
-              Found in your <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5">Supabase Dashboard <ExternalLink className="w-2.5 h-2.5" /></a> under <strong>Project Settings → API → Project URL</strong>.
-            </p>
-          </div>
-
-          {/* Supabase Anon Key */}
-          <div>
-            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1.5">
-              Supabase Anon / Public Key (starts with `ey...`)
-            </label>
-            <div className="relative">
-              <Key className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-              <input
-                type={showSupabaseKey ? 'text' : 'password'}
-                placeholder={supabaseStatus?.configured ? 'Enter new key to update...' : 'Paste your Supabase anon/public key (eyJhbGci...)'}
-                value={supabaseAnonKey}
-                onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/60 text-stone-900 dark:text-stone-100 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSupabaseKey(!showSupabaseKey)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
-              >
-                {showSupabaseKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-[11px] text-stone-400 mt-1">
-              Found in your Supabase Dashboard under <strong>Project Settings → API → Project API keys → anon public</strong>.
-            </p>
-          </div>
-
-          {/* Actions: Test Connection & Save */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-            <button
-              onClick={handleTestSupabaseConnection}
-              disabled={isTestingSupabase || (!supabaseUrl && !supabaseStatus?.configured)}
-              className="px-5 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              <Zap className={`w-4 h-4 text-emerald-500 ${isTestingSupabase ? 'animate-spin' : ''}`} />
-              <span>{isTestingSupabase ? 'Testing Connection...' : 'Test Connection'}</span>
-            </button>
-
-            <button
-              onClick={handleSaveSupabaseConfig}
-              disabled={(!supabaseUrl && !supabaseStatus?.configured) || (!supabaseAnonKey && !supabaseStatus?.hasKey)}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save & Activate</span>
-            </button>
-          </div>
+          {neonStatus?.authorized ? (
+            <button type="button" onClick={handleClearNeonConfig} className="text-xs font-semibold text-rose-600">Lock cloud access</button>
+          ) : (
+            <form className="flex flex-wrap items-center gap-3" onSubmit={event => { event.preventDefault(); void handleSaveNeonConfig(); }}>
+              <label htmlFor="cloud-access-key" className="text-xs font-semibold">Cloud access key</label>
+              <input id="cloud-access-key" type="password" value={cloudAccessKey} onChange={event => setCloudAccessKey(event.target.value)}
+                className="rounded-lg border border-stone-300 dark:border-stone-700 bg-transparent px-3 py-2 text-xs" />
+              <button type="submit" disabled={!cloudAccessKey || !neonStatus?.configured}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Unlock</button>
+            </form>
+          )}
+          <button type="button" onClick={handleTestNeonConnection} disabled={isTestingNeon || !neonStatus?.authorized}
+            className="rounded-lg border border-stone-300 dark:border-stone-700 px-3 py-2 text-xs font-semibold disabled:opacity-50">
+            {isTestingNeon ? 'Testing Connection…' : 'Test Connection'}
+          </button>
 
           {/* Test Result Message Box */}
-          {supabaseTestResult && (
-            <div className={`p-4 rounded-xl border text-xs animate-fadeIn ${supabaseTestResult.success
+          {neonTestResult && (
+            <div className={`p-4 rounded-xl border text-xs animate-fadeIn ${neonTestResult.success
               ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
               : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
               }`}>
               <div className="flex items-start gap-2.5">
-                {supabaseTestResult.success ? (
+                {neonTestResult.success ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 ) : (
                   <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                 )}
                 <div>
-                  <p className="font-semibold">{supabaseTestResult.message}</p>
-                  {supabaseTestResult.latencyMs && (
+                  <p className="font-semibold">{neonTestResult.message}</p>
+                  {neonTestResult.latencyMs && (
                     <p className="mt-1 text-[11px] font-mono text-emerald-700 dark:text-emerald-400">
-                      ⚡ Latency: {supabaseTestResult.latencyMs}ms via Supabase PostgreSQL
+                      ⚡ Latency: {neonTestResult.latencyMs}ms via Neon PostgreSQL
                     </p>
                   )}
-                  {supabaseTestResult.error && (
+                  {neonTestResult.error && (
                     <p className="mt-1 text-[11px] text-rose-700 dark:text-rose-300 font-mono">
-                      {supabaseTestResult.error}
+                      {neonTestResult.error}
                     </p>
                   )}
                 </div>
@@ -1286,26 +1136,18 @@ export function SettingsView({
             </div>
           )}
 
-          {supabaseSaveMessage && (
+          {neonSaveMessage && (
             <div className="p-3 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs text-stone-700 dark:text-stone-300 animate-fadeIn font-medium">
-              {supabaseSaveMessage}
+              {neonSaveMessage}
             </div>
           )}
-        </div>
-
-        {/* Database Setup Helper Note */}
-        <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800 text-xs space-y-2">
-          <p className="font-bold text-stone-900 dark:text-white">Quick Database Initialization:</p>
-          <p className="text-stone-600 dark:text-stone-300 text-[11px] leading-relaxed">
-            If this is a new Supabase project, execute the SQL schema from <code className="px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-700 font-mono font-bold">src/db/schema.sql</code> in your Supabase <strong>SQL Editor</strong>, then click <strong>Seed Master Kanji</strong> below to populate all 120 kanji.
-          </p>
         </div>
 
         {/* Cloud Sync & Backup Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <button
             type="button"
-            onClick={handleSeedKanjiToSupabase}
+            onClick={handleSeedKanjiToNeon}
             disabled={isSeedingKanji}
             className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:border-emerald-500 text-left transition flex flex-col justify-between cursor-pointer disabled:opacity-50 shadow-xs"
           >
@@ -1315,7 +1157,7 @@ export function SettingsView({
                 <Database className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-                Upload all 120 Kanji, readings, vocabulary & example sentences to Supabase.
+                Upload all 120 Kanji, readings, vocabulary & example sentences to Neon.
               </p>
             </div>
             <div className="mt-3 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -1325,7 +1167,7 @@ export function SettingsView({
 
           <button
             type="button"
-            onClick={handleSyncProgressToSupabase}
+            onClick={handleSyncProgressToNeon}
             disabled={isSyncingProgress}
             className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:border-blue-500 text-left transition flex flex-col justify-between cursor-pointer disabled:opacity-50 shadow-xs"
           >
@@ -1345,7 +1187,7 @@ export function SettingsView({
 
           <button
             type="button"
-            onClick={handleRestoreProgressFromSupabase}
+            onClick={handleRestoreProgressFromNeon}
             disabled={isRestoringProgress}
             className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:border-purple-500 text-left transition flex flex-col justify-between cursor-pointer disabled:opacity-50 shadow-xs"
           >
@@ -1355,7 +1197,7 @@ export function SettingsView({
                 <CloudDownload className="w-4 h-4 text-purple-600" />
               </div>
               <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
-                Pull your saved learning progress down from Supabase into your browser.
+                Pull your saved learning progress down from Neon into your browser.
               </p>
             </div>
             <div className="mt-3 text-[11px] font-bold text-purple-600 dark:text-purple-400">
@@ -1365,19 +1207,19 @@ export function SettingsView({
         </div>
 
         {/* Status Toast */}
-        {supabaseMessage && (
+        {neonMessage && (
           <div
-            className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 animate-fadeIn ${supabaseMessage.type === 'success'
+            className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 animate-fadeIn ${neonMessage.type === 'success'
               ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200'
               : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200'
               }`}
           >
-            {supabaseMessage.type === 'success' ? (
+            {neonMessage.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
-            <span className="font-medium">{supabaseMessage.text}</span>
+            <span className="font-medium">{neonMessage.text}</span>
           </div>
         )}
       </div>

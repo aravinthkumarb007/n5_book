@@ -297,7 +297,7 @@ export function KanjiLevelTestModal({
       } catch {}
     }
 
-    // Persist Level Test Record in Supabase & LocalStorage (Requirement 5 & 6)
+    // Persist Level Test Record in Neon & LocalStorage (Requirement 5 & 6)
     const testRecord: KanjiLevelTestResult = {
       id: `test_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       test_type: scopeMode === 'all_unlocked_ai' ? 'all_unlocked_ai' : (generationType === 'hardcoded' ? 'level_hardcoded' : 'level_ai'),

@@ -41,8 +41,8 @@ export function saveExamResult(result: MockExamResult): MockExamResult[] {
     });
     localStorage.setItem(STORAGE_KEYS.QUESTION_HISTORY, JSON.stringify(Array.from(fingerprints).slice(-500)));
 
-    // Optional background sync to Supabase if configured
-    syncExamResultToSupabase(result).catch(() => {});
+    // Optional background sync to Neon if configured
+    syncExamResultToNeon(result).catch(() => {});
 
     return updated;
   } catch (err) {
@@ -88,10 +88,10 @@ export function saveGeneratedExamCache(key: string, questions: MockExamQuestion[
   } catch {}
 }
 
-// Background sync to Supabase
-async function syncExamResultToSupabase(result: MockExamResult): Promise<void> {
+// Background sync to Neon
+async function syncExamResultToNeon(result: MockExamResult): Promise<void> {
   try {
-    await fetch('/api/supabase/sync', {
+    await fetch('/api/database/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

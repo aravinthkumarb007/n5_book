@@ -22,8 +22,6 @@ export const MinnaAppendicesModal: React.FC<MinnaAppendicesModalProps> = ({ isOp
   const [searchQuery, setSearchQuery] = useState('');
   const [verbGroupFilter, setVerbGroupFilter] = useState<'ALL' | 'I' | 'II' | 'III'>('ALL');
 
-  if (!isOpen) return null;
-
   // Filter particles
   const filteredParticles = useMemo(() => {
     if (!searchQuery.trim()) return MINNA_PARTICLES_SUMMARY;
@@ -68,6 +66,8 @@ export const MinnaAppendicesModal: React.FC<MinnaAppendicesModalProps> = ({ isOp
       c.items.some(i => i.reading.includes(q) || i.romaji.toLowerCase().includes(q))
     );
   }, [searchQuery]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn">

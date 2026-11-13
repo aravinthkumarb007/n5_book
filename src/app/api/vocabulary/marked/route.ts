@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSupabaseClient } from '@/services/serverSupabase';
+import { getDatabase, cloudAuthorized, OWNER_ID } from '@/services/serverDatabase';
 import { ALL_MINNA_LESSONS } from '@/data/minnaNoNihongo';
 import { MarkedVocabItemWithMeta, MinnaVocabularyItem, VocabLearningStatus } from '@/types/minna';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 // Pre-build index of all textbook vocabulary for instant O(1) lookups
 const MASTER_VOCAB_MAP = new Map<string, MinnaVocabularyItem>();
@@ -18,16 +17,17 @@ for (const lesson of ALL_MINNA_LESSONS) {
 
 // GET: Fetch all marked vocabulary items from the backend database
 export async function GET(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
+    const db = getDatabase();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || DEFAULT_USER_ID;
+    const userId = OWNER_ID;
     const filterStatus = searchParams.get('status') as VocabLearningStatus | 'all' | null;
     const filterLesson = searchParams.get('lessonNumber');
     const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
 
     // 1. Fetch custom lessons so custom lesson vocabulary can be matched
-    const { data: customLessonsData } = await supabase
+    const { data: customLessonsData } = await db
       .from('custom_lessons')
       .select('vocabulary')
       .eq('user_id', userId);
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     let recordsList: Array<{ vocabId: string; lessonNumber: number; status: VocabLearningStatus; updatedAt: string }> = [];
 
     try {
-      const { data: tableData, error: tableErr } = await supabase
+      const { data: tableData, error: tableErr } = await db
         .from('vocabulary_learning_status')
         .select('*')
         .eq('user_id', userId);
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     if (recordsList.length === 0) {
       const prefix = `vocab_status_${userId}_`;
-      const { data: cacheData, error: cacheErr } = await supabase
+      const { data: cacheData, error: cacheErr } = await db
         .from('content_cache')
         .select('cache_key, payload, updated_at')
         .eq('content_type', 'vocabulary_status')

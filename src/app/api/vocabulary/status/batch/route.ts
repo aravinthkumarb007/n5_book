@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getServerSupabaseClient } from '@/services/serverSupabase';
+import { getDatabase, cloudAuthorized, OWNER_ID } from '@/services/serverDatabase';
 import { VocabLearningStatus } from '@/types/minna';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 export async function POST(request: Request) {
+  if (!cloudAuthorized(request)) return NextResponse.json({ success: false, error: 'Unlock cloud access in Settings.' }, { status: 401 });
   try {
-    const supabase = getServerSupabaseClient(request);
+    const db = getDatabase();
     const body = await request.json();
-    const { updates, userId = DEFAULT_USER_ID } = body;
+    const userId = OWNER_ID;
+    const { updates } = body;
 
     if (!Array.isArray(updates) || updates.length === 0) {
       return NextResponse.json({
@@ -33,13 +34,13 @@ export async function POST(request: Request) {
 
       if (!status || status === 'unmarked') {
         // Queue delete from cache & table
-        await supabase
+        await db
           .from('content_cache')
           .delete()
           .eq('cache_key', `vocab_status_${userId}_${item.vocabId}`);
 
         try {
-          await supabase
+          await db
             .from('vocabulary_learning_status')
             .delete()
             .eq('user_id', userId)
@@ -93,14 +94,14 @@ export async function POST(request: Request) {
     }
 
     if (cacheRows.length > 0) {
-      await supabase
+      await db
         .from('content_cache')
         .upsert(cacheRows, { onConflict: 'cache_key' });
     }
 
     if (tableRows.length > 0) {
       try {
-        await supabase
+        await db
           .from('vocabulary_learning_status')
           .upsert(tableRows, { onConflict: 'user_id,vocab_id' });
       } catch {}
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
     // Synchronize minna_user_progress for all affected lessons
     for (const [lessonNumber, changes] of lessonUpdatesMap.entries()) {
       try {
-        const { data: existingProg } = await supabase
+        const { data: existingProg } = await db
           .from('minna_user_progress')
           .select('*')
           .eq('user_id', userId)
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
         changes.weakToAdd.forEach(id => weak.add(id));
         changes.weakToRemove.forEach(id => weak.delete(id));
 
-        await supabase
+        await db
           .from('minna_user_progress')
           .upsert({
             user_id: userId,

@@ -41,7 +41,7 @@ export function saveCountersQuizResult(result: CountersTestResult): CountersTest
     localStorage.setItem(COUNTERS_STORAGE_KEYS.QUESTION_HISTORY, JSON.stringify(Array.from(fingerprints).slice(-500)));
 
     // Optional background sync
-    syncCountersResultToSupabase(result).catch(() => {});
+    syncCountersResultToNeon(result).catch(() => {});
 
     return updated;
   } catch (err) {
@@ -83,10 +83,10 @@ export function getPastCountersQuestionFingerprints(): Set<string> {
   }
 }
 
-// Background sync to Supabase
-async function syncCountersResultToSupabase(result: CountersTestResult): Promise<void> {
+// Background sync to Neon
+async function syncCountersResultToNeon(result: CountersTestResult): Promise<void> {
   try {
-    await fetch('/api/supabase/sync', {
+    await fetch('/api/database/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
