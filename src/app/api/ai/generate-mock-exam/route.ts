@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { callUnifiedAi } from '@/services/aiRouter';
+import { callUnifiedAi, resolveEffectiveProvider, getAiLanguageInstructions } from '@/services/aiRouter';
 import {
   OFFICIAL_N5_EXAM_CONFIGS,
   SAMPLE_DEV_N5_QUESTION
@@ -12,7 +12,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const mode: MockExamMode = body.mode || 'full';
-    const provider = body.provider === 'groq' || body.provider === 'gemini' ? body.provider : undefined;
+    const effectiveProvider = resolveEffectiveProvider(body.provider);
+    const langInstruction = getAiLanguageInstructions(effectiveProvider, 'exam');
     const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints)
       ? body.pastQuestionFingerprints
       : [];
@@ -73,11 +74,13 @@ Return a JSON object matching this schema:
       "audioScript": "Dialogue or monologue transcript for listening questions",
       "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
       "correctAnswer": "Exact string of correct option",
-      "explanation": "Clear explanation of grammar/vocab principle in English",
+      "explanation": "Clear explanation of grammar/vocab principle",
       "marks": 1 or 2
     }
   ]
-}`;
+}
+
+${langInstruction}`;
 
     const requestedCategoriesDesc = targetSections.map(s =>
       `Section "${s.section}" (${s.titleEn}): ${s.categories.map(c => `${c.count} questions of category "${c.id}" (${c.nameEn})`).join(', ')}`
@@ -93,18 +96,18 @@ ${JSON.stringify(pastFingerprints.slice(-10))}
 
 Return strictly valid JSON with the "questions" array.`;
 
-      const aiResult = await callUnifiedAi({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        provider,
-        temperature: 0.3,
-        max_tokens: 3500,
+    const aiResult = await callUnifiedAi({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      provider: effectiveProvider,
+      temperature: 0.25,
+      max_tokens: 3500,
       jsonMode: true,
-        timeoutMs: 30000,
-        allowFallback: true
-      });
+      timeoutMs: 35000,
+      allowFallback: false
+    });
 
         if (aiResult.success && aiResult.content) {
       try {

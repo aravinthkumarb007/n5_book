@@ -563,7 +563,7 @@ export function SettingsView({
               Active Primary AI Provider
             </h2>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              Choose your preferred AI engine for quiz generation, Sensei tutor, and mock exams. If one fails, the router automatically falls back.
+              Active engine for quizzes, Sensei tutor & exams: Groq AI (English responses) or Google Gemini (Tanglish explanations).
             </p>
           </div>
           <div className="inline-flex rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 p-1 text-xs">

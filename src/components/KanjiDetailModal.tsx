@@ -487,7 +487,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                             <div className="flex flex-col items-center justify-center py-12 space-y-3">
                               <Loader2 size={32} className="text-red-600 animate-spin" />
                                 <p className="text-xs text-stone-600 dark:text-stone-400">
-                                  Consulting Groq AI for deep etymology, office application, and reading tips...
+                                  Consulting AI for deep etymology, office application, and reading tips...
                                 </p>
                             </div>
                           ) : aiError ? (
@@ -495,7 +495,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                               <p className="font-bold mb-1">AI Connection Notice:</p>
                               <p>{aiError}</p>
                               <p className="mt-2 text-[11px] text-stone-500">
-                                You can configure your GROQ_API_KEY in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
+                                You can configure your Groq or Gemini API key in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
                               </p>
                             </div>
                           ) : aiContent ? (

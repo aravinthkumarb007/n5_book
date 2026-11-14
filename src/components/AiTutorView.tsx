@@ -40,7 +40,7 @@ export function AiTutorView({
     {
       id: 'welcome',
       role: 'assistant',
-      content: `こんにちは！ (Konnichiwa!) I am **Sensei AI**, your Japanese tutor powered by high-speed Groq AI.
+      content: `こんにちは！ (Konnichiwa!) I am **Sensei AI**, your personal Japanese tutor.
 
 I'm here to help you master all 120 JLPT N5 kanji in your 10-15 minute daily office sessions. You can ask me:
 - **Mnemonics** to remember difficult kanji characters.
@@ -105,9 +105,9 @@ How can I assist your Japanese study today?`,
       const latencyMs = Date.now() - startTime;
 
       if (!response.ok || !data.success) {
-        setErrorMessage(data.error || 'Failed to receive response from Groq AI.');
-        if (data.error && data.error.includes('API Key')) {
-          setErrorMessage('Groq API Key is not configured. Please add your GROQ_API_KEY in Settings or .env file.');
+        setErrorMessage(data.error || 'Failed to receive response from AI Sensei.');
+        if (data.error && data.error.toLowerCase().includes('api key')) {
+          setErrorMessage('AI API Key is not configured. Please add your Groq or Gemini API key in Settings.');
         }
       } else {
         const assistantMsg: ChatMessage = {
@@ -120,7 +120,7 @@ How can I assist your Japanese study today?`,
         setMessages(prev => [...prev, assistantMsg]);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Network connection to Groq API failed.');
+      setErrorMessage(err.message || 'Network connection to AI service failed.');
     } finally {
       setIsLoading(false);
     }

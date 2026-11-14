@@ -68,12 +68,13 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
         const data = await res.json();
         if (data.success && data.questions && data.questions.length > 0) {
           setQuestions(data.questions);
-          setAiNotice('✨ Questions generated dynamically from Groq JLPT N5 engine');
+          const providerLabel = data.providerUsed === 'gemini' ? 'Google Gemini' : 'Groq AI';
+          setAiNotice(`✨ Questions generated dynamically from ${providerLabel} JLPT N5 engine`);
           resetTestState();
           setIsLoadingQuestions(false);
           return;
         } else {
-          setAiNotice('Groq AI generation fallback: Loaded dynamic smart engine');
+          setAiNotice('AI generation fallback: Loaded dynamic smart engine');
         }
       }
 

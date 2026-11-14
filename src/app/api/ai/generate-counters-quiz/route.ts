@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { callUnifiedAi } from '@/services/aiRouter';
+import { callUnifiedAi, resolveEffectiveProvider, getAiLanguageInstructions } from '@/services/aiRouter';
 import { CountersTestCategory, CountersTestQuestion } from '@/types/counters';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +10,12 @@ export async function POST(request: Request) {
     const category: CountersTestCategory = body.category || 'mixed';
     const count: number = Math.min(20, Math.max(5, body.count || 8));
     const difficulty: 'easy' | 'medium' | 'hard' = body.difficulty || 'medium';
-    const provider = body.provider === 'groq' || body.provider === 'gemini' ? body.provider : undefined;
     const pastFingerprints: string[] = Array.isArray(body.pastQuestionFingerprints)
       ? body.pastQuestionFingerprints
       : [];
+
+    const effectiveProvider = resolveEffectiveProvider(body.provider);
+    const langInstruction = getAiLanguageInstructions(effectiveProvider, 'exam');
 
     const categoryNames: Record<CountersTestCategory, string> = {
       numbers: 'Japanese Numbers & Pronunciations',
@@ -34,13 +36,15 @@ RULES:
 1. Generate authentic, high-quality Japanese counter, number, date, or time questions.
 2. Focus heavily on classic N5 sound changes, euphonic shifts, and irregular readings:
    - Counters: 1人 (ひとり), 2人 (ふたり), 4人 (よにん); 1本 (いっぽん), 3本 (さんぼん), 6本 (ろっぽん), 8本 (はっぽん); 3匹 (さんびき); 3階 (さんがい); 20歳 (はたち); etc.
-   - Time: 4時 (よじ), 7時 (しちじ), 9時 (くじ); 1分 (いっぷん), 3分 (さんぷん), 6分 (ろっぷん), 8分 (はっぷん), 10分 (じゅっぷん).
+   - Time: 4時 (よじ), 7時 (しちじ), 9時 (くじ); 1分 (いっぷん), 3分 (さんぷん), 6分 (ろっぽん), 8分 (はっぽん), 10分 (じゅっぷん).
    - Months: 4月 (しがつ), 7月 (しちがつ), 9月 (くがつ).
    - Dates: 1日 (ついたち), 2日 (ふつか), 3日 (みっか), 4日 (よっか), 8日 (ようか), 14日 (じゅうよっか), 20日 (はつか), 24日 (にじゅうよっか).
    - Duration vs Clock: 2時間 (duration) vs 2時 (time of day).
 3. Always provide bracket Furigana for Kanji characters: 漢字[かんじ].
 4. Exactly FOUR (4) options per question with exactly ONE correct answer.
-5. Provide a helpful, clear explanation in English.
+5. All question prompts and options must be in English or Japanese.
+
+${langInstruction}
 
 Return valid JSON with a "questions" array matching:
 {
@@ -62,40 +66,40 @@ Return valid JSON with a "questions" array matching:
     let difficultyRules = '';
     if (difficulty === 'easy') {
       difficultyRules = `DIFFICULTY: EASY (初級)
-      - Focus on basic regular numbers(1 - 100) or regular counters without complex sound changes(e.g.枚 for flat objects, 台 for machines, 人 for 3 + people).
+- Focus on basic regular numbers (1-100) or regular counters without complex sound changes (e.g. 枚 for flat objects, 台 for machines, 人 for 3+ people).
 - Keep context sentences short and direct.`;
     } else if (difficulty === 'hard') {
-      difficultyRules = `DIFFICULTY: HARD(上級) - MANDATORY RULES:
-    - DO NOT generate simple straightforward numbers or easy regular counters!
-      - Focus intensely on deceptive irregular readings and pronunciation traps:
-  * Irregular dates: 4日(よっか vs よんにち), 8日(ようか vs はちのひ), 14日(じゅうよっか), 20日(はつか), 24日(にじゅうよっか).
-  * Counters with rendaku / gemination: 3本(さんぼん), 1本(いっぽん), 3匹(さんびき), 6匹(ろっぴき), 3階(さんがい), 1足(いっそく), 20歳(はたち).
-  * Time traps: 4時(よじ, NOT よんじ / しじ), 9時(くじ, NOT きゅうじ), 30分(さんじゅっぷん / はん).
-  * Duration vs Clock time: 2時間(2 hours) vs 2時(2:00).
+      difficultyRules = `DIFFICULTY: HARD (上級) - MANDATORY RULES:
+- DO NOT generate simple straightforward numbers or easy regular counters!
+- Focus intensely on deceptive irregular readings and pronunciation traps:
+  * Irregular dates: 4日 (よっか vs よんにち), 8日 (ようか vs はちのひ), 14日 (じゅうよっか), 20日 (はつか), 24日 (にじゅうよっか).
+  * Counters with rendaku / gemination: 3本 (さんぼん), 1本 (いっぽん), 3匹 (さんびき), 6匹 (ろっぴき), 3階 (さんがい), 1足 (いっそく), 20歳 (はたち).
+  * Time traps: 4時 (よじ, NOT よんじ / しじ), 9時 (くじ, NOT きゅうじ), 30分 (さんじゅっぷん / はん).
+  * Duration vs Clock time: 2時間 (2 hours) vs 2時 (2:00).
 - Distractors MUST be plausible pronunciation traps that students typically confuse.`;
     } else {
-      difficultyRules = `DIFFICULTY: MEDIUM(中級)
-      - Focus on standard N5 sound changes: 1本(いっぽん), 3本(さんぼん), 8本(はっぽん), 1分(いっぷん), 3分(さんぷん), 4月(しがつ), 9月(くがつ).`;
+      difficultyRules = `DIFFICULTY: MEDIUM (中級)
+- Focus on standard N5 sound changes: 1本 (いっぽん), 3本 (さんぼん), 8本 (はっぽん), 1分 (いっぷん), 3分 (さんぷん), 4月 (しがつ), 9月 (くがつ).`;
     }
 
-    const userPrompt = `Generate ${ count } questions strictly at ${ difficulty.toUpperCase() } difficulty for category "${categoryNames[category]}".
+    const userPrompt = `Generate ${count} questions strictly at ${difficulty.toUpperCase()} difficulty for category "${categoryNames[category]}".
 
-      ${ difficultyRules }
+${difficultyRules}
 
 Avoid these recent prompts:
-${ JSON.stringify(pastFingerprints.slice(-10)) } `;
+${JSON.stringify(pastFingerprints.slice(-10))}`;
 
     const aiResult = await callUnifiedAi({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      provider,
+      provider: effectiveProvider,
       temperature: difficulty === 'hard' ? 0.35 : 0.25,
       max_tokens: 2500,
       jsonMode: true,
       timeoutMs: 25000,
-      allowFallback: true
+      allowFallback: false
     });
 
     if (aiResult.success) {
@@ -110,7 +114,7 @@ ${ JSON.stringify(pastFingerprints.slice(-10)) } `;
             return true;
           })
           .map((q, idx) => ({
-            id: `counters_q_${ Date.now() }_${ idx + 1 } `,
+            id: `counters_q_${Date.now()}_${idx + 1}`,
             category,
             categoryName: categoryNames[category],
             prompt: q.prompt,
@@ -124,7 +128,7 @@ ${ JSON.stringify(pastFingerprints.slice(-10)) } `;
         if (validQuestions.length >= 4) {
           return NextResponse.json({
             success: true,
-            source: aiResult.fallbackOccurred ? `${ aiResult.providerUsed } _fallback` : `${ aiResult.providerUsed } _ai`,
+            source: aiResult.fallbackOccurred ? `${aiResult.providerUsed}_fallback` : `${aiResult.providerUsed}_ai`,
             providerUsed: aiResult.providerUsed,
             model: aiResult.modelUsed,
             difficulty,
@@ -214,4 +218,3 @@ ${ JSON.stringify(pastFingerprints.slice(-10)) } `;
     }, { status: 500 });
   }
 }
-
