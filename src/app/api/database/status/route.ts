@@ -8,6 +8,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin) return new Response(null, { status: 403 });
+  if (!databaseConfigured()) {
+    return NextResponse.json(
+      { error: 'Cloud sync is unavailable. The server is missing its database connection or cloud access key.' },
+      { status: 503 },
+    );
+  }
   const body = await request.json().catch(() => null);
   const session = cloudSession(request, body?.accessKey);
   if (!session) return NextResponse.json({ error: 'Invalid cloud access key.' }, { status: 401 });
