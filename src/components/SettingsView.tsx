@@ -71,6 +71,7 @@ export function SettingsView({
   const [geminiSaveMessage, setGeminiSaveMessage] = useState<string | null>(null);
 
   const [cloudAccessKey, setCloudAccessKey] = useState('');
+  const [isUnlockingCloud, setIsUnlockingCloud] = useState(false);
   const [neonStatus, setNeonStatus] = useState<{ configured: boolean; authorized: boolean } | null>(null);
 
   // Neon Test Connection State
@@ -113,8 +114,9 @@ export function SettingsView({
       .catch(() => { });
 
     fetch('/api/database/status')
-      .then(res => res.json())
-      .then(data => setNeonStatus(data))
+      .then(async res => {
+        if (res.ok) setNeonStatus(await res.json());
+      })
       .catch(() => { });
   }, []);
 
@@ -206,20 +208,29 @@ export function SettingsView({
   };
 
   const handleSaveNeonConfig = async () => {
+    const accessKey = cloudAccessKey.trim();
+    if (!accessKey || isUnlockingCloud) return;
+    setIsUnlockingCloud(true);
     setNeonSaveMessage(null);
     try {
       const response = await fetch('/api/database/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessKey: cloudAccessKey }),
+        body: JSON.stringify({ accessKey }),
       });
-      if (!response.ok) throw new Error('Cloud access key was not accepted.');
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        if (response.status === 503) setNeonStatus({ configured: false, authorized: false });
+        throw new Error(result?.error || 'Could not unlock cloud access.');
+      }
       setNeonStatus({ configured: true, authorized: true });
       setCloudAccessKey('');
       await syncVocabStatusesFromBackend();
       await handleRestoreProgressFromNeon();
     } catch (error) {
       setNeonSaveMessage(error instanceof Error ? error.message : 'Could not unlock cloud access.');
+    } finally {
+      setIsUnlockingCloud(false);
     }
   };
 
@@ -1068,7 +1079,7 @@ export function SettingsView({
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
-                    <AlertTriangle className="w-3 h-3 text-amber-500" /> Cloud Access Locked
+                    <AlertTriangle className="w-3 h-3 text-amber-500" /> {neonStatus?.configured === false ? 'Cloud Setup Required' : 'Cloud Access Locked'}
                   </span>
                 )}
               </h2>
@@ -1091,6 +1102,9 @@ export function SettingsView({
         </div>
 
         <div className="space-y-4">
+          {neonStatus?.configured === false && !neonSaveMessage && (
+            <p role="status" className="text-xs text-amber-700 dark:text-amber-300">Cloud sync is unavailable until the server has a database connection and cloud access key.</p>
+          )}
           {neonStatus?.authorized ? (
             <button type="button" onClick={handleClearNeonConfig} className="text-xs font-semibold text-rose-600">Lock cloud access</button>
           ) : (
@@ -1098,8 +1112,8 @@ export function SettingsView({
               <label htmlFor="cloud-access-key" className="text-xs font-semibold">Cloud access key</label>
               <input id="cloud-access-key" type="password" value={cloudAccessKey} onChange={event => setCloudAccessKey(event.target.value)}
                 className="rounded-lg border border-stone-300 dark:border-stone-700 bg-transparent px-3 py-2 text-xs" />
-              <button type="submit" disabled={!cloudAccessKey || !neonStatus?.configured}
-                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Unlock</button>
+              <button type="submit" disabled={!cloudAccessKey.trim() || isUnlockingCloud}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">{isUnlockingCloud ? 'Unlocking...' : 'Unlock'}</button>
             </form>
           )}
           <button type="button" onClick={handleTestNeonConnection} disabled={isTestingNeon || !neonStatus?.authorized}
