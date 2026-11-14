@@ -890,8 +890,8 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
         />
       </div>
 
-      {/* Action buttons (Undo, Guide Toggle, Reset) */}
-      <div className="flex items-center justify-between w-full max-w-sm px-2 text-xs">
+      {/* Action buttons (Undo, Background Stroke Guide ON/OFF Toggle, Reset) */}
+      <div className="flex flex-wrap items-center justify-between w-full max-w-sm px-2 gap-2 text-xs">
         <button
           type="button"
           onClick={undoLastStroke}
@@ -903,14 +903,37 @@ export const StrokeCanvas: React.FC<StrokeCanvasProps> = ({
           <span>Undo Stroke</span>
         </button>
 
+        {/* Background Stroke Guide ON/OFF Toggle Button */}
         <button
           type="button"
           onClick={() => setShowGhost(prev => !prev)}
           disabled={isPlayingDemo}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 font-bold transition cursor-pointer disabled:opacity-40"
+          aria-pressed={showGhost}
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs cursor-pointer disabled:opacity-40 border ${
+            showGhost
+              ? 'bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/60 ring-2 ring-red-500/10'
+              : 'bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700'
+          }`}
+          title={`Background Stroke Guide: ${showGhost ? 'ON' : 'OFF'} (Click to toggle)`}
         >
-          {showGhost ? <EyeOff size={13} /> : <Eye size={13} />}
-          <span>{showGhost ? 'Hide Guide' : 'Show Guide'}</span>
+          {showGhost ? (
+            <Eye size={13} className="text-red-600 dark:text-red-400" />
+          ) : (
+            <EyeOff size={13} className="text-stone-400" />
+          )}
+          <span>
+            Stroke Guide:{' '}
+            <strong className={showGhost ? 'text-red-600 dark:text-red-400' : 'text-stone-500 dark:text-stone-400'}>
+              {showGhost ? 'ON' : 'OFF'}
+            </strong>
+          </span>
+          <span
+            className={`w-7 h-4 rounded-full flex items-center p-0.5 transition-colors ${
+              showGhost ? 'bg-red-600 justify-end' : 'bg-stone-300 dark:bg-stone-600 justify-start'
+            }`}
+          >
+            <span className="w-3 h-3 rounded-full bg-white shadow-xs" />
+          </span>
         </button>
 
         <button
