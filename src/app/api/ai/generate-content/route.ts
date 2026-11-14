@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { callUnifiedAi } from '@/services/aiRouter';
+import { callUnifiedAi, resolveEffectiveProvider, getAiLanguageInstructions } from '@/services/aiRouter';
 
-// In-memory cache for dynamic enriched educational content: kanjiId -> content
-const contentCache = new Map<number, any>();
+// In-memory cache for dynamic enriched educational content: `${kanjiId}_${provider}` -> content
+const contentCache = new Map<string, any>();
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +12,10 @@ export async function POST(request: Request) {
     if (!kanji || !kanji.id || !kanji.character) {
       return NextResponse.json({ error: 'Valid kanji object is required.' }, { status: 400 });
     }
+
+    const effectiveProvider = resolveEffectiveProvider(provider);
+    const langInstruction = getAiLanguageInstructions(effectiveProvider, 'enrichment');
+    const cacheKey = `${kanji.id}_${effectiveProvider}`;
 
     // Handle Refresh Sentences Only (guarantees brand new examples different from previous ones)
     if (refreshSentencesOnly) {
@@ -35,66 +39,68 @@ Return strictly valid JSON in this schema:
       "english": "Clear, natural English translation"
     }
   ]
-}`;
+}
 
-        const res = await callUnifiedAi({
-          messages: [
-            { role: 'system', content: sentencePrompt },
-            { role: 'user', content: `Generate 2 novel, fresh sentences for 「${kanji.character}」 (${kanji.meaning}). Timestamp: ${Date.now()}` }
-          ],
-          provider,
-          temperature: 0.85, // Higher temperature for novelty and variation
-          max_tokens: 500,
+${langInstruction}`;
+
+      const res = await callUnifiedAi({
+        messages: [
+          { role: 'system', content: sentencePrompt },
+          { role: 'user', content: `Generate 2 novel, fresh sentences for 「${kanji.character}」 (${kanji.meaning}). Timestamp: ${Date.now()}` }
+        ],
+        provider: effectiveProvider,
+        temperature: 0.85, // Higher temperature for novelty and variation
+        max_tokens: 500,
         jsonMode: true,
-          allowFallback: true
-        });
+        allowFallback: false
+      });
 
-        if(!res.success) {
-          const isAuth = res.error?.toLowerCase().includes('invalid api key') ||
+      if (!res.success) {
+        const isAuth = res.error?.toLowerCase().includes('invalid api key') ||
           res.error?.toLowerCase().includes('not configured');
+        return NextResponse.json({
+          success: false,
+          error: isAuth
+            ? 'Invalid AI API Key. Please verify your Groq or Gemini key in Settings.'
+            : (res.error || 'AI request failed.'),
+          isAuthError: isAuth
+        }, { status: isAuth ? 401 : 502 });
+      }
+
+      let parsedSentences: any = {};
+      try {
+        parsedSentences = JSON.parse(res.content);
+      } catch {
+        return NextResponse.json({ success: false, error: 'AI response was not valid JSON.' }, { status: 502 });
+      }
+
+      const newBonus = parsedSentences.bonus_sentences || [];
+
+      // Update in-memory cache with new sentences
+      if (contentCache.has(cacheKey)) {
+        const cached = contentCache.get(cacheKey);
+        cached.bonus_sentences = newBonus;
+        contentCache.set(cacheKey, cached);
+      }
+
       return NextResponse.json({
-        success: false,
-        error: isAuth
-            ?'Invalid AI API Key. Please verify your Groq or Gemini key in Settings.'
-          : (res.error || 'AI request failed.'),
-        isAuthError: isAuth
-      }, { status: isAuth ? 401 : 502 });
+        success: true,
+        source: `${res.providerUsed}_ai_fresh_sentences`,
+        providerUsed: res.providerUsed,
+        bonus_sentences: newBonus
+      });
     }
-
-    let parsedSentences: any = {};
-    try {
-      parsedSentences = JSON.parse(res.content);
-    } catch {
-      return NextResponse.json({ success: false, error: 'AI response was not valid JSON.' }, { status: 502 });
-    }
-
-    const newBonus = parsedSentences.bonus_sentences || [];
-
-    // Update in-memory cache with new sentences
-    if (contentCache.has(kanji.id)) {
-      const cached = contentCache.get(kanji.id);
-      cached.bonus_sentences = newBonus;
-      contentCache.set(kanji.id, cached);
-    }
-
-    return NextResponse.json({
-      success: true,
-      source: `${res.providerUsed}_ai_fresh_sentences`,
-      providerUsed: res.providerUsed,
-      bonus_sentences: newBonus
-    });
-  }
 
     // Check cache first if not force-refreshing
-    if (!forceRefresh && contentCache.has(kanji.id)) {
-    return NextResponse.json({
-      success: true,
-      source: 'cache',
-      content: contentCache.get(kanji.id)
-    });
-  }
+    if (!forceRefresh && contentCache.has(cacheKey)) {
+      return NextResponse.json({
+        success: true,
+        source: 'cache',
+        content: contentCache.get(cacheKey)
+      });
+    }
 
-  const systemPrompt = `You are a Japanese linguist and educational content engine for N5 Kanji Master.
+    const systemPrompt = `You are a Japanese linguist and educational content engine for N5 Kanji Master.
 Given a Japanese N5 kanji, generate rich educational enhancements formatted strictly as JSON.
 
 STRICT SCHEMA TO RETURN:
@@ -113,9 +119,11 @@ STRICT SCHEMA TO RETURN:
   ]
 }
 
-DO NOT invent readings. Use only authentic Japanese grammar.`;
+DO NOT invent readings. Use only authentic Japanese grammar.
 
-  const userPrompt = `Generate educational enrichment for:
+${langInstruction}`;
+
+    const userPrompt = `Generate educational enrichment for:
 Kanji: ${kanji.character}
 Meaning: ${kanji.meaning}
 Onyomi: ${kanji.onyomi_readings?.join(', ') || 'None'}
@@ -127,48 +135,48 @@ Radicals: ${kanji.radicals || 'None'}`;
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      provider,
+      provider: effectiveProvider,
       temperature: 0.3,
       max_tokens: 800,
       jsonMode: true,
-      allowFallback: true
+      allowFallback: false
     });
 
-    if(!result.success) {
+    if (!result.success) {
       const isAuth = result.error?.toLowerCase().includes('invalid api key') ||
-      result.error?.toLowerCase().includes('not configured');
-  return NextResponse.json({
-    success: false,
-    error: isAuth
-          ?'Invalid AI API Key. Please verify your Groq or Gemini key in Settings.'
-      : (result.error || 'AI request failed.'),
-    isAuthError: isAuth
-  }, { status: isAuth ? 401 : 502 });
-}
+        result.error?.toLowerCase().includes('not configured');
+      return NextResponse.json({
+        success: false,
+        error: isAuth
+          ? 'Invalid AI API Key. Please verify your Groq or Gemini key in Settings.'
+          : (result.error || 'AI request failed.'),
+        isAuthError: isAuth
+      }, { status: isAuth ? 401 : 502 });
+    }
 
-let parsedContent: any = {};
-try {
-  parsedContent = JSON.parse(result.content);
-} catch {
-  return NextResponse.json({
-    success: false,
-    error: 'AI response was not valid JSON.'
-  }, { status: 502 });
-}
+    let parsedContent: any = {};
+    try {
+      parsedContent = JSON.parse(result.content);
+    } catch {
+      return NextResponse.json({
+        success: false,
+        error: 'AI response was not valid JSON.'
+      }, { status: 502 });
+    }
 
-// Save to cache
-contentCache.set(kanji.id, parsedContent);
+    // Save to cache
+    contentCache.set(cacheKey, parsedContent);
 
-return NextResponse.json({
-  success: true,
-  source: `${result.providerUsed}_ai`,
-  providerUsed: result.providerUsed,
-  content: parsedContent
-});
+    return NextResponse.json({
+      success: true,
+      source: `${result.providerUsed}_ai`,
+      providerUsed: result.providerUsed,
+      content: parsedContent
+    });
   } catch (err: any) {
-  return NextResponse.json({
-    success: false,
-    error: err.message || 'Error generating educational content.'
-  }, { status: 500 });
-}
+    return NextResponse.json({
+      success: false,
+      error: err.message || 'Error generating educational content.'
+    }, { status: 500 });
+  }
 }

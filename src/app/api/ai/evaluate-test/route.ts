@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { callUnifiedAi } from '@/services/aiRouter';
+import { callUnifiedAi, resolveEffectiveProvider, getAiLanguageInstructions } from '@/services/aiRouter';
 import { evaluateExamResults } from '@/services/minnaQuizEngine';
 import { ExamAnswerLog } from '@/types/minna';
 
@@ -22,6 +22,9 @@ export async function POST(request: Request) {
 
     if (incorrectAnswers.length > 0) {
       try {
+        const effectiveProvider = resolveEffectiveProvider(provider);
+        const langInstruction = getAiLanguageInstructions(effectiveProvider, 'evaluation');
+
         const systemPrompt = `You are an encouraging, expert Japanese tutor analyzing student exam errors on Minna no Nihongo.
 Output a JSON object with:
 {
@@ -29,7 +32,9 @@ Output a JSON object with:
   "strengths": ["string", "string"],
   "areasToImprove": ["string", "string"],
   "recommendations": ["string", "string"]
-}`;
+}
+
+${langInstruction}`;
 
         const userPrompt = `Score: ${localResult.scorePercent}% (${localResult.correctCount}/${localResult.totalQuestions})
 Lessons tested: ${lessonNumbers.join(', ')}
@@ -43,17 +48,17 @@ ${JSON.stringify(incorrectAnswers.slice(0, 5).map(a => ({
 
 Provide insightful, actionable study recommendations for this student.`;
 
-          const response = await callUnifiedAi({
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            provider,
-            temperature: 0.3,
-            max_tokens: 800,
+        const response = await callUnifiedAi({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          provider: effectiveProvider,
+          temperature: 0.3,
+          max_tokens: 800,
           jsonMode: true,
-            allowFallback: true
-          });
+          allowFallback: false
+        });
 
         if (response.success && response.content) {
           const parsed = JSON.parse(response.content);

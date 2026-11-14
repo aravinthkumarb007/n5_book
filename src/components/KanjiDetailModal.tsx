@@ -22,6 +22,10 @@ import { AudioButton } from './AudioButton';
 import { StrokeCanvas } from './StrokeCanvas';
 import { KanjiAssessmentModal } from './KanjiAssessmentModal';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import {
+  filterSentenceByCompletedKanji,
+  getCompletedKanjiSet
+} from '@/services/sentenceFilterService';
 
 interface KanjiDetailModalProps {
   kanji: KanjiRecord | null;
@@ -44,6 +48,11 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
   const [isLoadingSentences, setIsLoadingSentences] = useState(false);
   const [sentenceSuccessToast, setSentenceSuccessToast] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [progressTick, setProgressTick] = useState(0);
+
+  const completedKanjiSet = React.useMemo(() => {
+    return getCompletedKanjiSet();
+  }, [currentKanji?.id, isOpen, progressTick]);
 
   useEffect(() => {
     setCurrentKanji(kanji);
@@ -405,25 +414,32 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                                 Japanese Example Sentences ({currentKanji.example_sentences.length})
                               </h4>
                               <div className="space-y-2.5">
-                                {currentKanji.example_sentences.map((sentence, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 flex items-start justify-between gap-3"
-                                  >
-                                    <div className="space-y-1">
-                                      <p className="text-sm font-japanese font-medium text-stone-900 dark:text-stone-100">
-                                        {sentence.japanese}
-                                      </p>
+                                {currentKanji.example_sentences.map((sentence, idx) => {
+                                  const displayJapanese = filterSentenceByCompletedKanji(
+                                    sentence.japanese,
+                                    sentence.hiragana,
+                                    completedKanjiSet
+                                  );
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 flex items-start justify-between gap-3"
+                                    >
+                                      <div className="space-y-1">
+                                        <p className="text-sm font-japanese font-medium text-stone-900 dark:text-stone-100">
+                                          {displayJapanese}
+                                        </p>
                                         <p className="text-xs text-stone-500 dark:text-stone-400 font-japanese">
                                           {sentence.hiragana}
                                         </p>
                                         <p className="text-xs text-stone-700 dark:text-stone-300 font-medium pt-0.5">
                                           {sentence.english}
                                         </p>
+                                      </div>
+                                      <AudioButton text={displayJapanese} size="sm" />
                                     </div>
-                                    <AudioButton text={sentence.japanese} size="sm" />
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                           </div>
                       </div>
@@ -471,7 +487,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                             <div className="flex flex-col items-center justify-center py-12 space-y-3">
                               <Loader2 size={32} className="text-red-600 animate-spin" />
                                 <p className="text-xs text-stone-600 dark:text-stone-400">
-                                  Consulting Groq AI for deep etymology, office application, and reading tips...
+                                  Consulting AI for deep etymology, office application, and reading tips...
                                 </p>
                             </div>
                           ) : aiError ? (
@@ -479,7 +495,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                               <p className="font-bold mb-1">AI Connection Notice:</p>
                               <p>{aiError}</p>
                               <p className="mt-2 text-[11px] text-stone-500">
-                                You can configure your GROQ_API_KEY in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
+                                You can configure your Groq or Gemini API key in the Settings tab. Offline lessons and verified dictionary content remain 100% accessible!
                               </p>
                             </div>
                           ) : aiContent ? (
@@ -609,6 +625,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                       isOpen={isAssessmentOpen}
                       onClose={() => setIsAssessmentOpen(false)}
                       onPassed={() => {
+                        setProgressTick(t => t + 1);
                         onProgressUpdated();
                       }}
                     />
