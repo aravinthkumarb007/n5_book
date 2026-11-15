@@ -10,6 +10,7 @@ import { LEVEL_METADATA, LevelInfo } from '@/data/kanjiDatabase';
 import { AudioButton } from './AudioButton';
 import { recoverCompletedLevel1 } from '@/services/cloudSyncService';
 import { KanjiLevelTestModal, TestScopeMode } from './KanjiLevelTestModal';
+import { AiKanjiLevelAssessmentModal } from './AiKanjiLevelAssessmentModal';
 
 interface LearnKanjiViewProps {
   kanjiList: KanjiRecord[];
@@ -38,6 +39,15 @@ export function LearnKanjiView({
   const [isLevelTestModalOpen, setIsLevelTestModalOpen] = useState(false);
   const [modalScopeMode, setModalScopeMode] = useState<TestScopeMode>('level_test');
   const [modalInitialLevel, setModalInitialLevel] = useState<number>(1);
+
+  // Centralized AI Kanji Level Assessment Modal State
+  const [isAiLevelAssessmentOpen, setIsAiLevelAssessmentOpen] = useState(false);
+  const [aiAssessmentLevel, setAiAssessmentLevel] = useState<number>(1);
+
+  const handleTakeAiAssessment = (levelNum: number) => {
+    setAiAssessmentLevel(levelNum);
+    setIsAiLevelAssessmentOpen(true);
+  };
 
   const handleOpenLevelTest = (level: number) => {
     setModalScopeMode('level_test');
@@ -442,24 +452,38 @@ export function LearnKanjiView({
                                                             </div>
                                                           </div>
 
-                                                      {/* Common Test Button for Each Level */}
-                                                      {isLevelStudied ? (
+                                                      {/* AI Kanji Level Assessment Button (Centralized Unified Assessment) */}
+                                                      {isUnlocked ? (
                                                         <button
-                                                          onClick={() => handleOpenLevelTest(lvl.level)}
-                                                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm hover:shadow-md cursor-pointer shrink-0 w-full sm:w-auto active:scale-95"
-                                                          title={`Start Level ${lvl.level} Test (All 10 Kanji Studied)`}
+                                                          type="button"
+                                                          onClick={() => handleTakeAiAssessment(lvl.level)}
+                                                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold transition shadow-sm hover:shadow-md cursor-pointer shrink-0 w-full sm:w-auto active:scale-95"
+                                                          title={`Take AI Level ${lvl.level} Cumulative Assessment (JLPT N5 / NAT-TEST 5Q)`}
                                                         >
-                                                          <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                                                          <span>Start Test</span>
+                                                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                                                          <span>Take AI Kanji Assessment</span>
                                                         </button>
                                                       ) : (
                                                         <button
                                                           disabled
                                                           className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 dark:text-stone-500 text-xs font-semibold shrink-0 cursor-not-allowed border border-stone-200/80 dark:border-stone-700/60 w-full sm:w-auto"
-                                                          title={`Study all 10 kanji in Level ${lvl.level} to unlock this test (${studiedCount}/10 studied)`}
+                                                          title={`Unlock Level ${lvl.level} to take assessment`}
                                                         >
                                                           <Lock className="w-3 h-3 shrink-0" />
-                                                          <span>Start Test ({studiedCount}/10)</span>
+                                                          <span>Take AI Kanji Assessment</span>
+                                                        </button>
+                                                      )}
+
+                                                      {/* Keep legacy Standard Test available if user studied all kanji */}
+                                                      {isLevelStudied && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleOpenLevelTest(lvl.level)}
+                                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold transition cursor-pointer shrink-0"
+                                                          title={`Start Standard Level ${lvl.level} Test`}
+                                                        >
+                                                          <Play className="w-3 h-3 fill-current shrink-0" />
+                                                          <span>Standard Test</span>
                                                         </button>
                                                       )}
                                                     </div>
@@ -618,6 +642,19 @@ export function LearnKanjiView({
                                               onRefreshProgress?.();
                                             }}
                                           />
+
+                                          {/* Unified Centralized AI Kanji Level Assessment Modal */}
+                                          {isAiLevelAssessmentOpen && (
+                                            <AiKanjiLevelAssessmentModal
+                                              level={aiAssessmentLevel}
+                                              isOpen={isAiLevelAssessmentOpen}
+                                              onClose={() => setIsAiLevelAssessmentOpen(false)}
+                                              progressMap={progressMap}
+                                              onAssessmentCompleted={() => {
+                                                onRefreshProgress?.();
+                                              }}
+                                            />
+                                          )}
                                         </div>
                                         );
 }
