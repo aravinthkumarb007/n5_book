@@ -132,7 +132,7 @@ export async function callGroqChat(options: GroqChatOptions): Promise<{
       payload.response_format = options.response_format;
     }
 
-    const response = await fetch(config.endpoint, {
+    let response = await fetch(config.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,6 +141,25 @@ export async function callGroqChat(options: GroqChatOptions): Promise<{
       body: JSON.stringify(payload),
       signal: controller.signal
     });
+
+    // Resilience: If the primary model hits an output tokens per minute (OTPM) rate limit (HTTP 429),
+    // automatically retry using high-capacity openai/gpt-oss-120b
+    if (!response.ok && (response.status === 429 || response.status === 400) && payload.model !== 'openai/gpt-oss-120b') {
+      const errText = await response.text();
+      if (errText.includes('tokens per minute') || errText.includes('Rate limit') || response.status === 429) {
+        console.warn(`[Groq Service] Primary model ${payload.model} rate-limited, retrying on openai/gpt-oss-120b...`);
+        payload.model = 'openai/gpt-oss-120b';
+        response = await fetch(config.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey.trim()}`
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+      }
+    }
 
     clearTimeout(timeoutId);
 
