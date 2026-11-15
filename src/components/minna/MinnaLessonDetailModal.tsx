@@ -9,6 +9,7 @@ import {
 import { MinnaLesson, VocabLearningStatus, MinnaVocabularyItem } from '@/types/minna';
 import { getStoredVocabStatuses, setVocabStatus, batchSetVocabStatus } from '@/services/vocabStorage';
 import { MinnaFlashcardsModal } from './MinnaFlashcardsModal';
+import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { speakJapanese } from '@/services/audio';
 import { toggleVocabLearned, toggleGrammarUnderstood } from '@/services/minnaStorage';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
@@ -17,6 +18,7 @@ interface MinnaLessonDetailModalProps {
   lesson: MinnaLesson;
   learnedVocabIds: string[];
   understoodGrammarIds: string[];
+  initialTab?: 'vocab' | 'grammar' | 'dialogue' | 'exercises' | 'assessment';
   onClose: () => void;
   onLaunchLessonQuiz: (lesson: MinnaLesson) => void;
   onRefreshProgress: () => void;
@@ -26,18 +28,25 @@ export function MinnaLessonDetailModal({
   lesson,
   learnedVocabIds,
   understoodGrammarIds,
+  initialTab,
   onClose,
   onLaunchLessonQuiz,
   onRefreshProgress
 }: MinnaLessonDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'vocab' | 'grammar' | 'dialogue' | 'exercises' | 'assessment'>('vocab');
+  const [activeTab, setActiveTab] = useState<'vocab' | 'grammar' | 'dialogue' | 'exercises' | 'assessment'>(initialTab || 'vocab');
   const [vocabSearch, setVocabSearch] = useState('');
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [userExerciseAnswers, setUserExerciseAnswers] = useState<Record<string, string>>({});
   const [exerciseEvaluations, setExerciseEvaluations] = useState<Record<string, boolean>>({});
   const [activeTiles, setActiveTiles] = useState<Record<string, string[]>>({});
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [isAiGrammarOpen, setIsAiGrammarOpen] = useState(false);
+  const [aiGrammarTopicId, setAiGrammarTopicId] = useState<string | null>(null);
   const [vocabStatuses, setVocabStatuses] = useState<Record<string, VocabLearningStatus>>({});
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
   const [selectedVocabIds, setSelectedVocabIds] = useState<Set<string>>(new Set());
   const [customFlashcardsCards, setCustomFlashcardsCards] = useState<MinnaVocabularyItem[] | null>(null);
   const [batchNotice, setBatchNotice] = useState<string | null>(null);
@@ -852,6 +861,32 @@ export function MinnaLessonDetailModal({
               {/* TAB 2: GRAMMAR */}
               {activeTab === 'grammar' && (
                 <div className="space-y-4">
+                  {/* Learn via AI Lesson Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+                        <h4 className="text-sm sm:text-base font-bold truncate">
+                          Learn Lesson {lesson.lessonNumber} Grammar via AI
+                        </h4>
+                      </div>
+                      <p className="text-xs text-blue-100 leading-relaxed max-w-xl">
+                        Detailed, step-by-step beginner explanations, formulas, sentence structures, authentic examples, common mistakes & learning tips.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiGrammarTopicId(null);
+                        setIsAiGrammarOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Learn via AI</span>
+                    </button>
+                  </div>
+
                   {lesson.grammar.map((g, idx) => {
                     const isUnderstood = understoodGrammarIds.includes(g.id);
                     return (
@@ -877,17 +912,32 @@ export function MinnaLessonDetailModal({
                                       </div>
                                     </div>
 
-                                    <button
-                                      onClick={() => handleToggleGrammar(g.id)}
-                                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-                                        isUnderstood
-                                          ? 'bg-blue-600 text-white shadow-sm'
-                                          : 'bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-300'
-                                      }`}
-                                    >
-                        <Check className="w-3.5 h-3.5" />
-                        {isUnderstood ? 'Understood' : 'Mark Understood'}
-                      </button>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAiGrammarTopicId(g.id);
+                                          setIsAiGrammarOpen(true);
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 active:scale-95"
+                                        title="Learn this grammar topic with AI"
+                                      >
+                                        <Sparkles className="w-3 h-3 text-amber-500" />
+                                        <span>Learn via AI</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleToggleGrammar(g.id)}
+                                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                                          isUnderstood
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-300'
+                                        }`}
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                        {isUnderstood ? 'Understood' : 'Mark Understood'}
+                                      </button>
+                                    </div>
                     </div>
 
                     <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed mb-3">
@@ -1231,6 +1281,19 @@ export function MinnaLessonDetailModal({
           onRefreshData={() => {
             onRefreshProgress();
           }}
+        />
+      )}
+
+      {/* Learn via AI Modal */}
+      {isAiGrammarOpen && (
+        <MinnaAiGrammarModal
+          isOpen={isAiGrammarOpen}
+          onClose={() => {
+            setIsAiGrammarOpen(false);
+            setAiGrammarTopicId(null);
+          }}
+          lesson={lesson}
+          initialTopicId={aiGrammarTopicId}
         />
       )}
     </div>

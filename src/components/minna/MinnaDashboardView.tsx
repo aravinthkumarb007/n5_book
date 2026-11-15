@@ -25,6 +25,7 @@ import { MinnaExamResultModal } from './MinnaExamResultModal';
 import { MinnaCustomLessonModal } from './MinnaCustomLessonModal';
 import { MinnaLessonQuizModal } from './MinnaLessonQuizModal';
 import { MinnaAppendicesModal } from './MinnaAppendicesModal';
+import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { AiQuizLoadingOverlay } from '@/components/common/AiQuizLoadingOverlay';
 
 interface MinnaDashboardViewProps {
@@ -40,10 +41,12 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'assessments' | 'in_progress' | 'completed' | 'custom'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'grammar' | 'assessments' | 'in_progress' | 'completed' | 'custom'>('all');
 
   // Modals Active State
   const [selectedLessonForDetail, setSelectedLessonForDetail] = useState<MinnaLesson | null>(null);
+  const [initialDetailTab, setInitialDetailTab] = useState<'vocab' | 'grammar' | 'dialogue' | 'exercises' | 'assessment'>('vocab');
+  const [selectedLessonForAiGrammar, setSelectedLessonForAiGrammar] = useState<MinnaLesson | null>(null);
   const [lessonForQuizModal, setLessonForQuizModal] = useState<MinnaLesson | null>(null);
   const [customExamModalOpen, setCustomExamModalOpen] = useState(false);
   const [customExamInitialRange, setCustomExamInitialRange] = useState<number[]>([1]);
@@ -324,6 +327,7 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full scrollbar-none">
               {[
                 { id: 'all', label: 'All 25 Lessons' },
+                { id: 'grammar', label: '📖 Lesson-Wise Grammar (1–25)' },
                 { id: 'assessments', label: '🎯 Lesson Assessments (1–25)' },
                 { id: 'in_progress', label: 'In Progress' },
                 { id: 'completed', label: 'Completed' },
@@ -414,12 +418,16 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-stone-500">
-                  {statusFilter === 'assessments'
+                  {statusFilter === 'grammar'
+                    ? `📖 Lesson-Wise Grammar (${filteredLessons.length} Lessons Available)`
+                    : statusFilter === 'assessments'
                     ? `🎯 Lesson-Wise Assessments (${filteredLessons.length} Lessons Available)`
                     : `Minna no Nihongo Lessons (${filteredLessons.length})`}
                 </h2>
                 <span className="text-xs text-stone-400">
-                  {statusFilter === 'assessments'
+                  {statusFilter === 'grammar'
+                    ? 'Learn grammar step-by-step for each lesson via AI in your preferred language'
+                    : statusFilter === 'assessments'
                     ? 'Generate AI tests or instant quizzes strictly for any single lesson'
                     : 'Click any lesson to browse vocabulary, grammar explanations & dialogues'}
                 </span>
@@ -485,20 +493,45 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                           )}
                         </div>
 
-                        {statusFilter === 'assessments' ? (
+                        {statusFilter === 'grammar' ? (
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLessonForAiGrammar(lesson)}
+                              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Learn via AI ({lesson.grammar.length} Topics)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInitialDetailTab('grammar');
+                                setSelectedLessonForDetail(lesson);
+                              }}
+                              className="w-full py-2 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>View Textbook Grammar Notes</span>
+                            </button>
+                          </div>
+                        ) : statusFilter === 'assessments' ? (
                           <button
                             onClick={() => handleLaunchQuickLessonQuiz(lesson)}
-                            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md active:scale-95"
+                            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
                           >
                             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                             <span>Generate Lesson {lesson.lessonNumber} Assessment</span>
                           </button>
                         ) : (
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-4 gap-1 sm:gap-1.5">
                             <button
-                              onClick={() => setSelectedLessonForDetail(lesson)}
-                              className="py-2.5 px-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1"
-                              title="Browse Vocabulary & Grammar"
+                              onClick={() => {
+                                setInitialDetailTab('vocab');
+                                setSelectedLessonForDetail(lesson);
+                              }}
+                              className="py-2.5 px-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                              title="Browse Vocabulary & Notes"
                             >
                               <BookOpen className="w-3.5 h-3.5" />
                               <span>Study</span>
@@ -506,7 +539,7 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
 
                             <button
                               onClick={() => setFlashcardLesson(lesson)}
-                              className="py-2.5 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95"
+                              className="py-2.5 px-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                               title="Study Lesson with Interactive Flashcards"
                             >
                               <Layers className="w-3.5 h-3.5" />
@@ -514,8 +547,17 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                             </button>
 
                             <button
+                              onClick={() => setSelectedLessonForAiGrammar(lesson)}
+                              className="py-2.5 px-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30 text-xs font-bold transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                              title="Learn Lesson Grammar via AI"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Grammar</span>
+                            </button>
+
+                            <button
                               onClick={() => handleLaunchQuickLessonQuiz(lesson)}
-                              className="py-2.5 px-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm active:scale-95"
+                              className="py-2.5 px-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer"
                               title="Practice Assessment"
                             >
                               <Play className="w-3.5 h-3.5" />
@@ -580,9 +622,22 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
               lesson={selectedLessonForDetail}
               learnedVocabIds={progressMap.get(selectedLessonForDetail.lessonNumber)?.learnedVocabIds || []}
               understoodGrammarIds={progressMap.get(selectedLessonForDetail.lessonNumber)?.understoodGrammarIds || []}
-              onClose={() => setSelectedLessonForDetail(null)}
+              initialTab={initialDetailTab}
+              onClose={() => {
+                setSelectedLessonForDetail(null);
+                setInitialDetailTab('vocab');
+              }}
               onLaunchLessonQuiz={handleLaunchQuickLessonQuiz}
               onRefreshProgress={refreshLocalData}
+            />
+          )}
+
+          {/* MODAL: Learn Lesson Grammar via AI */}
+          {selectedLessonForAiGrammar && (
+            <MinnaAiGrammarModal
+              isOpen={Boolean(selectedLessonForAiGrammar)}
+              onClose={() => setSelectedLessonForAiGrammar(null)}
+              lesson={selectedLessonForAiGrammar}
             />
           )}
 

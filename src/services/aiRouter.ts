@@ -5,7 +5,7 @@ import { callGroqChat, getEffectiveGroqConfig, maskApiKey } from '@/services/gro
 import { callGeminiChat, getEffectiveGeminiConfig, maskGeminiApiKey, GEMINI_AVAILABLE_MODELS } from '@/services/geminiService';
 
 export type AiProvider = 'groq' | 'gemini';
-export type AiPromptContext = 'chat' | 'enrichment' | 'evaluation' | 'exam';
+export type AiPromptContext = 'chat' | 'enrichment' | 'evaluation' | 'exam' | 'grammar';
 
 let globalActiveProvider: AiProvider | null = null;
 
@@ -129,6 +129,14 @@ export function getAiLanguageInstructions(provider: AiProvider, context: AiPromp
 2. Tanglish style example: "Nalla effort! Basic vocabulary la nalla score pannirukkeenga, aana particles 'ni' and 'de' la konjam confuse aagudhu. Daily 10 mins grammar patterns practice pannunga."
 3. STRICT PROHIBITION: DO NOT use Tamil script (never use தமிழ் எழுத்துக்கள்). Use ONLY English/Latin alphabet for Tamil words.
 4. Keep Japanese phrases and grammatical terms accurate.`;
+
+      case 'grammar':
+        return `CRITICAL LANGUAGE & SCRIPT RULES FOR GEMINI (TANGLISH GRAMMAR EXPLANATIONS):
+1. Provide all grammar explanations, simple explanations, step-by-step construction guidance, example meanings, common mistakes, and learning tips in natural, conversational Tanglish (Tamil spoken words typed phonetically using the English/Latin alphabet).
+2. Tanglish style example: "～たいです grammar pattern namma oru action panna aasai irukku nu sollumbodhu use pannuvom. Verb oda ます-form la irundhu ます remove pannitu たいです add pannanum. Example: 日本に行きたいです。 Meaning: Enakku Japan poga aasai irukku."
+3. STRICT PROHIBITION: DO NOT use Tamil script (never use தமிழ் எழுத்துக்கள்). ONLY use English/Latin alphabet letters for Tamil words.
+4. Keep all Japanese vocabulary, Kanji, Furigana, Hiragana, Katakana, and Japanese example sentences in proper Japanese.
+5. Retain standard English grammatical terminology (e.g. subject, verb, particle, ます-form, te-form, noun, adjective) where necessary.`;
     }
   }
 
@@ -153,6 +161,11 @@ export function getAiLanguageInstructions(provider: AiProvider, context: AiPromp
       return `CRITICAL LANGUAGE & SCRIPT RULES FOR GROQ (ENGLISH ONLY):
 1. All evaluation feedback, diagnostic summaries, and recommendations ("summary", "strengths", "areasToImprove", "recommendations") MUST be written strictly in English.
 2. DO NOT use Tanglish or Tamil words anywhere.`;
+
+    case 'grammar':
+      return `CRITICAL LANGUAGE & SCRIPT RULES FOR GROQ (ENGLISH ONLY):
+1. All grammar explanations, simple explanations, step-by-step sentence construction instructions, meanings, common mistakes, and learning tips MUST be written strictly in clear, professional English.
+2. DO NOT use Tanglish or Tamil words anywhere in the response. All explanations must be entirely in English with Japanese examples.`;
   }
 }
 
@@ -196,7 +209,7 @@ export async function callUnifiedAi(options: UnifiedChatOptions): Promise<Unifie
       temperature: options.temperature,
       max_tokens: options.max_tokens,
       jsonMode: options.jsonMode,
-      timeoutMs: options.timeoutMs
+      timeoutMs: Math.max(options.timeoutMs || 0, 120000)
     });
 
     if (geminiRes.success) {
@@ -268,7 +281,7 @@ export async function callUnifiedAi(options: UnifiedChatOptions): Promise<Unifie
         temperature: options.temperature,
         max_tokens: options.max_tokens,
         jsonMode: options.jsonMode,
-        timeoutMs: options.timeoutMs
+        timeoutMs: Math.max(options.timeoutMs || 0, 120000)
       });
 
       if (geminiRes.success) {
