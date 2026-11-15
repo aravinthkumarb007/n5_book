@@ -1204,3 +1204,43 @@ export async function triggerLessonGrammarPdfExport(
   const grammarData = await getOrFetchLessonAiGrammar(lesson, preferredProvider);
   exportGrammarLessonAsPdf(lesson, grammarData);
 }
+
+/**
+ * Exports the lesson as an interactive PDF with embedded AcroForm widgets & PDF JavaScript
+ * Features Show/Hide answers for each practice question, generated via PyMuPDF.
+ */
+export async function downloadInteractiveGrammarPdf(
+  lesson: MinnaLesson,
+  grammarData?: GrammarAiPayload | null,
+  preferredProvider?: 'groq' | 'gemini'
+): Promise<void> {
+  const data = grammarData || await getOrFetchLessonAiGrammar(lesson, preferredProvider);
+
+  const res = await fetch('/api/ai/export-interactive-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      lessonNumber: lesson.lessonNumber,
+      provider: data.providerUsed || preferredProvider || 'groq',
+      grammarData: data
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to generate interactive PDF.');
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Lesson_${lesson.lessonNumber}_Interactive_Grammar_Coach.pdf`;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }, 1000);
+}

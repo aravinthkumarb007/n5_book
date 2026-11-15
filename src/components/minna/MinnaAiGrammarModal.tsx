@@ -20,7 +20,7 @@ import {
 import { MinnaLesson, MinnaGrammarPoint } from '@/types/minna';
 import { speakJapanese } from '@/services/audio';
 import { FuriganaText } from '@/components/FuriganaText';
-import { exportGrammarLessonAsPdf, triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
+import { exportGrammarLessonAsPdf, triggerLessonGrammarPdfExport, downloadInteractiveGrammarPdf } from '@/services/grammarPdfExport';
 
 export interface MinnaAiGrammarModalProps {
   isOpen: boolean;
@@ -64,6 +64,7 @@ export function MinnaAiGrammarModal({
 }: MinnaAiGrammarModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingInteractive, setIsExportingInteractive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeProvider, setActiveProvider] = useState<'groq' | 'gemini'>('groq');
   const [grammarData, setGrammarData] = useState<GrammarAiPayload | null>(null);
@@ -166,6 +167,19 @@ export function MinnaAiGrammarModal({
     }
   };
 
+  const handleExportInteractivePdf = async () => {
+    if (isExportingInteractive || isLoading) return;
+    setIsExportingInteractive(true);
+    try {
+      await downloadInteractiveGrammarPdf(lesson, grammarData, activeProvider);
+    } catch (err: any) {
+      console.error('Failed to export interactive PDF:', err);
+      alert(err.message || 'Failed to generate interactive PDF.');
+    } finally {
+      setIsExportingInteractive(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const topicsToDisplay = grammarData?.topics?.filter(t =>
@@ -210,23 +224,36 @@ export function MinnaAiGrammarModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={handleExportInteractivePdf}
+              disabled={isLoading || isExporting || isExportingInteractive}
+              className="p-2 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer active:scale-95"
+              title="Export as Interactive PDF with embedded Show/Hide questions (Acrobat Reader)"
+            >
+              {isExportingInteractive ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              )}
+              <span className="hidden sm:inline font-extrabold">{isExportingInteractive ? 'Generating Interactive PDF...' : 'Export as Interactive PDF'}</span>
+            </button>
             <button
               onClick={handleExportPdf}
-              disabled={isLoading || isExporting}
+              disabled={isLoading || isExporting || isExportingInteractive}
               className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer active:scale-95 shadow-xs"
-              title="Export Lesson Grammar as Premium PDF"
+              title="Open Printable PDF Study Guide"
             >
               {isExporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
               ) : (
                 <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               )}
-              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export as PDF'}</span>
+              <span className="hidden sm:inline">{isExporting ? 'Opening...' : 'Printable PDF'}</span>
             </button>
             <button
               onClick={handleRefresh}
-              disabled={isLoading || isExporting}
+              disabled={isLoading || isExporting || isExportingInteractive}
               className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               title="Regenerate fresh grammar explanations"
             >
