@@ -20,6 +20,19 @@ interface KanjiAssessmentModalProps {
   onProgressUpdated?: () => void;
 }
 
+// Strips bracketed furigana/reading annotations attached to kanji or words:
+// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】 -> 漢字
+function stripFurigana(text: string): string {
+  if (!text) return '';
+  let clean = text;
+  clean = clean.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+  clean = clean.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+  clean = clean.replace(/<\/?ruby[^>]*>/gi, '');
+  clean = clean.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_m, k) => k);
+  clean = clean.replace(/([一-龯ぁ-んァ-ヶー]+)\s*[\(\[（【][^\)\]）】]+[\)\]）】]/g, (_m, k) => k);
+  return clean.trim();
+}
+
 export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
   kanji,
   isOpen,
@@ -281,13 +294,13 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                 />
               </div>
 
-              {/* Question Prompts */}
+              {/* Question Prompts (Clean Exam Presentation: NO Furigana) */}
               <div className="text-center mb-6">
                 <span className="inline-block text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 font-semibold mb-2">
-                  <FuriganaText text={currentQ.secondaryPrompt || 'Select the correct answer'} />
+                  {stripFurigana(currentQ.secondaryPrompt || 'Select the correct answer')}
                 </span>
-                  <h4 className="text-2xl sm:text-3xl font-japanese font-bold text-stone-900 dark:text-stone-100 mb-1">
-                    <FuriganaText text={currentQ.prompt} />
+                  <h4 className="text-2xl sm:text-3xl font-japanese font-bold text-stone-900 dark:text-stone-100 mb-1 leading-relaxed">
+                    {stripFurigana(currentQ.prompt)}
                   </h4>
 
                 {/* Show/Hide English Meaning Toggle */}
@@ -349,7 +362,7 @@ export const KanjiAssessmentModal: React.FC<KanjiAssessmentModalProps> = ({
                       onClick={() => handleSelectOption(option)}
                       className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-150 flex items-center justify-between cursor-pointer ${btnStyle}`}
                     >
-                      <span className="font-medium"><FuriganaText text={option} /></span>
+                      <span className="font-medium font-japanese">{stripFurigana(option)}</span>
                       {isAnswerSubmitted && option === currentQ.correctAnswer && (
                         <CheckCircle2 size={16} className="text-green-600 dark:text-green-400 shrink-0" />
                       )}
