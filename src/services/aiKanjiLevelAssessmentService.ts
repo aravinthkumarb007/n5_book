@@ -1,5 +1,6 @@
-import { KanjiRecord } from '@/types/kanji';
+import { KanjiRecord, LearningStatus, UserKanjiProgress } from '@/types/kanji';
 import { ALL_120_KANJI, LEVEL_METADATA } from '@/data/kanjiDatabase';
+import { storage, evaluateLevelProgressions } from '@/services/storage';
 
 export type JlptQuestionType =
   | 'reading_identification'
@@ -107,29 +108,20 @@ export function getCumulativeLearnedKanjiPool(
 } {
   const learnedSet = new Set(learnedKanjiIds);
 
-  // Current level learned kanji
-  let currentLevelLearned = ALL_120_KANJI.filter(
-    k => k.level === targetLevel && learnedSet.has(k.id)
-  );
+  // Current level target kanji: all 10 Kanji for this level's assessment curriculum
+  const currentLevelLearned = ALL_120_KANJI.filter(k => k.level === targetLevel);
 
-  // If user is testing Level 1 and hasn't marked any as learned yet,
-  // allow all Level 1 Kanji so they are never blocked from their first test!
-  if (targetLevel === 1 && currentLevelLearned.length === 0) {
-    currentLevelLearned = ALL_120_KANJI.filter(k => k.level === 1);
-  }
-
-  // Previous levels (1 to targetLevel - 1) learned kanji
+  // Previous levels (1 to targetLevel - 1) learned kanji for cumulative retention
   let previousLevelsLearned = ALL_120_KANJI.filter(
-    k => k.level < targetLevel && learnedSet.has(k.id)
+    k => k.level < targetLevel && (learnedSet.has(k.id) || targetLevel <= 2)
   );
 
-  // If testing Level > 1 and previous levels haven't been marked learned,
-  // include foundational Level 1 kanji as base retention pool
+  // Fallback: if previous levels not yet recorded in local map, include Level 1 as foundational retention
   if (targetLevel > 1 && previousLevelsLearned.length === 0) {
-    previousLevelsLearned = ALL_120_KANJI.filter(k => k.level < targetLevel);
+    previousLevelsLearned = ALL_120_KANJI.filter(k => k.level === 1);
   }
 
-  const cumulativePool = [...previousLevelsLearned, ...currentLevelLearned];
+  const cumulativePool = [...currentLevelLearned, ...previousLevelsLearned];
 
   return {
     cumulativePool,
@@ -319,5 +311,95 @@ export function evaluateAiLevelExam(
     incorrectKanji,
     examReadinessRating,
     recommendations
+  };
+}
+
+/**
+ * Automatically completes a level upon passing the AI assessment (>= 80%):
+ * 1. Marks every Kanji in target level as 'learned' with 100% mastery/accuracy.
+ * 2. Unlocks the next level automatically.
+ * 3. Saves locally and triggers atomic database synchronization.
+ * 4. Broadcasts UI refresh events.
+ */
+export async function completeLevelFromPassedAiAssessment(
+  level: number,
+  scorePercent: number,
+  examDetails?: {
+    totalQuestions: number;
+    correctCount: number;
+    timeSpentSeconds: number;
+    answers: Array<{ questionId: string; kanjiId: number; prompt: string; selectedAnswer: string; correctAnswer: string; isCorrect: boolean }>;
+  }
+): Promise<{
+  success: boolean;
+  level: number;
+  nextLevelUnlocked: number;
+  updatedKanjiCount: number;
+}> {
+  const lvlMeta = LEVEL_METADATA.find(l => l.level === level);
+  if (!lvlMeta) throw new Error(`Level ${level} not found`);
+
+  const now = new Date().toISOString();
+  const currentProgress = storage.getProgress();
+
+  // 1. Mark every Kanji belonging to Level N as learned
+  const updatedProgress = currentProgress.map(p => {
+    if (lvlMeta.kanjiIds.includes(p.kanji_id)) {
+      return {
+        ...p,
+        learning_status: 'learned' as LearningStatus,
+        learned_at: p.learned_at || now,
+        meaning_accuracy: Math.max(p.meaning_accuracy || 0, scorePercent),
+        onyomi_accuracy: Math.max(p.onyomi_accuracy || 0, scorePercent),
+        kunyomi_accuracy: Math.max(p.kunyomi_accuracy || 0, scorePercent),
+        vocabulary_accuracy: Math.max(p.vocabulary_accuracy || 0, scorePercent),
+        revision_count: Math.max(p.revision_count || 0, 1),
+        last_studied_at: now
+      };
+    }
+    return p;
+  });
+
+  // 2. Evaluate progressions to unlock Level N + 1
+  const withUnlocks = evaluateLevelProgressions(updatedProgress);
+
+  // 3. Save locally immediately (instant UI feedback, zero delay)
+  storage.saveProgress(withUnlocks);
+
+  // 4. Atomic backend database sync & validation
+  try {
+    if (examDetails) {
+      await fetch('/api/ai/kanji-level-assessment/complete-level', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          level,
+          scorePercent,
+          totalQuestions: examDetails.totalQuestions,
+          correctCount: examDetails.correctCount,
+          timeSpentSeconds: examDetails.timeSpentSeconds,
+          kanjiIdsTested: lvlMeta.kanjiIds,
+          answers: examDetails.answers
+        })
+      });
+    }
+
+    const { syncFullProjectToCloud } = await import('./cloudSyncService');
+    await syncFullProjectToCloud();
+  } catch (err) {
+    console.warn('Database cloud sync warning for level completion:', err);
+  }
+
+  // 5. Notify all frontend listeners
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('project-data-refreshed'));
+    window.dispatchEvent(new CustomEvent('level-completion-verified', { detail: { level } }));
+  }
+
+  return {
+    success: true,
+    level,
+    nextLevelUnlocked: Math.min(12, level + 1),
+    updatedKanjiCount: lvlMeta.kanjiIds.length
   };
 }

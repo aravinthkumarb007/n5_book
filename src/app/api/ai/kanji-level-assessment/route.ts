@@ -39,7 +39,22 @@ function robustParseJson(raw: string): any {
   }
 }
 
-// Convert out-of-pool kanji in sentences to Hiragana for beginner N5 accessibility
+function shuffleArray<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+const DEFAULT_SUBPROMPTS: Record<JlptQuestionType, string> = {
+  reading_identification: 'Choose the correct reading of the underlined word.',
+  kanji_selection: 'Choose the correct kanji for the underlined word.',
+  vocab_meaning: 'Choose the correct meaning of the underlined word.',
+  contextual_usage: 'Choose the word that best fits the sentence context.',
+  sentence_fill: 'Choose the correct kanji to complete the sentence.'
+};
 const COMMON_KANJI_TO_HIRAGANA: Record<string, string> = {
   '私': 'わたし', '本': 'ほん', '時': 'じ', '月': 'つき', '会': 'かい',
   '社': 'しゃ', '校': 'こう', '学': 'がく', '生': 'せい', '先': 'せん',
@@ -115,39 +130,70 @@ export async function POST(request: Request) {
     const currentLevelChars = currentLevelLearned.map(k => k.character).join(' ');
     const prevLevelsChars = previousLevelsLearned.map(k => k.character).join(' ');
 
-    const systemPrompt = `You are the Official Examination Authority for JLPT N5 and NAT-TEST 5Q Japanese Kanji Examinations.
-Your mission is to synthesize an authentic, realistic, 100% AI-generated Level ${requestedLevel} Kanji Examination.
+    const systemPrompt = `You are the Official Chief Examiner for the JLPT N5 and NAT-TEST 5Q Japanese Language Examinations.
+Your mission is to dynamically synthesize authentic, grammatically flawless, natural Japanese exam questions for Level ${requestedLevel}.
 
-PEDAGOGICAL & EXAM SPECIFICATIONS:
-1. CUMULATIVE KANJI POOL ENFORCEMENT:
-   Current Level (${requestedLevel}) Kanji Pool: [${currentLevelChars || 'None'}]
-   Previous Levels (1–${requestedLevel - 1}) Cumulative Kanji Pool: [${prevLevelsChars || 'None'}]
-   TOTAL CUMULATIVE EXAM POOL: ${cumulativePool.length} characters.
-   CRITICAL MANDATORY RULE: Every question, option, and tested Kanji MUST come STRICTLY from this cumulative pool!
-   DO NOT introduce any Kanji character outside this cumulative pool! (Hiragana and Katakana are permitted for grammar and Okurigana).
+CRITICAL PEDAGOGICAL & JLPT EXAMINATION SPECIFICATIONS:
 
-2. AUTHENTIC JLPT / NAT-TEST QUESTION PATTERNS (Distribute across these 5 types):
-   - "reading_identification": 漢字の読み (e.g. 「日本に行きます。」の「日本」の読み方はどれですか。)
-   - "kanji_selection": 表記・漢字選択 (e.g. 「かのじょは [ひと] です。」の [ひと] はどの漢字ですか。)
-   - "vocab_meaning": 語彙の意味 (e.g. 「休日」の意味はどれですか。)
-   - "contextual_usage": 文脈規定・使い方 (e.g. 文脈に最も合う言葉・漢字を一つ選んでください。)
-   - "sentence_fill": 文中漢字選択 (e.g. 「いま、［　］時ですか。」)
+1. AUTHENTIC QUESTION PATTERNS & PRESENTATION:
+   Every question MUST follow one of these 5 authentic JLPT N5 / NAT-TEST 5Q formats with markdown underline __word__ around the target word:
 
-3. CRITICAL: ZERO FURIGANA & ZERO READING HINTS DURING ASSESSMENT:
-   - MANDATORY: NEVER include Furigana (ふりがな), Hiragana reading hints, Romaji, or pronunciation hints in "prompt", "subPrompt", "contextSentence", or "options"!
-   - Present Kanji cleanly (e.g. 『日本』, NEVER 『日本[にほん]』), exactly like authentic printed JLPT and NAT-TEST exam question sheets.
-   - The assessment evaluates the student's ability to read and recognize Kanji independently without hints.
-   - In "explanation", DO include full readings, furigana, and educational explanations for review after completing the test.
+   - Pattern 1 ("reading_identification" - 漢字の読み):
+     Instruction (subPrompt): "Choose the correct reading of the underlined word."
+     Prompt: A natural Japanese sentence with the target word underlined.
+     Example: "毎朝、__新聞__を読みます。"
+     Options: Exactly 4 authentic Hiragana readings with realistic phonetic distractors (e.g., voiced/unvoiced consonants like しん/じん, p-sounds like ぶん/ぷん, long vowels, alternate readings).
+     Example options: ["しんぶん", "しんもん", "しんぷん", "じんぶん"]
+     CorrectAnswer: "しんぶん"
 
-4. BALANCED CUMULATIVE COVERAGE:
-   - Approximately 50-60% of questions should test Current Level (${requestedLevel}) Kanji.
-   - Approximately 40-50% of questions should test Previously Learned Retention (Levels 1–${requestedLevel - 1}).
+   - Pattern 2 ("kanji_selection" - 表記・漢字選択):
+     Instruction (subPrompt): "Choose the correct kanji for the underlined word."
+     Prompt: A natural Japanese sentence with the target Hiragana word underlined.
+     Example: "きのう、友だちに __あいました__。"
+     Options: Exactly 4 Kanji choices with identical okurigana, drawn from the cumulative pool.
+     Example options: ["会いました", "合いました", "今いました", "見いました"]
+     CorrectAnswer: "会いました"
 
-5. EXAM STRUCTURE & PRESENTATION:
-   - Exactly FOUR (4) multiple-choice options per question.
-   - Exactly ONE correct option.
-   - Realistic, authentic distractors drawn strictly from the cumulative pool (homophones, similar radicals, related meanings).
-   - Clear, concise explanation for each question breaking down why the correct answer is right.
+   - Pattern 3 ("vocab_meaning" - 語彙の意味):
+     Instruction (subPrompt): "Choose the correct meaning of the underlined word."
+     Prompt: "「__休日__」の意味として最もよいものはどれですか。"
+     Options: Exactly 4 distinct English meanings.
+     Example options: ["Holiday / Day off", "Workday", "Birthday", "Yesterday"]
+     CorrectAnswer: "Holiday / Day off"
+
+   - Pattern 4 ("contextual_usage" - 文脈規定・言葉の使い方):
+     Instruction (subPrompt): "Choose the word that best fits the sentence context."
+     Prompt: A natural sentence with a blank ［　］.
+     Example: "田中さんは　大学の　［　］です。"
+     Options: Exactly 4 plausible Japanese words formed strictly with cumulative Kanji.
+     Example options: ["学生", "先生", "会社", "友達"]
+     CorrectAnswer: "学生"
+
+   - Pattern 5 ("sentence_fill" - 文中漢字選択):
+     Instruction (subPrompt): "Choose the correct kanji to complete the sentence."
+     Prompt: A natural sentence testing a single Kanji character in context with ［　］.
+     Example: "いま、何［　］ですか。"
+     Options: Exactly 4 single Kanji characters strictly from the cumulative pool.
+     Example options: ["時", "分", "半", "年"]
+     CorrectAnswer: "時"
+
+2. CUMULATIVE KANJI POOL RULES:
+   - Target Curriculum (Level ${requestedLevel}): [${currentLevelChars || 'All Level Kanji'}]
+   - Prior Retention (Levels 1–${requestedLevel - 1}): [${prevLevelsChars || 'Level 1 Foundational'}]
+   - Every tested Kanji and every Kanji in options MUST come strictly from this cumulative pool!
+   - NO unlearned Kanji from higher levels permitted in questions, options, or passages!
+   - Grammatical words and particles outside the pool must be written in Hiragana (e.g. わたし, ともだち).
+
+3. ABSOLUTE ZERO FURIGANA DURING EXAM:
+   - NEVER put Furigana, reading annotations [かんじ], romaji, or pronunciation hints inside prompt, contextSentence, or options.
+   - The user must demonstrate independent reading ability.
+   - Put detailed readings, furigana, and educational explanations in "explanation" for review after the test.
+
+4. REALISTIC DISTRACTORS & UNAMBIGUOUS ANSWERS:
+   - Exactly FOUR (4) options per question.
+   - All 4 options MUST be distinct and non-empty (NO DUPLICATES).
+   - Exactly ONE unambiguously correct answer.
+   - Realistic distractors with plausible variations.
 
 ${langInstruction}
 
@@ -159,9 +205,9 @@ OUTPUT SCHEMA (Return strictly JSON):
       "kanjiCharacter": "single character from cumulative pool",
       "kanjiLevel": number,
       "questionType": "reading_identification" | "kanji_selection" | "vocab_meaning" | "contextual_usage" | "sentence_fill",
-      "prompt": "Question prompt in authentic JLPT exam style without any furigana or reading hints",
-      "subPrompt": "Brief standard exam instruction without giving away the reading",
-      "contextSentence": "Short natural context sentence without furigana",
+      "prompt": "Natural Japanese sentence with __target_word__ underlined, without furigana",
+      "subPrompt": "Choose the correct reading of the underlined word.",
+      "contextSentence": "Short natural context sentence without furigana (optional)",
       "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
       "correctAnswer": "Exact matching string from options",
       "explanation": "Clear educational explanation with readings for post-test review"
@@ -227,11 +273,16 @@ ${JSON.stringify(poolContext, null, 2)}`;
         cumulativePool[validatedQuestions.length % cumulativePool.length];
 
       // Sanitize context text
-      const cleanPrompt = sanitizeContextText(q.prompt, cumulativeChars);
-      const cleanSubPrompt = sanitizeContextText(q.subPrompt || '', cumulativeChars);
+      let cleanPrompt = sanitizeContextText(q.prompt, cumulativeChars);
+      let cleanSubPrompt = sanitizeContextText(q.subPrompt || '', cumulativeChars);
       const cleanContext = sanitizeContextText(q.contextSentence || '', cumulativeChars);
-      const cleanOptions = q.options.map((opt: string) => sanitizeContextText(opt, cumulativeChars));
-      const cleanAnswer = sanitizeContextText(q.correctAnswer, cumulativeChars);
+      const rawOptions = q.options.map((opt: string) => sanitizeContextText(opt, cumulativeChars).trim());
+      const cleanAnswer = sanitizeContextText(q.correctAnswer, cumulativeChars).trim();
+
+      // Ensure all 4 options are non-empty and unique (NO duplicate choices)
+      const uniqueOptions: string[] = Array.from(new Set(rawOptions.filter((opt): opt is string => Boolean(opt))));
+      if (uniqueOptions.length !== 4) continue;
+      if (!uniqueOptions.includes(cleanAnswer)) continue;
 
       const validTypes: JlptQuestionType[] = [
         'reading_identification',
@@ -244,6 +295,19 @@ ${JSON.stringify(poolContext, null, 2)}`;
         ? q.questionType
         : validTypes[validatedQuestions.length % validTypes.length];
 
+      // Ensure proper JLPT subprompt instruction
+      if (!cleanSubPrompt || cleanSubPrompt.length < 5) {
+        cleanSubPrompt = DEFAULT_SUBPROMPTS[qType];
+      }
+
+      // If prompt doesn't have underline formatting (__...__), add it to target kanji
+      if (!cleanPrompt.includes('__') && !cleanPrompt.includes('【') && cleanPrompt.includes(matchedKanji.character)) {
+        cleanPrompt = cleanPrompt.replace(matchedKanji.character, `__${matchedKanji.character}__`);
+      }
+
+      // Shuffle options randomly so correct answer is uniformly distributed among A, B, C, D
+      const shuffledOptions = shuffleArray(uniqueOptions);
+
       validatedQuestions.push({
         id: `ai_exam_${Date.now()}_${validatedQuestions.length + 1}`,
         kanjiId: matchedKanji.id,
@@ -255,7 +319,7 @@ ${JSON.stringify(poolContext, null, 2)}`;
         prompt: cleanPrompt,
         subPrompt: cleanSubPrompt,
         contextSentence: cleanContext,
-        options: cleanOptions,
+        options: shuffledOptions,
         correctAnswer: cleanAnswer,
         explanation: q.explanation || `「${matchedKanji.character}」 (${matchedKanji.meaning})`,
         audioTarget: matchedKanji.character

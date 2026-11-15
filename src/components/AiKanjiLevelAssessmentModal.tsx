@@ -34,7 +34,8 @@ import {
   AiLevelExamEvaluation,
   JLPT_QUESTION_TYPE_META,
   getCumulativeLearnedKanjiPool,
-  evaluateAiLevelExam
+  evaluateAiLevelExam,
+  completeLevelFromPassedAiAssessment
 } from '@/services/aiKanjiLevelAssessmentService';
 import { storage } from '@/services/storage';
 import { FuriganaText } from './FuriganaText';
@@ -49,12 +50,62 @@ function stripFurigana(text: string): string {
   return text.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*[ぁ-んァ-ヶー]+\s*[\])）】>]/g, '$1');
 }
 
+// Renders authentic JLPT examination underlines for target words:
+// e.g. 毎朝、__新聞__を読みます。 -> 毎朝、[新聞 with underline] を読みます。
+function renderExamPrompt(text: string) {
+  if (!text) return null;
+  const clean = stripFurigana(text);
+  const parts = clean.split(/(__[^\s_]+__|【[^】]+】|<underline>[^<]+<\/underline>)/g);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('__') && part.endsWith('__') && part.length > 4) {
+          const word = part.slice(2, -2);
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-stone-100 px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        if (part.startsWith('<underline>') && part.endsWith('</underline>')) {
+          const word = part.replace(/^<underline>|<\/underline>$/g, '');
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-stone-100 px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        if (part.startsWith('【') && part.endsWith('】') && part.length > 2) {
+          const word = part.slice(1, -1);
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-stone-100 px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 interface AiKanjiLevelAssessmentModalProps {
   level: number;
   isOpen: boolean;
   onClose: () => void;
   progressMap: Record<number, UserKanjiProgress>;
   onAssessmentCompleted?: () => void;
+  onSelectNextLevel?: (nextLevel: number) => void;
 }
 
 export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalProps> = ({
@@ -62,7 +113,8 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
   isOpen,
   onClose,
   progressMap,
-  onAssessmentCompleted
+  onAssessmentCompleted,
+  onSelectNextLevel
 }) => {
   // Phases: 'setup' | 'exam' | 'review_sheet' | 'results'
   const [phase, setPhase] = useState<'setup' | 'exam' | 'review_sheet' | 'results'>('setup');
@@ -249,7 +301,7 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
   }, [phase, currentQ, isAdvancing, currentIndex, questions, answers]);
 
   // Final Submit
-  const handleFinalSubmit = (customAnswers?: Record<string, string>) => {
+  const handleFinalSubmit = async (customAnswers?: Record<string, string>) => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
     const effectiveAnswers = customAnswers || answers;
@@ -262,14 +314,23 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
     if (evaluation.isPassed) {
       try {
         confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.55 }
         });
       } catch {}
     }
 
-    // Record exam results in storage
+    const testAnswers = questions.map(q => ({
+      questionId: q.id,
+      kanjiId: q.kanjiId,
+      prompt: q.prompt,
+      selectedAnswer: effectiveAnswers[q.id] || '',
+      correctAnswer: q.correctAnswer,
+      isCorrect: effectiveAnswers[q.id] === q.correctAnswer
+    }));
+
+    // 1. Record exam results in storage history
     storage.recordKanjiLevelTestResult({
       id: `ai_exam_${Date.now()}`,
       test_type: 'level_ai',
@@ -282,17 +343,27 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
       is_passed: evaluation.isPassed,
       generation_mode: '100% Pure AI (Cumulative Learned Pool)',
       kanji_ids_tested: Array.from(new Set(questions.map(q => q.kanjiId))),
-      answers: questions.map(q => ({
-        questionId: q.id,
-        kanjiId: q.kanjiId,
-        prompt: q.prompt,
-        selectedAnswer: effectiveAnswers[q.id] || '',
-        correctAnswer: q.correctAnswer,
-        isCorrect: effectiveAnswers[q.id] === q.correctAnswer
-      })),
+      answers: testAnswers,
       time_spent_seconds: timeSpent,
       created_at: new Date().toISOString()
     });
+
+    // 2. CRITICAL LEVEL COMPLETION & DATABASE SYNCHRONIZATION:
+    // If the assessment is passed (>= 80%):
+    // Automatically mark all Kanji in this level as learned,
+    // unlock next level, and save to database!
+    if (evaluation.isPassed) {
+      try {
+        await completeLevelFromPassedAiAssessment(level, evaluation.accuracyPercent, {
+          totalQuestions: evaluation.totalQuestions,
+          correctCount: evaluation.score,
+          timeSpentSeconds: timeSpent,
+          answers: testAnswers
+        });
+      } catch (err) {
+        console.warn('Level completion database sync warning:', err);
+      }
+    }
 
     onAssessmentCompleted?.();
   };
@@ -621,22 +692,23 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                     </span>
                   </div>
 
-                  {/* Clean Question Prompt without Furigana or Reading Hints */}
-                  <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 font-japanese leading-relaxed">
-                    {stripFurigana(currentQ.prompt)}
-                  </h3>
-
+                  {/* Subprompt / Exam Instruction */}
                   {currentQ.subPrompt && (
                     <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
                       {stripFurigana(currentQ.subPrompt)}
                     </p>
                   )}
+
+                  {/* Authentic JLPT Question Sentence with Underlined Target Word */}
+                  <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 font-japanese leading-relaxed tracking-wide">
+                    {renderExamPrompt(currentQ.prompt)}
+                  </h3>
                 </div>
 
                 {/* Optional Context Sentence without Furigana */}
                 {currentQ.contextSentence && (
                   <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 font-japanese text-base sm:text-lg font-semibold text-stone-800 dark:text-stone-200 leading-relaxed">
-                    {stripFurigana(currentQ.contextSentence)}
+                    {renderExamPrompt(currentQ.contextSentence)}
                   </div>
                 )}
               </div>
@@ -786,44 +858,89 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
           {phase === 'results' && finalEvaluation && (
             <div className="space-y-5">
               {/* Mastery Banner */}
-              <div className={`p-5 rounded-2xl border text-center space-y-2 shadow-xs ${
-                finalEvaluation.isPassed
-                  ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
-              }`}>
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white dark:bg-stone-800 shadow-md mb-1">
-                  {finalEvaluation.accuracyPercent >= 90 ? (
-                    <Award size={26} className="text-amber-500" />
-                  ) : finalEvaluation.isPassed ? (
-                    <CheckCircle2 size={26} className="text-emerald-500" />
-                  ) : (
-                    <RotateCcw size={26} className="text-amber-600" />
+              {finalEvaluation.isPassed ? (
+                <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 dark:from-emerald-950/40 dark:via-stone-900 dark:to-emerald-950/20 border-2 border-emerald-500/80 shadow-md space-y-3 text-center animate-fadeIn">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-600 text-white shadow-lg mx-auto">
+                    <Award size={32} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold uppercase tracking-wide">
+                      <CheckCircle2 size={14} /> Level {level} Passed & Completed! (100% Mastery)
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100">
+                      Official Level {level} Assessment Passed ({finalEvaluation.accuracyPercent}%)
+                    </h3>
+                    <p className="text-xs text-stone-600 dark:text-stone-300 max-w-lg mx-auto leading-relaxed">
+                      All 10 Kanji in Level {level} are now marked as <strong>Learned</strong> in your database.
+                      {level < 12 ? (
+                        <span> <strong>Level {level + 1}</strong> is now unlocked and ready to study!</span>
+                      ) : (
+                        <span> Congratulations on completing the 12-Level Kanji curriculum!</span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-xs">
+                    <div className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-stone-800 border border-emerald-300 dark:border-emerald-800 font-bold text-emerald-800 dark:text-emerald-300">
+                      Score: {finalEvaluation.score} / {finalEvaluation.totalQuestions} ({finalEvaluation.accuracyPercent}%)
+                    </div>
+                    <div className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-stone-800 border border-emerald-300 dark:border-emerald-800 font-bold text-emerald-800 dark:text-emerald-300">
+                      Status: {finalEvaluation.examReadinessRating}
+                    </div>
+                    {level < 12 && (
+                      <div className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-bold shadow-xs flex items-center gap-1">
+                        <span>Level {level + 1} Unlocked</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {level < 12 && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectNextLevel?.(level + 1);
+                          onClose();
+                        }}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-bold shadow-lg transition-all cursor-pointer active:scale-95"
+                      >
+                        <span>Continue to Level {level + 1}</span>
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
                   )}
                 </div>
+              ) : (
+                <div className="p-5 sm:p-6 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-800 space-y-3 text-center animate-fadeIn">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 mx-auto">
+                    <AlertTriangle size={26} />
+                  </div>
 
-                <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                  {finalEvaluation.accuracyPercent >= 90
-                    ? `🏆 Level ${level} Exam Ready (合格圏内)!`
-                    : finalEvaluation.isPassed
-                    ? `🌟 Level ${level} Assessment Passed!`
-                    : `📖 Level ${level} Practice Completed – Review Recommended`}
-                </h3>
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-xs font-bold">
+                      Score: {finalEvaluation.score} / {finalEvaluation.totalQuestions} ({finalEvaluation.accuracyPercent}%) • 80% Required to Pass
+                    </div>
+                    <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">
+                      Assessment Not Passed – Practice & Review Recommended
+                    </h3>
+                    <p className="text-xs text-stone-600 dark:text-stone-400 max-w-lg mx-auto">
+                      Your existing learning progress has been preserved. Review the recommended Kanji below and retake the assessment to unlock Level {level + 1}.
+                    </p>
+                  </div>
 
-                <p className="text-xs text-stone-600 dark:text-stone-400 max-w-lg mx-auto">
-                  {finalEvaluation.isPassed
-                    ? `You demonstrated strong cumulative retention across Level ${level} and previous foundational levels.`
-                    : `Focus on the recommended Kanji below to solidify your retention before taking the official exam.`}
-                </p>
-
-                {/* Score & Exam Readiness Status */}
-                <div className="flex flex-wrap items-center justify-center gap-4 pt-2 text-xs font-bold text-stone-800 dark:text-stone-200">
-                  <span>Score: {finalEvaluation.score} / {finalEvaluation.totalQuestions} ({finalEvaluation.accuracyPercent}%)</span>
-                  <span>•</span>
-                  <span>Status: <strong className="text-red-600 dark:text-red-400">{finalEvaluation.examReadinessRating}</strong></span>
-                  <span>•</span>
-                  <span>Time: {Math.floor(finalEvaluation.timeSpentSeconds / 60)}m {finalEvaluation.timeSpentSeconds % 60}s</span>
+                  <div className="pt-1 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleStartExam}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+                    >
+                      <RefreshCw size={14} />
+                      <span>Retry Level {level} Assessment</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Cumulative Retention Diagnostic Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1014,7 +1131,7 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                 </div>
               </div>
 
-              {/* Action Buttons: Retake / Finish */}
+              {/* Action Buttons: Retake / Continue / Finish */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
                 <button
                   type="button"
@@ -1025,13 +1142,29 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                   <span>Retake Assessment (New AI Questions)</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
-                >
-                  Save & Return to Kanji Levels
-                </button>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  {finalEvaluation.isPassed && level < 12 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectNextLevel?.(level + 1);
+                        onClose();
+                      }}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                    >
+                      <span>Continue to Level {level + 1}</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 font-bold text-xs shadow-md transition cursor-pointer"
+                  >
+                    Save & Return to Levels
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -422,6 +422,12 @@ export function LearnKanjiView({
                                                           <span className="text-xs text-stone-400 dark:text-stone-500 font-medium shrink-0">
                                                             {lvl.kanjiRange}
                                                           </span>
+                                                          {stat?.learned === 10 && (
+                                                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-800 shrink-0">
+                                                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                              <span>Level {lvl.level} Completed (100%)</span>
+                                                            </span>
+                                                          )}
                                                           {!isUnlocked && (
                                                             <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded flex-wrap">
                                                               <Lock className="w-3 h-3 shrink-0" />
@@ -651,6 +657,10 @@ export function LearnKanjiView({
                                               onClose={() => setIsAiLevelAssessmentOpen(false)}
                                               progressMap={progressMap}
                                               onAssessmentCompleted={() => {
+                                                onRefreshProgress?.();
+                                              }}
+                                              onSelectNextLevel={(nextLevel) => {
+                                                setSelectedLevel(nextLevel);
                                                 onRefreshProgress?.();
                                               }}
                                             />
