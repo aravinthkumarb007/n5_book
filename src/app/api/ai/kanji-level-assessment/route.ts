@@ -65,13 +65,21 @@ const COMMON_KANJI_TO_HIRAGANA: Record<string, string> = {
 function sanitizeContextText(text: string, allowedChars: Set<string>): string {
   if (!text) return '';
 
+  // 0. Remove ruby/rt/rp tags
+  let result = text.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+  result = result.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+  result = result.replace(/<\/?ruby[^>]*>/gi, '');
+
   // 1. Process bracket furigana:
   // - If the kanji is allowed, keep ONLY the kanji part (no furigana/reading hint): 漢字[かんじ] -> 漢字
   // - If the kanji is unlearned, convert to Hiragana reading: 漢字[かんじ] -> かんじ
-  let result = text.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*([ぁ-んァ-ヶー]+)\s*[\])）】>]/g, (match, kanjiPart, reading) => {
+  result = result.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*([ぁ-んァ-ヶーa-zA-Z]+)\s*[\])）】>]/g, (_match, kanjiPart, reading) => {
     const isAllowed = Array.from(kanjiPart).every((c: any) => allowedChars.has(c));
     return isAllowed ? kanjiPart : reading;
   });
+
+  // Strip any remaining brackets attached to kanji
+  result = result.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_match, kanjiPart) => kanjiPart);
 
   // 2. Convert common unlearned standalone kanji to Hiragana
   result = result.replace(/[\u4E00-\u9FAF]/g, (char) => {
@@ -79,7 +87,7 @@ function sanitizeContextText(text: string, allowedChars: Set<string>): string {
     return COMMON_KANJI_TO_HIRAGANA[char] || char;
   });
 
-  return result;
+  return result.trim();
 }
 
 export async function POST(request: Request) {

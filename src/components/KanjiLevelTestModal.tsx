@@ -17,6 +17,67 @@ import { AudioButton } from './AudioButton';
 export type TestScopeMode = 'level_test' | 'all_unlocked_ai';
 export type TestGenerationType = 'hardcoded' | 'ai';
 
+// Strips bracketed furigana/reading annotations attached to kanji or words:
+// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】 -> 漢字
+function stripFurigana(text: string): string {
+  if (!text) return '';
+  let clean = text;
+  clean = clean.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+  clean = clean.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+  clean = clean.replace(/<\/?ruby[^>]*>/gi, '');
+  clean = clean.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_m, k) => k);
+  clean = clean.replace(/([一-龯ぁ-んァ-ヶー]+)\s*[\(\[（【][^\)\]）】]+[\)\]）】]/g, (_m, k) => k);
+  return clean.trim();
+}
+
+// Renders examination prompts cleanly with authentic JLPT underlines for target words
+function renderExamPrompt(text: string) {
+  if (!text) return null;
+  const clean = stripFurigana(text);
+  const parts = clean.split(/(__[^\s_]+__|【[^】]+】|<underline>[^<]+<\/underline>)/g);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('__') && part.endsWith('__') && part.length > 4) {
+          const word = part.slice(2, -2);
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-white px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        if (part.startsWith('<underline>') && part.endsWith('</underline>')) {
+          const word = part.replace(/^<underline>|<\/underline>$/g, '');
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-white px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        if (part.startsWith('【') && part.endsWith('】') && part.length > 2) {
+          const word = part.slice(1, -1);
+          return (
+            <span
+              key={i}
+              className="underline decoration-2 decoration-red-600 dark:decoration-red-400 underline-offset-4 font-bold text-stone-900 dark:text-white px-0.5"
+            >
+              {word}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 interface KanjiLevelTestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -608,18 +669,17 @@ export function KanjiLevelTestModal({
               </div>
             </div>
 
-            {/* Question Card */}
+            {/* Question Card (Authentic Clean Test Presentation: Pure Kanji/Kana, NO Furigana) */}
             <div className="bg-stone-50/70 dark:bg-stone-800/40 rounded-2xl border border-stone-200 dark:border-stone-700/60 p-5 text-center space-y-3">
-              <div className="flex items-center justify-center gap-3">
-                <div className="font-japanese text-3xl sm:text-4xl font-extrabold text-stone-900 dark:text-white">
-                  <FuriganaText text={currentQ.prompt} />
+              <div className="flex items-center justify-center">
+                <div className="font-japanese text-3xl sm:text-4xl font-extrabold text-stone-900 dark:text-white leading-relaxed tracking-wide">
+                  {renderExamPrompt(currentQ.prompt)}
                 </div>
-                <AudioButton text={currentQ.prompt.replace(/\[.*?\]/g, '')} size="md" />
               </div>
 
               {currentQ.secondaryPrompt && (
                 <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 font-medium">
-                  {currentQ.secondaryPrompt}
+                  {stripFurigana(currentQ.secondaryPrompt)}
                 </p>
               )}
             </div>
@@ -657,8 +717,8 @@ export function KanjiLevelTestModal({
                         <span className="w-5 h-5 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-[10px] font-bold text-stone-600 dark:text-stone-300 shrink-0">
                           {String.fromCharCode(65 + idx)}
                         </span>
-                        <span className="truncate">
-                          <FuriganaText text={option} />
+                        <span className="truncate font-japanese text-sm sm:text-base">
+                          {stripFurigana(option)}
                         </span>
                       </div>
 
@@ -762,7 +822,7 @@ export function KanjiLevelTestModal({
                     </div>
                     {!ans.isCorrect && (
                       <div className="text-[11px] text-stone-500 dark:text-stone-400">
-                        Your answer: <span className="text-rose-600 font-medium">{ans.selectedAnswer}</span> • Correct: <span className="text-emerald-600 font-bold">{ans.correctAnswer}</span>
+                        Your answer: <span className="text-rose-600 font-medium">{stripFurigana(ans.selectedAnswer)}</span> • Correct: <span className="text-emerald-600 font-bold">{stripFurigana(ans.correctAnswer)}</span>
                       </div>
                     )}
                     <div className="text-[10px] text-stone-400 dark:text-stone-500 pt-0.5">

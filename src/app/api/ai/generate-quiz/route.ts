@@ -93,12 +93,10 @@ PEDAGOGICAL SPECIFICATIONS:
 ${difficultyGuidelines[cleanDifficulty]}
 3. QUESTION FORMAT:
    Format: "${testType}" - ${typeDescriptions[testType] || 'Multiple-choice test question'}.
-4. FURIGANA REQUIREMENT:
-   Every Japanese Kanji in "prompt", "secondaryPrompt", "contextSentence", "options", and "correctAnswer" MUST be annotated with bracket furigana:
-   Format: 漢字[かんじ]
-   Examples:
-   - "これ[これ]は 私[わたし]の 本[ほん]です。"
-   - "日曜日[にちようび]に 行[い]きます。"
+4. ABSOLUTE ZERO FURIGANA DURING TEST:
+   DO NOT include Furigana, ruby tags, romaji, or bracketed reading annotations (e.g. 漢字[かんじ]) inside "prompt", "secondaryPrompt", "contextSentence", "options", or "correctAnswer".
+   Kanji must appear cleanly (e.g. "私", "本", "日曜日に行きます") without revealing readings, so students can be tested accurately on recognition and reading comprehension.
+   Include full readings, furigana breakdowns, and English explanations ONLY in the "explanation" field for post-test review.
 5. OPTIONS SPECIFICATION:
    Exactly FOUR (4) multiple-choice options.
    Exactly ONE completely correct option.
@@ -116,9 +114,9 @@ OUTPUT SCHEMA (Return strictly JSON):
       "kanjiCharacter": "single character from pool",
       "type": "${testType}",
       "difficulty": "${cleanDifficulty}",
-      "prompt": "The primary question prompt with bracket furigana 漢字[かんじ]",
+      "prompt": "The primary question prompt without furigana (e.g. 日曜日に行きます)",
       "secondaryPrompt": "Clear instructions for the learner in English",
-      "contextSentence": "Natural context sentence if applicable",
+      "contextSentence": "Natural context sentence if applicable without furigana",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "Exact string of correct option",
       "explanation": "Educational explanation breaking down reading, meaning, and why distractors are incorrect"
@@ -158,9 +156,21 @@ Generate exactly ${questionCount} diverse, educationally rich, non-repetitive qu
     let validatedQuestions: any[] = [];
     const kanjiRegex = /[\u4E00-\u9FAF]/g;
 
+    const stripFuriganaFromText = (text: string): string => {
+      if (!text) return '';
+      let clean = text;
+      clean = clean.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+      clean = clean.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+      clean = clean.replace(/<\/?ruby[^>]*>/gi, '');
+      clean = clean.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_m, k) => k);
+      clean = clean.replace(/([一-龯ぁ-んァ-ヶー]+)\s*[\(\[（【][^\)\]）】]+[\)\]）】]/g, (_m, k) => k);
+      return clean.trim();
+    };
+
     const hasUnlearnedKanji = (str: string) => {
       if (!str) return false;
-      const found = str.match(kanjiRegex);
+      const cleanStr = stripFuriganaFromText(str);
+      const found = cleanStr.match(kanjiRegex);
       if (!found) return false;
       return found.some(char => !eligibleChars.has(char));
     };
@@ -176,15 +186,22 @@ Generate exactly ${questionCount} diverse, educationally rich, non-repetitive qu
           if (!q.prompt || !q.options || !Array.isArray(q.options) || q.options.length !== 4) continue;
           if (!q.correctAnswer || !q.options.includes(q.correctAnswer)) continue;
 
+          // Clean Furigana from all exam fields
+          const cleanPrompt = stripFuriganaFromText(q.prompt);
+          const cleanSecondaryPrompt = stripFuriganaFromText(q.secondaryPrompt || 'Select the correct answer');
+          const cleanContextSentence = q.contextSentence ? stripFuriganaFromText(q.contextSentence) : undefined;
+          const cleanOptions = q.options.map((opt: string) => stripFuriganaFromText(opt));
+          const cleanCorrectAnswer = stripFuriganaFromText(q.correctAnswer);
+
           // Reject questions with unlearned Kanji in character, prompt, or options
           if (q.kanjiCharacter && !eligibleChars.has(q.kanjiCharacter)) continue;
-          if (hasUnlearnedKanji(q.prompt)) continue;
-          if (hasUnlearnedKanji(q.secondaryPrompt)) continue;
-          if (hasUnlearnedKanji(q.contextSentence)) continue;
-          if (q.options.some((opt: string) => hasUnlearnedKanji(opt))) continue;
+          if (hasUnlearnedKanji(cleanPrompt)) continue;
+          if (hasUnlearnedKanji(cleanSecondaryPrompt)) continue;
+          if (cleanContextSentence && hasUnlearnedKanji(cleanContextSentence)) continue;
+          if (cleanOptions.some((opt: string) => hasUnlearnedKanji(opt))) continue;
 
           // Deduplicate within the batch
-          const normalizedPrompt = q.prompt.replace(/\s+/g, '').toLowerCase();
+          const normalizedPrompt = cleanPrompt.replace(/\s+/g, '').toLowerCase();
           if (seenPrompts.has(normalizedPrompt)) continue;
           seenPrompts.add(normalizedPrompt);
 
@@ -198,12 +215,12 @@ Generate exactly ${questionCount} diverse, educationally rich, non-repetitive qu
             kanjiCharacter: q.kanjiCharacter || eligibleKanjiPool[0].character,
             type: q.type || testType,
             difficulty: cleanDifficulty,
-            prompt: q.prompt,
-            secondaryPrompt: q.secondaryPrompt || 'Select the correct answer',
-            contextSentence: q.contextSentence,
+            prompt: cleanPrompt,
+            secondaryPrompt: cleanSecondaryPrompt,
+            contextSentence: cleanContextSentence,
             englishMeaning: q.englishMeaning,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
+            options: cleanOptions,
+            correctAnswer: cleanCorrectAnswer,
             explanation: q.explanation || 'Answer validated by N5 Kanji Master engine.'
           });
         }

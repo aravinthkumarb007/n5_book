@@ -40,6 +40,19 @@ interface KanjiKnowledgeAssessmentModalProps {
   onAssessmentCompleted?: () => void;
 }
 
+// Strips bracketed furigana/reading annotations attached to kanji or words:
+// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】 -> 漢字
+function stripFurigana(text: string): string {
+  if (!text) return '';
+  let clean = text;
+  clean = clean.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+  clean = clean.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+  clean = clean.replace(/<\/?ruby[^>]*>/gi, '');
+  clean = clean.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_m, k) => k);
+  clean = clean.replace(/([一-龯ぁ-んァ-ヶー]+)\s*[\(\[（【][^\)\]）】]+[\)\]）】]/g, (_m, k) => k);
+  return clean.trim();
+}
+
 export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentModalProps> = ({
   kanji,
   isOpen,
@@ -536,23 +549,20 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1 flex-1">
                     <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 font-japanese leading-relaxed">
-                      <FuriganaText text={currentQ.prompt} />
+                      {stripFurigana(currentQ.prompt)}
                     </h3>
                     {currentQ.secondaryPrompt && (
                       <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
-                        {currentQ.secondaryPrompt}
+                        {stripFurigana(currentQ.secondaryPrompt)}
                       </p>
                     )}
                   </div>
-                  {currentQ.audioTarget && (
-                    <AudioButton text={currentQ.audioTarget} size="md" />
-                  )}
                 </div>
 
                 {/* Context sentence if present */}
                 {currentQ.contextSentence && (
                   <div className="p-3 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 font-japanese text-sm sm:text-base font-semibold text-stone-800 dark:text-stone-200">
-                    <FuriganaText text={currentQ.contextSentence} />
+                    {stripFurigana(currentQ.contextSentence)}
                   </div>
                 )}
               </div>
@@ -587,7 +597,7 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                         <span className="w-6 h-6 rounded-lg bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs font-bold flex items-center justify-center shrink-0">
                           {String.fromCharCode(65 + idx)}
                         </span>
-                        <span>{opt}</span>
+                        <span>{stripFurigana(opt)}</span>
                       </div>
 
                       {isAnswerSubmitted && isCorrect && (

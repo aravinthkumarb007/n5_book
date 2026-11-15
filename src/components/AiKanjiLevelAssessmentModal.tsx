@@ -43,11 +43,17 @@ import { AudioButton } from './AudioButton';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
-// Strips bracketed furigana/reading annotations attached to kanji:
-// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】 -> 漢字
+// Strips bracketed furigana/reading annotations attached to kanji or words:
+// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】, 漢字(kanji), <ruby>漢字<rt>かんじ</rt></ruby> -> 漢字
 function stripFurigana(text: string): string {
   if (!text) return '';
-  return text.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*[ぁ-んァ-ヶー]+\s*[\])）】>]/g, '$1');
+  let clean = text;
+  clean = clean.replace(/<rt[^>]*>.*?<\/rt>/gi, '');
+  clean = clean.replace(/<rp[^>]*>.*?<\/rp>/gi, '');
+  clean = clean.replace(/<\/?ruby[^>]*>/gi, '');
+  clean = clean.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<][^\])）】>]+[\])）】>]/g, (_m, k) => k);
+  clean = clean.replace(/([一-龯ぁ-んァ-ヶー]+)\s*[\(\[（【][^\)\]）】]+[\)\]）】]/g, (_m, k) => k);
+  return clean.trim();
 }
 
 // Renders authentic JLPT examination underlines for target words:
