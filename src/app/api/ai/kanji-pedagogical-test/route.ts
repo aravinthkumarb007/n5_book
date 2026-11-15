@@ -3,7 +3,6 @@ import { callUnifiedAi, resolveEffectiveProvider, getAiLanguageInstructions } fr
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
 import {
   PedagogicalQuestion,
-  generateLocalPedagogicalAssessment,
   CATEGORY_META,
   AssessmentDifficulty,
   PedagogicalCategory
@@ -29,7 +28,7 @@ function robustParseJson(raw: string): any {
 
   try {
     return JSON.parse(text);
-  } catch (initialErr) {
+  } catch {
     // Clean trailing commas before closing braces
     const cleaned = text.replace(/,\s*([}\]])/g, '$1');
     try {
@@ -48,7 +47,6 @@ export async function POST(request: Request) {
       level,
       count = 8,
       difficulty = 'medium',
-      focusKanjiOnly = false,
       provider
     } = body;
 
@@ -57,22 +55,38 @@ export async function POST(request: Request) {
     const cleanDifficulty: AssessmentDifficulty =
       ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : 'medium';
 
-    // 1. Retrieve the target kanji and all kanji for the current lesson/level
-    const targetKanji = ALL_120_KANJI.find(k => k.id === Number(kanjiId)) || ALL_120_KANJI[0];
-    const lessonKanji = ALL_120_KANJI.filter(k => k.level === (targetKanji ? targetKanji.level : requestedLevel));
-    
-    if (lessonKanji.length === 0) {
+    // 1. Retrieve the currently selected kanji and all kanji for this lesson
+    const selectedKanji = ALL_120_KANJI.find(k => k.id === Number(kanjiId)) || ALL_120_KANJI[0];
+    const lessonLevel = selectedKanji ? selectedKanji.level : requestedLevel;
+    const allLessonKanji = ALL_120_KANJI.filter(k => k.level === lessonLevel);
+
+    if (allLessonKanji.length === 0) {
       return NextResponse.json({
-        error: `No Kanji found for lesson level ${requestedLevel}.`
+        success: false,
+        error: `No Kanji found for lesson level ${lessonLevel}.`
       }, { status: 400 });
     }
 
-    const eligibleChars = new Set(lessonKanji.map(k => k.character));
+    // 2. STRICT RULE: EXCLUDE the currently selected Kanji from question generation!
+    // All questions must test the OTHER Kanji taught in this lesson.
+    const testableLessonKanji = allLessonKanji.filter(
+      k => k.id !== selectedKanji.id && k.character !== selectedKanji.character
+    );
+
+    if (testableLessonKanji.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: `Lesson ${lessonLevel} must contain peer Kanji to generate peer assessment.`
+      }, { status: 400 });
+    }
+
+    const testableChars = new Set(testableLessonKanji.map(k => k.character));
+    const allLessonChars = new Set(allLessonKanji.map(k => k.character));
     const effectiveProvider = resolveEffectiveProvider(provider);
     const langInstruction = getAiLanguageInstructions(effectiveProvider, 'exam');
 
-    // 2. Prepare structured context for AI
-    const promptContext = lessonKanji.map(k => ({
+    // 3. Prepare structured context for AI (providing detailed data for testable lesson peer kanji)
+    const testableContext = testableLessonKanji.map(k => ({
       id: k.id,
       character: k.character,
       meaning: k.meaning,
@@ -90,33 +104,40 @@ export async function POST(request: Request) {
       }))
     }));
 
-    const systemPrompt = `You are the Master JLPT N5 Kanji Pedagogical Assessment Architect.
-Your task is to generate an interactive, educationally rigorous "Test My Knowledge" assessment for Lesson ${targetKanji.level}.
+    const systemPrompt = `You are the Master JLPT N5 Japanese Examination Authority.
+Your sole mission is to dynamically synthesize an authentic, high-quality, 100% AI-generated interactive Kanji assessment for Lesson ${lessonLevel}.
 
-CRITICAL MANDATORY RULES:
-1. STRICT LESSON RESTRICTION:
-   You must ONLY generate questions, multiple-choice options, vocabulary, and context sentences using characters from the provided CURRENT LESSON KANJI POOL.
-   DO NOT include any Kanji character outside this lesson pool! (Hiragana and Katakana are permitted for grammar, particles, and Okurigana).
-2. TARGET FOCUS:
-   Primary focus character: 「${targetKanji.character}」 (${targetKanji.meaning}).
-   The assessment must evaluate retention and deep comprehension of 「${targetKanji.character}」 and its Lesson ${targetKanji.level} peers.
-3. QUESTION DIVERSITY (Synthesize questions across these 5 categories):
-   - "kanji_recognition": Identify correct character from meaning/shape description.
-   - "onyomi_kunyomi": Discriminate Chinese-derived Onyomi vs native Japanese Kunyomi readings.
-   - "english_meaning": Core English semantic definition recall.
-   - "vocab_usage": Complete or analyze compound words (熟語) formed from this lesson's Kanji.
-   - "sentence_based": Contextual Japanese sentence completion testing real-world application.
-4. OPTIONS SPECIFICATION:
+STRICT MANDATORY CONSTRAINTS:
+1. ABSOLUTE EXCLUSION OF CURRENTLY SELECTED KANJI:
+   The student is currently viewing and studying: 「${selectedKanji.character}」 (${selectedKanji.meaning}).
+   CRITICAL PROHIBITION: DO NOT generate any question testing 「${selectedKanji.character}」!
+   - NO question prompt should ask about 「${selectedKanji.character}」.
+   - NO correct answer may be 「${selectedKanji.character}」.
+   - All questions MUST evaluate the student's retention of the OTHER Kanji covered in Lesson ${lessonLevel}: [${testableLessonKanji.map(k => k.character).join(', ')}].
+
+2. STRICT LESSON BOUNDARY:
+   Only use Kanji characters from Lesson ${lessonLevel} (the testable pool).
+   CRITICAL: Never introduce ANY Kanji character from other lessons or levels! (Standard Hiragana and Katakana are permitted for grammar and Okurigana).
+
+3. QUESTION CATEGORIES (Distribute questions across these 5 categories):
+   - "kanji_recognition": Identify correct character given its meaning, components, or stroke characteristics.
+   - "onyomi_kunyomi": Discriminate Chinese-derived Onyomi vs native Japanese Kunyomi readings in context.
+   - "english_meaning": Core English definition and semantic understanding.
+   - "vocab_usage": Complete or analyze compound words (熟語) formed from Lesson ${lessonLevel} Kanji.
+   - "sentence_based": Contextual Japanese sentence completion testing real-world practical application.
+
+4. MULTIPLE-CHOICE FORMAT:
    - Exactly FOUR (4) distinct options.
    - Exactly ONE correct option.
-   - THREE plausible distractors drawn STRICTLY from Lesson ${targetKanji.level} kanji or their verified readings.
-5. ADAPTIVE DIFFICULTY:
-   - Target tier: ${cleanDifficulty.toUpperCase()}.
+   - THREE plausible distractors drawn strictly from Lesson ${lessonLevel} Kanji and their verified readings.
+
+5. ADAPTIVE DIFFICULTY TARGET: ${cleanDifficulty.toUpperCase()}
    - Easy: Direct recognition, simple matching.
    - Medium: Reading discrimination, compound completion.
    - Hard: Contextual nuances, look-alike discrimination among lesson peers.
+
 6. BRACKET FURIGANA:
-   Annotate Japanese Kanji with bracket furigana: 漢字[かんじ].
+   Annotate all Japanese Kanji with bracket furigana: 漢字[かんじ].
 
 ${langInstruction}
 
@@ -124,12 +145,12 @@ OUTPUT SCHEMA (Return strictly JSON):
 {
   "questions": [
     {
-      "kanjiId": ${targetKanji.id},
-      "kanjiCharacter": "${targetKanji.character}",
+      "kanjiId": number (must be an ID from the testable peer kanji list, NEVER ${selectedKanji.id}),
+      "kanjiCharacter": "single character from testable peer kanji list, NEVER ${selectedKanji.character}",
       "category": "kanji_recognition" | "onyomi_kunyomi" | "english_meaning" | "vocab_usage" | "sentence_based",
       "difficulty": "${cleanDifficulty}",
       "prompt": "Clear question prompt with bracket furigana where appropriate",
-      "secondaryPrompt": "Instructive guidance for the student",
+      "secondaryPrompt": "Instructive guidance for the student in English",
       "contextSentence": "Natural context sentence if applicable",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "Exact matching string from options",
@@ -139,16 +160,18 @@ OUTPUT SCHEMA (Return strictly JSON):
   ]
 }`;
 
-    const userPrompt = `LESSON: Lesson ${targetKanji.level} Kanji Assessment
-FOCUS KANJI: 「${targetKanji.character}」 (${targetKanji.meaning})
+    const userPrompt = `LESSON: Lesson ${lessonLevel} Kanji Knowledge Assessment
+CURRENTLY STUDIED KANJI TO EXCLUDE: 「${selectedKanji.character}」 (${selectedKanji.meaning}) - DO NOT generate questions on this character!
+
+TESTABLE LESSON ${lessonLevel} PEER KANJI (${testableLessonKanji.length} characters):
+${JSON.stringify(testableContext, null, 2)}
+
 DIFFICULTY: ${cleanDifficulty.toUpperCase()}
-QUESTION COUNT REQUESTED: ${requestedCount}
+QUESTIONS REQUESTED: ${requestedCount} questions
 
-LESSON ${targetKanji.level} KANJI POOL (${lessonKanji.length} characters):
-${JSON.stringify(promptContext, null, 2)}
+Generate exactly ${requestedCount} pure AI-powered questions testing ONLY the above peer Kanji, strictly excluding 「${selectedKanji.character}」.`;
 
-Generate ${requestedCount} diverse pedagogical assessment questions adhering strictly to the above guidelines.`;
-
+    // Pure AI call - no hardcoded questions allowed
     const aiResult = await callUnifiedAi({
       provider: effectiveProvider,
       messages: [
@@ -156,11 +179,28 @@ Generate ${requestedCount} diverse pedagogical assessment questions adhering str
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.25,
-      max_tokens: 3000,
+      max_tokens: 3500,
       jsonMode: true,
-      timeoutMs: 22000,
-      allowFallback: false
+      timeoutMs: 30000,
+      allowFallback: true
     });
+
+    if (!aiResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: aiResult.error || 'AI generation unavailable. Please ensure Groq or Gemini API key is configured in Settings.'
+      }, { status: 502 });
+    }
+
+    const parsed = robustParseJson(aiResult.content);
+    const rawQuestions: any[] = parsed?.questions || [];
+
+    if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'AI response was not formatted as valid questions. Please try again.'
+      }, { status: 502 });
+    }
 
     const validatedQuestions: PedagogicalQuestion[] = [];
     const kanjiRegex = /[\u4E00-\u9FAF]/g;
@@ -168,90 +208,81 @@ Generate ${requestedCount} diverse pedagogical assessment questions adhering str
       if (!str) return false;
       const found = str.match(kanjiRegex);
       if (!found) return false;
-      return found.some(char => !eligibleChars.has(char));
+      return found.some(char => !allLessonChars.has(char));
     };
 
-    if (aiResult.success) {
-      const parsed = robustParseJson(aiResult.content);
-      const rawQuestions: any[] = parsed?.questions || [];
+    for (const q of rawQuestions) {
+      if (!q.prompt || !q.options || !Array.isArray(q.options) || q.options.length !== 4) continue;
+      if (!q.correctAnswer || !q.options.includes(q.correctAnswer)) continue;
 
-      for (const q of rawQuestions) {
-        if (!q.prompt || !q.options || !Array.isArray(q.options) || q.options.length !== 4) continue;
-        if (!q.correctAnswer || !q.options.includes(q.correctAnswer)) continue;
+      // STRICT CHECK: Reject any question testing the currently selected Kanji!
+      if (q.kanjiCharacter === selectedKanji.character || q.kanjiId === selectedKanji.id) continue;
+      if (q.correctAnswer === selectedKanji.character) continue;
+      if (typeof q.prompt === 'string' && q.prompt.includes(`「${selectedKanji.character}」`)) continue;
 
-        // Ensure no out-of-lesson kanji exist in question, options, or prompts
-        if (q.kanjiCharacter && !eligibleChars.has(q.kanjiCharacter)) continue;
-        if (hasUnlearnedKanji(q.prompt)) continue;
-        if (hasUnlearnedKanji(q.secondaryPrompt)) continue;
-        if (hasUnlearnedKanji(q.contextSentence)) continue;
-        if (q.options.some((opt: string) => hasUnlearnedKanji(opt))) continue;
+      // Reject questions containing Kanji outside this lesson
+      if (q.kanjiCharacter && !testableChars.has(q.kanjiCharacter)) continue;
+      if (hasUnlearnedKanji(q.prompt)) continue;
+      if (hasUnlearnedKanji(q.secondaryPrompt)) continue;
+      if (hasUnlearnedKanji(q.contextSentence)) continue;
+      if (q.options.some((opt: string) => hasUnlearnedKanji(opt))) continue;
 
-        const validCat: PedagogicalCategory = [
-          'kanji_recognition',
-          'onyomi_kunyomi',
-          'english_meaning',
-          'vocab_usage',
-          'sentence_based'
-        ].includes(q.category) ? q.category : 'kanji_recognition';
+      const validCat: PedagogicalCategory = [
+        'kanji_recognition',
+        'onyomi_kunyomi',
+        'english_meaning',
+        'vocab_usage',
+        'sentence_based'
+      ].includes(q.category) ? q.category : 'kanji_recognition';
 
-        const matchedKanji = lessonKanji.find(k => k.character === q.kanjiCharacter) || targetKanji;
+      const matchedPeer = testableLessonKanji.find(k => k.character === q.kanjiCharacter) ||
+        testableLessonKanji.find(k => k.id === q.kanjiId) ||
+        testableLessonKanji[validatedQuestions.length % testableLessonKanji.length];
 
-        validatedQuestions.push({
-          id: `ped_ai_${Date.now()}_${validatedQuestions.length + 1}`,
-          kanjiId: matchedKanji.id,
-          kanjiCharacter: matchedKanji.character,
-          category: validCat,
-          categoryLabel: CATEGORY_META[validCat].label,
-          difficulty: cleanDifficulty,
-          prompt: q.prompt,
-          secondaryPrompt: q.secondaryPrompt || `Lesson ${targetKanji.level} evaluation`,
-          contextSentence: q.contextSentence,
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation || `「${matchedKanji.character}」 (${matchedKanji.meaning})`,
-          audioTarget: q.audioTarget || matchedKanji.character,
-          mnemonicHint: matchedKanji.mnemonic
-        });
-      }
+      validatedQuestions.push({
+        id: `ai_ped_${Date.now()}_${validatedQuestions.length + 1}`,
+        kanjiId: matchedPeer.id,
+        kanjiCharacter: matchedPeer.character,
+        category: validCat,
+        categoryLabel: CATEGORY_META[validCat].label,
+        difficulty: cleanDifficulty,
+        prompt: q.prompt,
+        secondaryPrompt: q.secondaryPrompt || `Lesson ${lessonLevel} Peer Evaluation`,
+        contextSentence: q.contextSentence,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation || `「${matchedPeer.character}」 (${matchedPeer.meaning})`,
+        audioTarget: q.audioTarget || matchedPeer.character,
+        mnemonicHint: matchedPeer.mnemonic
+      });
     }
 
-    // 3. Fallback / Supplement: If AI generated fewer than requested, fill with deterministic local engine
-    if (validatedQuestions.length < requestedCount) {
-      const needed = requestedCount - validatedQuestions.length;
-      const localFallback = generateLocalPedagogicalAssessment(
-        targetKanji,
-        lessonKanji,
-        needed,
-        cleanDifficulty
-      );
-
-      for (const lq of localFallback) {
-        // avoid duplicate prompts
-        if (!validatedQuestions.some(vq => vq.prompt === lq.prompt)) {
-          validatedQuestions.push(lq);
-        }
-      }
+    if (validatedQuestions.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'AI did not return valid peer questions for this lesson. Please click retry.'
+      }, { status: 502 });
     }
-
-    const finalQuestions = validatedQuestions.slice(0, requestedCount);
 
     return NextResponse.json({
       success: true,
-      questions: finalQuestions,
-      lessonLevel: targetKanji.level,
-      targetKanji: {
-        id: targetKanji.id,
-        character: targetKanji.character,
-        meaning: targetKanji.meaning
+      questions: validatedQuestions,
+      lessonLevel,
+      selectedKanji: {
+        id: selectedKanji.id,
+        character: selectedKanji.character,
+        meaning: selectedKanji.meaning
       },
-      source: aiResult.success ? aiResult.providerUsed : 'smart_pedagogical_engine',
+      testablePeerKanji: testableLessonKanji.map(k => ({ id: k.id, character: k.character, meaning: k.meaning })),
+      source: 'pure_ai',
       providerUsed: aiResult.providerUsed,
+      modelUsed: aiResult.modelUsed,
       difficulty: cleanDifficulty
     });
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      error: err.message || 'Server error during pedagogical assessment generation.'
+      error: err.message || 'Server error during AI assessment generation.'
     }, { status: 500 });
   }
 }
