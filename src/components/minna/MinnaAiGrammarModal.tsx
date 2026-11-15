@@ -14,11 +14,13 @@ import {
   ChevronRight,
   ExternalLink,
   Loader2,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import { MinnaLesson, MinnaGrammarPoint } from '@/types/minna';
 import { speakJapanese } from '@/services/audio';
 import { FuriganaText } from '@/components/FuriganaText';
+import { exportGrammarLessonAsPdf, triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
 
 export interface MinnaAiGrammarModalProps {
   isOpen: boolean;
@@ -61,6 +63,7 @@ export function MinnaAiGrammarModal({
   initialTopicId
 }: MinnaAiGrammarModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeProvider, setActiveProvider] = useState<'groq' | 'gemini'>('groq');
   const [grammarData, setGrammarData] = useState<GrammarAiPayload | null>(null);
@@ -147,6 +150,22 @@ export function MinnaAiGrammarModal({
     fetchGrammarExplanation(activeProvider, true);
   };
 
+  const handleExportPdf = async () => {
+    if (isExporting || isLoading) return;
+    setIsExporting(true);
+    try {
+      if (grammarData && Array.isArray(grammarData.topics) && grammarData.topics.length > 0) {
+        exportGrammarLessonAsPdf(lesson, grammarData);
+      } else {
+        await triggerLessonGrammarPdfExport(lesson, activeProvider);
+      }
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const topicsToDisplay = grammarData?.topics?.filter(t =>
@@ -193,8 +212,21 @@ export function MinnaAiGrammarModal({
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
+              onClick={handleExportPdf}
+              disabled={isLoading || isExporting}
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer active:scale-95 shadow-xs"
+              title="Export Lesson Grammar as Premium PDF"
+            >
+              {isExporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              )}
+              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export as PDF'}</span>
+            </button>
+            <button
               onClick={handleRefresh}
-              disabled={isLoading}
+              disabled={isLoading || isExporting}
               className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
               title="Regenerate fresh grammar explanations"
             >

@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Volume2, CheckCircle2, Circle, AlertCircle, BookOpen,
   MessageSquare, Sparkles, ChevronRight, Check, Trophy, Zap, ArrowRight, Layers,
-  HelpCircle, X, ShieldCheck, CheckSquare, Square, RotateCcw, Eye, EyeOff
+  HelpCircle, X, ShieldCheck, CheckSquare, Square, RotateCcw, Eye, EyeOff,
+  Download, Loader2
 } from 'lucide-react';
 import { MinnaLesson, VocabLearningStatus, MinnaVocabularyItem } from '@/types/minna';
 import { getStoredVocabStatuses, setVocabStatus, batchSetVocabStatus } from '@/services/vocabStorage';
@@ -13,6 +14,7 @@ import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { speakJapanese } from '@/services/audio';
 import { toggleVocabLearned, toggleGrammarUnderstood } from '@/services/minnaStorage';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
+import { triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
 
 interface MinnaLessonDetailModalProps {
   lesson: MinnaLesson;
@@ -42,7 +44,20 @@ export function MinnaLessonDetailModal({
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
   const [isAiGrammarOpen, setIsAiGrammarOpen] = useState(false);
   const [aiGrammarTopicId, setAiGrammarTopicId] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [vocabStatuses, setVocabStatuses] = useState<Record<string, VocabLearningStatus>>({});
+
+  const handleExportLessonPdf = async () => {
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      await triggerLessonGrammarPdfExport(lesson);
+    } catch (err) {
+      console.error('Failed to export lesson PDF:', err);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -874,17 +889,33 @@ export function MinnaLessonDetailModal({
                         Detailed, step-by-step beginner explanations, formulas, sentence structures, authentic examples, common mistakes & learning tips.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAiGrammarTopicId(null);
-                        setIsAiGrammarOpen(true);
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Learn via AI</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiGrammarTopicId(null);
+                          setIsAiGrammarOpen(true);
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Learn via AI</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportLessonPdf}
+                        disabled={isExportingPdf}
+                        className="px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
+                        title="Export Lesson Grammar as Premium PDF"
+                      >
+                        {isExportingPdf ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-blue-100" />
+                        )}
+                        <span>{isExportingPdf ? 'Preparing...' : 'Export as PDF'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   {lesson.grammar.map((g, idx) => {

@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen, Sparkles, Trophy, CheckCircle2, Clock,
   Search, Plus, ArrowRight, Play, Award, Zap, Layers,
-  ChevronRight, RefreshCw, RotateCcw, BarChart2, Star, Sliders
+  ChevronRight, RefreshCw, RotateCcw, BarChart2, Star, Sliders,
+  Download, Loader2
 } from 'lucide-react';
 import { CustomExamConfig, CustomLesson, ExamQuestion, ExamResultRecord, MinnaLesson, MinnaUserLessonProgress } from '@/types/minna';
 import { ALL_MINNA_LESSONS, getCurriculumStats } from '@/data/minnaNoNihongo';
@@ -27,6 +28,7 @@ import { MinnaLessonQuizModal } from './MinnaLessonQuizModal';
 import { MinnaAppendicesModal } from './MinnaAppendicesModal';
 import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { AiQuizLoadingOverlay } from '@/components/common/AiQuizLoadingOverlay';
+import { triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
 
 interface MinnaDashboardViewProps {
   onNavigateHome?: () => void;
@@ -63,6 +65,19 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
   const [examResultForModal, setExamResultForModal] = useState<ExamResultRecord | null>(null);
 
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [exportingLessonNumber, setExportingLessonNumber] = useState<number | null>(null);
+
+  const handleExportLessonPdf = async (lesson: MinnaLesson) => {
+    if (exportingLessonNumber !== null) return;
+    setExportingLessonNumber(lesson.lessonNumber);
+    try {
+      await triggerLessonGrammarPdfExport(lesson);
+    } catch (err) {
+      console.error('Failed to export lesson PDF:', err);
+    } finally {
+      setExportingLessonNumber(null);
+    }
+  };
 
   // Load storage state on mount
   const refreshLocalData = () => {
@@ -503,17 +518,34 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                               <span>Learn via AI ({lesson.grammar.length} Topics)</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setInitialDetailTab('grammar');
-                                setSelectedLessonForDetail(lesson);
-                              }}
-                              className="w-full py-2 px-3 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              <BookOpen className="w-3.5 h-3.5" />
-                              <span>View Textbook Grammar Notes</span>
-                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInitialDetailTab('grammar');
+                                  setSelectedLessonForDetail(lesson);
+                                }}
+                                className="w-full py-2 px-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                title="View Textbook Grammar Notes"
+                              >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                <span className="truncate">Textbook Notes</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExportLessonPdf(lesson)}
+                                disabled={exportingLessonNumber === lesson.lessonNumber}
+                                className="w-full py-2 px-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                                title="Export Lesson Grammar as Premium PDF"
+                              >
+                                {exportingLessonNumber === lesson.lessonNumber ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+                                ) : (
+                                  <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                )}
+                                <span className="truncate">{exportingLessonNumber === lesson.lessonNumber ? 'Preparing...' : 'Export PDF'}</span>
+                              </button>
+                            </div>
                           </div>
                         ) : statusFilter === 'assessments' ? (
                           <button
