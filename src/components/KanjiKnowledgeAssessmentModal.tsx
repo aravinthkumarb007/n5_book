@@ -50,7 +50,7 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
   const [phase, setPhase] = useState<'setup' | 'testing' | 'summary'>('setup');
 
   // Configuration State
-  const [questionCount, setQuestionCount] = useState<number>(8);
+  const [questionCount, setQuestionCount] = useState<number>(5);
   const [currentDifficulty, setCurrentDifficulty] = useState<AssessmentDifficulty>('medium');
   const [difficultyNotice, setDifficultyNotice] = useState<string | null>(null);
 
@@ -416,9 +416,8 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                     onChange={e => setQuestionCount(Number(e.target.value))}
                     className="w-full p-2.5 rounded-xl text-xs font-semibold border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100"
                   >
-                    <option value={6}>6 AI Questions (Focused Recall)</option>
-                    <option value={8}>8 AI Questions (Standard Assessment)</option>
-                    <option value={10}>10 AI Questions (Comprehensive Lesson Drill)</option>
+                    <option value={5}>5 AI Questions (Standard Assessment)</option>
+                    <option value={6}>6 AI Questions (Comprehensive Lesson Drill)</option>
                   </select>
                 </div>
 
