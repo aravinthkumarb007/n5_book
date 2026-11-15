@@ -137,7 +137,8 @@ export async function callGeminiChat(options: GeminiChatOptions): Promise<{
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 25000);
+  const timeoutMs = Math.max(options.timeoutMs || 0, 120000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     // Separate system instructions from conversation turns
@@ -249,7 +250,7 @@ export async function callGeminiChat(options: GeminiChatOptions): Promise<{
   } catch (err: any) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') {
-      return { success: false, content: '', error: 'Google Gemini API request timed out (25s limit).' };
+      return { success: false, content: '', error: `Google Gemini API request timed out (${Math.round(timeoutMs / 1000)}s limit).` };
     }
     return { success: false, content: '', error: err.message || 'Unknown network error calling Google Gemini API.' };
   }
