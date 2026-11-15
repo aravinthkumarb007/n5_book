@@ -28,7 +28,7 @@ import { MinnaLessonQuizModal } from './MinnaLessonQuizModal';
 import { MinnaAppendicesModal } from './MinnaAppendicesModal';
 import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { AiQuizLoadingOverlay } from '@/components/common/AiQuizLoadingOverlay';
-import { triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
+import { triggerLessonGrammarPdfExport, downloadInteractiveGrammarPdf } from '@/services/grammarPdfExport';
 
 interface MinnaDashboardViewProps {
   onNavigateHome?: () => void;
@@ -66,6 +66,7 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
 
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
   const [exportingLessonNumber, setExportingLessonNumber] = useState<number | null>(null);
+  const [exportingInteractiveLessonNumber, setExportingInteractiveLessonNumber] = useState<number | null>(null);
 
   const handleExportLessonPdf = async (lesson: MinnaLesson) => {
     if (exportingLessonNumber !== null) return;
@@ -76,6 +77,19 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
       console.error('Failed to export lesson PDF:', err);
     } finally {
       setExportingLessonNumber(null);
+    }
+  };
+
+  const handleExportInteractiveLessonPdf = async (lesson: MinnaLesson) => {
+    if (exportingInteractiveLessonNumber !== null) return;
+    setExportingInteractiveLessonNumber(lesson.lessonNumber);
+    try {
+      await downloadInteractiveGrammarPdf(lesson);
+    } catch (err: any) {
+      console.error('Failed to export interactive PDF:', err);
+      alert(err.message || 'Failed to generate interactive PDF.');
+    } finally {
+      setExportingInteractiveLessonNumber(null);
     }
   };
 
@@ -518,6 +532,22 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                               <span>Learn via AI ({lesson.grammar.length} Topics)</span>
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => handleExportInteractiveLessonPdf(lesson)}
+                              disabled={exportingInteractiveLessonNumber === lesson.lessonNumber}
+                              className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                              title="Export as Interactive PDF with embedded Show/Hide questions (Acrobat Reader)"
+                            >
+                              {exportingInteractiveLessonNumber === lesson.lessonNumber ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
+                              ) : (
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                              )}
+                              <span>
+                                {exportingInteractiveLessonNumber === lesson.lessonNumber ? 'Generating Interactive PDF...' : 'Export as Interactive PDF'}
+                              </span>
+                            </button>
                             <div className="grid grid-cols-2 gap-2">
                               <button
                                 type="button"
@@ -525,7 +555,7 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                                   setInitialDetailTab('grammar');
                                   setSelectedLessonForDetail(lesson);
                                 }}
-                                className="w-full py-2 px-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                className="w-full py-1.5 px-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                                 title="View Textbook Grammar Notes"
                               >
                                 <BookOpen className="w-3.5 h-3.5" />
@@ -535,15 +565,15 @@ export function MinnaDashboardView({ onNavigateHome, onNavigateToBatch, onNaviga
                                 type="button"
                                 onClick={() => handleExportLessonPdf(lesson)}
                                 disabled={exportingLessonNumber === lesson.lessonNumber}
-                                className="w-full py-2 px-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
-                                title="Export Lesson Grammar as Premium PDF"
+                                className="w-full py-1.5 px-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                                title="Open Printable PDF Study Guide"
                               >
                                 {exportingLessonNumber === lesson.lessonNumber ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-600" />
                                 ) : (
-                                  <Download className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                  <Download className="w-3.5 h-3.5 text-stone-500" />
                                 )}
-                                <span className="truncate">{exportingLessonNumber === lesson.lessonNumber ? 'Preparing...' : 'Export PDF'}</span>
+                                <span className="truncate">{exportingLessonNumber === lesson.lessonNumber ? 'Opening...' : 'Printable PDF'}</span>
                               </button>
                             </div>
                           </div>

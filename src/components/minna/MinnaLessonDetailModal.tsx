@@ -14,7 +14,7 @@ import { MinnaAiGrammarModal } from './MinnaAiGrammarModal';
 import { speakJapanese } from '@/services/audio';
 import { toggleVocabLearned, toggleGrammarUnderstood } from '@/services/minnaStorage';
 import { getJapaneseWordDisplay } from '@/utils/japaneseWordDisplay';
-import { triggerLessonGrammarPdfExport } from '@/services/grammarPdfExport';
+import { triggerLessonGrammarPdfExport, downloadInteractiveGrammarPdf } from '@/services/grammarPdfExport';
 
 interface MinnaLessonDetailModalProps {
   lesson: MinnaLesson;
@@ -45,6 +45,7 @@ export function MinnaLessonDetailModal({
   const [isAiGrammarOpen, setIsAiGrammarOpen] = useState(false);
   const [aiGrammarTopicId, setAiGrammarTopicId] = useState<string | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isExportingInteractivePdf, setIsExportingInteractivePdf] = useState(false);
   const [vocabStatuses, setVocabStatuses] = useState<Record<string, VocabLearningStatus>>({});
 
   const handleExportLessonPdf = async () => {
@@ -56,6 +57,19 @@ export function MinnaLessonDetailModal({
       console.error('Failed to export lesson PDF:', err);
     } finally {
       setIsExportingPdf(false);
+    }
+  };
+
+  const handleExportInteractiveLessonPdf = async () => {
+    if (isExportingInteractivePdf) return;
+    setIsExportingInteractivePdf(true);
+    try {
+      await downloadInteractiveGrammarPdf(lesson);
+    } catch (err: any) {
+      console.error('Failed to export interactive PDF:', err);
+      alert(err.message || 'Failed to generate interactive PDF.');
+    } finally {
+      setIsExportingInteractivePdf(false);
     }
   };
 
@@ -903,17 +917,31 @@ export function MinnaLessonDetailModal({
                       </button>
                       <button
                         type="button"
+                        onClick={handleExportInteractiveLessonPdf}
+                        disabled={isExportingInteractivePdf}
+                        className="px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
+                        title="Export as Interactive PDF with embedded Show/Hide questions (Acrobat Reader)"
+                      >
+                        {isExportingInteractivePdf ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-900" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5 text-stone-900" />
+                        )}
+                        <span>{isExportingInteractivePdf ? 'Generating Interactive PDF...' : 'Export as Interactive PDF'}</span>
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleExportLessonPdf}
                         disabled={isExportingPdf}
-                        className="px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
-                        title="Export Lesson Grammar as Premium PDF"
+                        className="px-3 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer disabled:opacity-50"
+                        title="Open Printable PDF Study Guide"
                       >
                         {isExportingPdf ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                         ) : (
                           <Download className="w-3.5 h-3.5 text-blue-100" />
                         )}
-                        <span>{isExportingPdf ? 'Preparing...' : 'Export as PDF'}</span>
+                        <span>{isExportingPdf ? 'Opening...' : 'Printable PDF'}</span>
                       </button>
                     </div>
                   </div>
