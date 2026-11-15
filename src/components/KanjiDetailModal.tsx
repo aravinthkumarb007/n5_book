@@ -13,7 +13,8 @@ import {
   PenTool,
   BrainCircuit,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Play
 } from 'lucide-react';
 import { KanjiRecord, LearningStatus } from '@/types/kanji';
 import { ALL_120_KANJI } from '@/data/kanjiDatabase';
@@ -21,6 +22,7 @@ import { storage } from '@/services/storage';
 import { AudioButton } from './AudioButton';
 import { StrokeCanvas } from './StrokeCanvas';
 import { KanjiAssessmentModal } from './KanjiAssessmentModal';
+import { KanjiKnowledgeAssessmentModal } from './KanjiKnowledgeAssessmentModal';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   filterSentenceByCompletedKanji,
@@ -43,6 +45,7 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
   const [currentKanji, setCurrentKanji] = useState<KanjiRecord | null>(kanji);
   const [activeTab, setActiveTab] = useState<'study' | 'practice' | 'ai_insights'>('study');
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
+  const [isKnowledgeAssessmentOpen, setIsKnowledgeAssessmentOpen] = useState(false);
   const [aiContent, setAiContent] = useState<any>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [isLoadingSentences, setIsLoadingSentences] = useState(false);
@@ -465,22 +468,60 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
 
                       {activeTab === 'ai_insights' && (
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2">
                               <BrainCircuit size={18} className="text-red-600 dark:text-red-400" />
                               <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                                Groq AI Pedagogical Enrichment
+                                AI Pedagogical Enrichment
                               </h3>
                             </div>
-                            <button
-                              type="button"
-                              disabled={isLoadingAi}
-                              onClick={() => fetchAiEnrichment(true)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors cursor-pointer"
-                            >
-                              <RefreshCw size={12} className={isLoadingAi ? 'animate-spin' : ''} />
-                              <span>Regenerate Insights</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setIsKnowledgeAssessmentOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors cursor-pointer"
+                                title="Interactive assessment testing the Kanji covered in this lesson"
+                              >
+                                <Sparkles size={12} />
+                                <span>Test My Knowledge</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isLoadingAi}
+                                onClick={() => fetchAiEnrichment(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors cursor-pointer"
+                              >
+                                <RefreshCw size={12} className={isLoadingAi ? 'animate-spin' : ''} />
+                                <span>Regenerate Insights</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Interactive "Test My Knowledge" Feature Banner */}
+                          <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500/10 via-amber-500/10 to-stone-100/60 dark:from-red-950/40 dark:via-amber-950/20 dark:to-stone-850 border border-red-200 dark:border-red-900/60 shadow-xs">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
+                                  <BrainCircuit size={11} />
+                                  <span>Interactive Knowledge Assessment</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                                  Test My Knowledge: Lesson {currentKanji.level} Kanji (「{currentKanji.character}」)
+                                </h4>
+                                <p className="text-xs text-stone-600 dark:text-stone-400 max-w-xl">
+                                  Evaluate your retention and practical application exclusively on Lesson {currentKanji.level} Kanji with adaptive difficulty, instant explanations, and personalized review recommendations.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setIsKnowledgeAssessmentOpen(true)}
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
+                              >
+                                <Play size={14} />
+                                <span>Test My Knowledge</span>
+                              </button>
+                            </div>
                           </div>
 
                           {isLoadingAi ? (
@@ -625,6 +666,19 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                       isOpen={isAssessmentOpen}
                       onClose={() => setIsAssessmentOpen(false)}
                       onPassed={() => {
+                        setProgressTick(t => t + 1);
+                        onProgressUpdated();
+                      }}
+                    />
+                  )}
+
+                  {/* AI Pedagogical Knowledge Assessment Modal */}
+                  {isKnowledgeAssessmentOpen && (
+                    <KanjiKnowledgeAssessmentModal
+                      kanji={currentKanji}
+                      isOpen={isKnowledgeAssessmentOpen}
+                      onClose={() => setIsKnowledgeAssessmentOpen(false)}
+                      onAssessmentCompleted={() => {
                         setProgressTick(t => t + 1);
                         onProgressUpdated();
                       }}
