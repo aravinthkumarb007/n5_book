@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Sparkles,
@@ -8,20 +8,13 @@ import {
   XCircle,
   Award,
   RotateCcw,
-  Clock,
   Play,
-  BookOpen,
   BrainCircuit,
-  ShieldCheck,
   Loader2,
-  ChevronRight,
   AlertTriangle,
-  Layers,
-  Volume2,
   TrendingUp,
   Target,
   ArrowRight,
-  HelpCircle,
   Lightbulb,
   Check,
   RefreshCw
@@ -33,9 +26,7 @@ import {
   PedagogicalQuestion,
   PedagogicalAssessmentSummary,
   AssessmentDifficulty,
-  PedagogicalCategory,
   CATEGORY_META,
-  generateLocalPedagogicalAssessment,
   evaluatePedagogicalAssessment
 } from '@/services/pedagogicalAssessmentService';
 import { storage } from '@/services/storage';
@@ -59,7 +50,6 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
   const [phase, setPhase] = useState<'setup' | 'testing' | 'summary'>('setup');
 
   // Configuration State
-  const [testMode, setTestMode] = useState<'focused' | 'full_lesson'>('focused');
   const [questionCount, setQuestionCount] = useState<number>(8);
   const [currentDifficulty, setCurrentDifficulty] = useState<AssessmentDifficulty>('medium');
   const [difficultyNotice, setDifficultyNotice] = useState<string | null>(null);
@@ -88,9 +78,15 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
     return LEVEL_METADATA.find(l => l.level === kanji.level) || LEVEL_METADATA[0];
   }, [kanji.level]);
 
-  const lessonKanjiPool = useMemo(() => {
+  // All Kanji in this lesson
+  const allLessonKanji = useMemo(() => {
     return ALL_120_KANJI.filter(k => k.level === kanji.level);
   }, [kanji.level]);
+
+  // Peer Kanji to be tested (STRICT RULE: Exclude the currently selected Kanji)
+  const peerKanjiPool = useMemo(() => {
+    return allLessonKanji.filter(k => k.id !== kanji.id && k.character !== kanji.character);
+  }, [allLessonKanji, kanji.id, kanji.character]);
 
   // Reset when modal opens
   useEffect(() => {
@@ -111,20 +107,8 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
 
   if (!isOpen) return null;
 
-  // Load questions from API (with local fallback)
-  const handleStartAssessment = async (overrideDifficulty?: AssessmentDifficulty, customQuestions?: PedagogicalQuestion[]) => {
-    if (customQuestions && customQuestions.length > 0) {
-      setQuestions(customQuestions);
-      setCurrentIndex(0);
-      setSelectedOption(null);
-      setIsAnswerSubmitted(false);
-      setAnswersLog([]);
-      setConsecutiveCorrect(0);
-      setStartTime(Date.now());
-      setPhase('testing');
-      return;
-    }
-
+  // Pure AI Generation - No Hardcoded Questions
+  const handleStartAssessment = async (overrideDifficulty?: AssessmentDifficulty) => {
     setIsLoading(true);
     setErrorNotice(null);
     const startDiff = overrideDifficulty || currentDifficulty;
@@ -137,45 +121,36 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
           kanjiId: kanji.id,
           level: kanji.level,
           count: questionCount,
-          difficulty: startDiff,
-          focusKanjiOnly: testMode === 'focused'
+          difficulty: startDiff
         })
       });
 
       const data = await res.json();
-      if (data.success && data.questions && data.questions.length > 0) {
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate questions via AI.');
+      }
+
+      if (data.questions && Array.isArray(data.questions) && data.questions.length > 0) {
         setQuestions(data.questions);
         setProviderUsed(data.providerUsed || 'AI Engine');
+        setCurrentIndex(0);
+        setSelectedOption(null);
+        setIsAnswerSubmitted(false);
+        setAnswersLog([]);
+        setConsecutiveCorrect(0);
+        setStartTime(Date.now());
+        setPhase('testing');
       } else {
-        // Fallback to local engine
-        const fallbackQs = generateLocalPedagogicalAssessment(
-          kanji,
-          lessonKanjiPool,
-          questionCount,
-          startDiff
-        );
-        setQuestions(fallbackQs);
-        setProviderUsed('Pedagogical Curriculum Engine');
+        throw new Error('AI returned an empty question set. Please try again.');
       }
-    } catch {
-      // Fallback on network error
-      const fallbackQs = generateLocalPedagogicalAssessment(
-        kanji,
-        lessonKanjiPool,
-        questionCount,
-        startDiff
+    } catch (err: any) {
+      setErrorNotice(
+        err.message ||
+        'AI generation unavailable. Please ensure your Groq or Gemini API key is configured in Settings.'
       );
-      setQuestions(fallbackQs);
-      setProviderUsed('Pedagogical Curriculum Engine');
     } finally {
       setIsLoading(false);
-      setCurrentIndex(0);
-      setSelectedOption(null);
-      setIsAnswerSubmitted(false);
-      setAnswersLog([]);
-      setConsecutiveCorrect(0);
-      setStartTime(Date.now());
-      setPhase('testing');
     }
   };
 
@@ -285,39 +260,31 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
         mode: 'regular_lesson'
       });
 
-      // If user passed with >=80%, mark the kanji as learned or update accuracy
-      if (summary.isPassed) {
-        storage.updateSingleKanjiProgress(kanji.id, {
-          learning_status: 'learned',
-          learned_at: new Date().toISOString(),
-          meaning_accuracy: summary.accuracyPercent
-        });
-      }
-
       onAssessmentCompleted?.();
     }
   };
 
-  // Retry full test
+  // Retry full test via AI
   const handleRetryFullTest = () => {
     handleStartAssessment(currentDifficulty);
   };
 
-  // Re-test only missed Kanji
-  const handleRetryMissedKanji = () => {
+  // Re-attempt missed questions from the AI set
+  const handleRetryMissedQuestions = () => {
     if (!finalSummary || finalSummary.incorrectItems.length === 0) return;
-    const missedKanjiIds = new Set(finalSummary.incorrectItems.map(item => item.kanji.id));
-    const missedKanjiList = lessonKanjiPool.filter(k => missedKanjiIds.has(k.id));
+    const incorrectPrompts = new Set(finalSummary.incorrectItems.map(i => i.questionPrompt));
+    const missedQuestions = questions.filter(q => incorrectPrompts.has(q.prompt));
 
-    // Generate fresh targeted questions for just the missed kanji
-    const targetedQuestions = generateLocalPedagogicalAssessment(
-      missedKanjiList[0] || kanji,
-      missedKanjiList,
-      Math.min(6, missedKanjiList.length * 2),
-      'medium'
-    );
-
-    handleStartAssessment('medium', targetedQuestions);
+    if (missedQuestions.length > 0) {
+      setQuestions(missedQuestions);
+      setCurrentIndex(0);
+      setSelectedOption(null);
+      setIsAnswerSubmitted(false);
+      setAnswersLog([]);
+      setConsecutiveCorrect(0);
+      setStartTime(Date.now());
+      setPhase('testing');
+    }
   };
 
   return (
@@ -338,9 +305,12 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                   Lesson {kanji.level}
                 </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                  ✨ 100% Pure AI
+                </span>
               </div>
               <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                Evaluating 「{kanji.character}」 ({kanji.meaning}) & Lesson {kanji.level} peers
+                Testing the other {peerKanjiPool.length} Kanji in Lesson {kanji.level} (strictly excluding 「{kanji.character}」)
               </p>
             </div>
           </div>
@@ -363,55 +333,47 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
           {/* ============================================================== */}
           {phase === 'setup' && (
             <div className="space-y-5">
-              {/* Target Kanji Hero Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-red-50/80 via-stone-50 to-amber-50/50 dark:from-red-950/30 dark:via-stone-900/60 dark:to-amber-950/20 border border-red-200/60 dark:border-red-900/50 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 shadow-xs">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-stone-800 border border-red-100 dark:border-stone-700 shadow-md flex flex-col items-center justify-center shrink-0 relative">
-                  <span className="font-japanese text-4xl sm:text-5xl font-bold text-stone-900 dark:text-stone-100">
+              {/* Target Kanji Being Studied (Notice of Exclusion) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-stone-50 via-stone-50 to-amber-50/40 dark:from-stone-900/60 dark:via-stone-900/40 dark:to-amber-950/20 border border-stone-200/80 dark:border-stone-800 flex flex-col sm:flex-row items-center sm:items-start gap-4 shadow-xs">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 shadow-xs flex flex-col items-center justify-center shrink-0 relative">
+                  <span className="font-japanese text-3xl sm:text-4xl font-bold text-stone-900 dark:text-stone-100">
                     {kanji.character}
                   </span>
-                  <div className="absolute bottom-1 right-1">
-                    <AudioButton text={kanji.character} size="sm" />
-                  </div>
                 </div>
 
-                <div className="flex-1 text-center sm:text-left space-y-1.5">
+                <div className="flex-1 text-center sm:text-left space-y-1">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                      {kanji.meaning}
-                    </h2>
-                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 font-semibold">
-                      JLPT N5
+                    <span className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                      Currently Studied Character
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200">
+                      Excluded From Test Questions
                     </span>
                   </div>
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">
+                    「{kanji.character}」 — {kanji.meaning}
+                  </h2>
                   <p className="text-xs text-stone-600 dark:text-stone-400">
-                    <strong className="text-stone-800 dark:text-stone-200">Readings:</strong>{' '}
-                    Onyomi: {kanji.onyomi_readings.join(', ') || 'N/A'} • Kunyomi: {kanji.kunyomi_readings.join(', ') || 'N/A'}
-                  </p>
-                  <p className="text-xs text-amber-800 dark:text-amber-300 italic pt-0.5">
-                    💡 Memory Mnemonic: {kanji.mnemonic}
+                    To ensure authentic recall and practical comprehension, <strong>NO question will test this currently selected Kanji</strong>. Instead, the AI will evaluate your retention of the other {peerKanjiPool.length} Kanji covered in Lesson {kanji.level}.
                   </p>
                 </div>
               </div>
 
-              {/* Lesson Scope Details */}
+              {/* Lesson Scope: The other peer kanji being tested */}
               <div className="p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/30 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                    Lesson {kanji.level} Syllabus Coverage (10 Kanji Pool)
+                    Lesson {kanji.level} Peer Test Pool ({peerKanjiPool.length} Kanji)
                   </span>
-                  <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                    Strictly isolated to Lesson {kanji.level}
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                    ✓ 100% AI-generated from this pool only
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {lessonKanjiPool.map(k => (
+                  {peerKanjiPool.map(k => (
                     <span
                       key={k.id}
-                      className={`px-2.5 py-1 rounded-lg text-sm font-bold font-japanese border ${
-                        k.id === kanji.id
-                          ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                          : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700'
-                      }`}
+                      className="px-2.5 py-1 rounded-lg text-sm font-bold font-japanese border bg-white dark:bg-stone-800 text-stone-800 dark:text-stone-200 border-stone-200 dark:border-stone-700 shadow-xs"
                       title={`${k.meaning} (${k.hiragana_reading})`}
                     >
                       {k.character}
@@ -420,15 +382,15 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                 </div>
               </div>
 
-              {/* Features List */}
+              {/* AI Pedagogical Features */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-850 space-y-1">
                   <div className="flex items-center gap-2 text-xs font-bold text-stone-800 dark:text-stone-200">
                     <Target size={14} className="text-red-500" />
-                    <span>5 Rigorous Question Categories</span>
+                    <span>Pure AI Synthesis</span>
                   </div>
                   <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                    Kanji recognition, Onyomi/Kunyomi distinction, English meanings, vocabulary usage, and context sentences.
+                    Every question is generated live by AI (recognition, readings, meanings, vocabulary, and sentences). Zero hardcoded questions.
                   </p>
                 </div>
 
@@ -438,62 +400,55 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                     <span>Real-Time Adaptive Difficulty</span>
                   </div>
                   <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                    Automatically promotes to Hard as you succeed or steps down to consolidate fundamentals on errors.
+                    Promotes to Hard on consecutive correct answers, or steps down to consolidate foundations when mistakes occur.
                   </p>
                 </div>
               </div>
 
-              {/* Focus Scope & Question Count Options */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                <div className="flex-1 space-y-1.5">
+              {/* Question Count & Initial Difficulty */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                    Assessment Focus
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setTestMode('focused')}
-                      className={`p-2.5 rounded-xl text-xs font-bold border text-center transition cursor-pointer ${
-                        testMode === 'focused'
-                          ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
-                          : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                      }`}
-                    >
-                      Focus 「{kanji.character}」 & Peers
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTestMode('full_lesson')}
-                      className={`p-2.5 rounded-xl text-xs font-bold border text-center transition cursor-pointer ${
-                        testMode === 'full_lesson'
-                          ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
-                          : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                      }`}
-                    >
-                      Full Lesson {kanji.level} Review
-                    </button>
-                  </div>
-                </div>
-
-                <div className="w-full sm:w-44 space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                    Question Count
+                    AI Question Count
                   </label>
                   <select
                     value={questionCount}
                     onChange={e => setQuestionCount(Number(e.target.value))}
                     className="w-full p-2.5 rounded-xl text-xs font-semibold border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100"
                   >
-                    <option value={6}>6 Questions (Quick)</option>
-                    <option value={8}>8 Questions (Standard)</option>
-                    <option value={10}>10 Questions (Mastery)</option>
+                    <option value={6}>6 AI Questions (Focused Recall)</option>
+                    <option value={8}>8 AI Questions (Standard Assessment)</option>
+                    <option value={10}>10 AI Questions (Comprehensive Lesson Drill)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                    Initial Difficulty Tier
+                  </label>
+                  <select
+                    value={currentDifficulty}
+                    onChange={e => setCurrentDifficulty(e.target.value as AssessmentDifficulty)}
+                    className="w-full p-2.5 rounded-xl text-xs font-semibold border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100"
+                  >
+                    <option value="easy">🟢 Easy (Direct Recognition & Meaning)</option>
+                    <option value="medium">🟡 Medium (Readings & Vocabulary Usage)</option>
+                    <option value="hard">🟣 Hard (Contextual Nuances & Sentence Fill)</option>
                   </select>
                 </div>
               </div>
 
+              {/* Error Notice */}
               {errorNotice && (
-                <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
-                  {errorNotice}
+                <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300 space-y-2">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertTriangle size={15} />
+                    <span>AI Generation Notice</span>
+                  </div>
+                  <p>{errorNotice}</p>
+                  <p className="text-[11px] text-stone-500">
+                    Ensure your Groq or Gemini API key is configured in the Settings tab to generate live AI questions.
+                  </p>
                 </div>
               )}
 
@@ -508,12 +463,12 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                   {isLoading ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      <span>Synthesizing AI Knowledge Assessment...</span>
+                      <span>Synthesizing Pure AI Questions...</span>
                     </>
                   ) : (
                     <>
                       <Play size={16} />
-                      <span>Start Knowledge Assessment</span>
+                      <span>Generate & Start AI Assessment</span>
                     </>
                   )}
                 </button>
@@ -723,13 +678,13 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                   {finalSummary.accuracyPercent === 100
                     ? '🏆 Perfect Kanji Mastery (完璧)!'
                     : finalSummary.isPassed
-                    ? `🌟 Lesson ${kanji.level} Assessment Passed!`
-                    : '📖 Good Progress – Review Recommended'}
+                    ? `🌟 Lesson ${kanji.level} Peer Assessment Passed!`
+                    : '📖 Good Effort – Review Recommended'}
                 </h3>
 
                 <p className="text-xs text-stone-600 dark:text-stone-400 max-w-lg mx-auto">
                   {finalSummary.isPassed
-                    ? `You demonstrated strong retention across Lesson ${kanji.level} Kanji (「${kanji.character}」 and its peers).`
+                    ? `You demonstrated strong retention across Lesson ${kanji.level} peer Kanji.`
                     : `Review the recommended Kanji below to solidify your understanding of Lesson ${kanji.level}.`}
                 </p>
 
@@ -855,7 +810,7 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                 </div>
               )}
 
-              {/* Action Buttons: Retry / Review / Close */}
+              {/* Action Buttons: Retry Full AI Test / Retry Missed Questions / Close */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <button
@@ -864,17 +819,17 @@ export const KanjiKnowledgeAssessmentModal: React.FC<KanjiKnowledgeAssessmentMod
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 text-xs font-bold transition cursor-pointer"
                   >
                     <RefreshCw size={13} />
-                    <span>Retry Test (Fresh Questions)</span>
+                    <span>Generate New AI Test</span>
                   </button>
 
                   {finalSummary.incorrectItems.length > 0 && (
                     <button
                       type="button"
-                      onClick={handleRetryMissedKanji}
+                      onClick={handleRetryMissedQuestions}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition cursor-pointer"
                     >
                       <Target size={13} />
-                      <span>Re-Test Missed Kanji ({finalSummary.incorrectItems.length})</span>
+                      <span>Retry Missed Questions ({finalSummary.incorrectItems.length})</span>
                     </button>
                   )}
                 </div>

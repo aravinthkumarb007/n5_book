@@ -503,13 +503,13 @@ export const KanjiDetailModal: React.FC<KanjiDetailModalProps> = ({
                               <div className="space-y-1">
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                                   <BrainCircuit size={11} />
-                                  <span>Interactive Knowledge Assessment</span>
+                                  <span>100% Pure AI Knowledge Assessment</span>
                                 </div>
                                 <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                                  Test My Knowledge: Lesson {currentKanji.level} Kanji (「{currentKanji.character}」)
+                                  Test My Knowledge: Lesson {currentKanji.level} Peer Kanji Assessment
                                 </h4>
                                 <p className="text-xs text-stone-600 dark:text-stone-400 max-w-xl">
-                                  Evaluate your retention and practical application exclusively on Lesson {currentKanji.level} Kanji with adaptive difficulty, instant explanations, and personalized review recommendations.
+                                  Evaluates your retention of the other Kanji taught in Lesson {currentKanji.level} (strictly excluding the currently studied 「{currentKanji.character}」). Pure AI-generated questions with real-time adaptive difficulty, instant explanations, and personalized review recommendations.
                                 </p>
                               </div>
 
