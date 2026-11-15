@@ -50,10 +50,12 @@ const COMMON_KANJI_TO_HIRAGANA: Record<string, string> = {
 function sanitizeContextText(text: string, allowedChars: Set<string>): string {
   if (!text) return '';
 
-  // 1. Convert bracket furigana for unlearned kanji: 漢字[かんじ] -> かんじ
-  let result = text.replace(/([\u4E00-\u9FAF]+)\[([^\]]+)\]/g, (match, kanjiPart, reading) => {
+  // 1. Process bracket furigana:
+  // - If the kanji is allowed, keep ONLY the kanji part (no furigana/reading hint): 漢字[かんじ] -> 漢字
+  // - If the kanji is unlearned, convert to Hiragana reading: 漢字[かんじ] -> かんじ
+  let result = text.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*([ぁ-んァ-ヶー]+)\s*[\])）】>]/g, (match, kanjiPart, reading) => {
     const isAllowed = Array.from(kanjiPart).every((c: any) => allowedChars.has(c));
-    return isAllowed ? match : reading;
+    return isAllowed ? kanjiPart : reading;
   });
 
   // 2. Convert common unlearned standalone kanji to Hiragana
@@ -125,17 +127,23 @@ PEDAGOGICAL & EXAM SPECIFICATIONS:
    DO NOT introduce any Kanji character outside this cumulative pool! (Hiragana and Katakana are permitted for grammar and Okurigana).
 
 2. AUTHENTIC JLPT / NAT-TEST QUESTION PATTERNS (Distribute across these 5 types):
-   - "reading_identification": 漢字の読み (e.g. 「日本[にほん]」の「日」の読み方はどれですか。)
+   - "reading_identification": 漢字の読み (e.g. 「日本に行きます。」の「日本」の読み方はどれですか。)
    - "kanji_selection": 表記・漢字選択 (e.g. 「かのじょは [ひと] です。」の [ひと] はどの漢字ですか。)
-   - "vocab_meaning": 語彙の意味 (e.g. 「休日[きゅうじつ]」の意味はどれですか。)
-   - "contextual_usage": 文脈規定・使い方 (e.g. 文脈に最も合う漢字・言葉を一つ選んでください。)
-   - "sentence_fill": 文中漢字選択 (e.g. 「いま、[　]時ですか。」 $\rightarrow$ [何, 時, 分, 半])
+   - "vocab_meaning": 語彙の意味 (e.g. 「休日」の意味はどれですか。)
+   - "contextual_usage": 文脈規定・使い方 (e.g. 文脈に最も合う言葉・漢字を一つ選んでください。)
+   - "sentence_fill": 文中漢字選択 (e.g. 「いま、［　］時ですか。」)
 
-3. BALANCED CUMULATIVE COVERAGE:
+3. CRITICAL: ZERO FURIGANA & ZERO READING HINTS DURING ASSESSMENT:
+   - MANDATORY: NEVER include Furigana (ふりがな), Hiragana reading hints, Romaji, or pronunciation hints in "prompt", "subPrompt", "contextSentence", or "options"!
+   - Present Kanji cleanly (e.g. 『日本』, NEVER 『日本[にほん]』), exactly like authentic printed JLPT and NAT-TEST exam question sheets.
+   - The assessment evaluates the student's ability to read and recognize Kanji independently without hints.
+   - In "explanation", DO include full readings, furigana, and educational explanations for review after completing the test.
+
+4. BALANCED CUMULATIVE COVERAGE:
    - Approximately 50-60% of questions should test Current Level (${requestedLevel}) Kanji.
    - Approximately 40-50% of questions should test Previously Learned Retention (Levels 1–${requestedLevel - 1}).
 
-4. EXAM STRUCTURE & PRESENTATION:
+5. EXAM STRUCTURE & PRESENTATION:
    - Exactly FOUR (4) multiple-choice options per question.
    - Exactly ONE correct option.
    - Realistic, authentic distractors drawn strictly from the cumulative pool (homophones, similar radicals, related meanings).
@@ -151,12 +159,12 @@ OUTPUT SCHEMA (Return strictly JSON):
       "kanjiCharacter": "single character from cumulative pool",
       "kanjiLevel": number,
       "questionType": "reading_identification" | "kanji_selection" | "vocab_meaning" | "contextual_usage" | "sentence_fill",
-      "prompt": "Question prompt in authentic JLPT exam style with bracket furigana 漢字[かんじ]",
-      "subPrompt": "Brief instruction or English translation hint",
-      "contextSentence": "Short natural context sentence if applicable",
+      "prompt": "Question prompt in authentic JLPT exam style without any furigana or reading hints",
+      "subPrompt": "Brief standard exam instruction without giving away the reading",
+      "contextSentence": "Short natural context sentence without furigana",
       "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
       "correctAnswer": "Exact matching string from options",
-      "explanation": "Clear educational explanation"
+      "explanation": "Clear educational explanation with readings for post-test review"
     }
   ]
 }`;

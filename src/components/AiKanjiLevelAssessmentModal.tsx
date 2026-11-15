@@ -40,6 +40,15 @@ import { storage } from '@/services/storage';
 import { FuriganaText } from './FuriganaText';
 import { AudioButton } from './AudioButton';
 
+const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+
+// Strips bracketed furigana/reading annotations attached to kanji:
+// e.g. 漢字[かんじ], 漢字(かんじ), 漢字（かんじ）, 漢字【かんじ】 -> 漢字
+function stripFurigana(text: string): string {
+  if (!text) return '';
+  return text.replace(/([\u4E00-\u9FAF\u3005]+)\s*[\[(（【<]\s*[ぁ-んァ-ヶー]+\s*[\])）】>]/g, '$1');
+}
+
 interface AiKanjiLevelAssessmentModalProps {
   level: number;
   isOpen: boolean;
@@ -68,6 +77,7 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
   const [questions, setQuestions] = useState<AiLevelQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({}); // questionId -> selected answer
+  const [isAdvancing, setIsAdvancing] = useState(false); // Prevents accidental double-taps
   const [isLoading, setIsLoading] = useState(false);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
@@ -104,6 +114,7 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
       setQuestions([]);
       setCurrentIndex(0);
       setAnswers({});
+      setIsAdvancing(false);
       setErrorNotice(null);
       setFinalEvaluation(null);
       setTimeRemainingSeconds(timerMinutes * 60);
@@ -178,21 +189,72 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
     }
   };
 
-  // Option Selection
-  const handleSelectOption = (option: string) => {
-    if (!currentQ) return;
-    setAnswers(prev => ({
-      ...prev,
-      [currentQ.id]: option
-    }));
+  const currentQ = questions[currentIndex];
+  const answeredCount = Object.keys(answers).length;
+  const isAllAnswered = questions.length > 0 && answeredCount === questions.length;
+
+  // Format timer display mm:ss
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Option Selection: Auto-advance immediately upon selection
+  const handleSelectOption = (option: string) => {
+    if (!currentQ || isAdvancing) return;
+
+    setIsAdvancing(true);
+    const updatedAnswers = {
+      ...answers,
+      [currentQ.id]: option
+    };
+    setAnswers(updatedAnswers);
+
+    // Tactile 280ms feedback then immediately proceed to next question or submit results
+    setTimeout(() => {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setIsAdvancing(false);
+      } else {
+        // Last question answered: immediately transition to assessment results
+        setIsAdvancing(false);
+        handleFinalSubmit(updatedAnswers);
+      }
+    }, 280);
+  };
+
+  // Keyboard navigation for A/B/C/D and 1/2/3/4
+  useEffect(() => {
+    if (phase !== 'exam' || !currentQ || isAdvancing) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const key = e.key.toUpperCase();
+      let optIdx = -1;
+      if (key === 'A' || key === '1') optIdx = 0;
+      else if (key === 'B' || key === '2') optIdx = 1;
+      else if (key === 'C' || key === '3') optIdx = 2;
+      else if (key === 'D' || key === '4') optIdx = 3;
+
+      if (optIdx >= 0 && optIdx < currentQ.options.length) {
+        e.preventDefault();
+        handleSelectOption(currentQ.options[optIdx]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, currentQ, isAdvancing, currentIndex, questions, answers]);
+
   // Final Submit
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = (customAnswers?: Record<string, string>) => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
+    const effectiveAnswers = customAnswers || answers;
     const timeSpent = Math.max(1, Math.round((Date.now() - examStartTime) / 1000));
-    const evaluation = evaluateAiLevelExam(questions, answers, level, timeSpent);
+    const evaluation = evaluateAiLevelExam(questions, effectiveAnswers, level, timeSpent);
     setFinalEvaluation(evaluation);
     setPhase('results');
 
@@ -224,26 +286,15 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
         questionId: q.id,
         kanjiId: q.kanjiId,
         prompt: q.prompt,
-        selectedAnswer: answers[q.id] || '',
+        selectedAnswer: effectiveAnswers[q.id] || '',
         correctAnswer: q.correctAnswer,
-        isCorrect: answers[q.id] === q.correctAnswer
+        isCorrect: effectiveAnswers[q.id] === q.correctAnswer
       })),
       time_spent_seconds: timeSpent,
       created_at: new Date().toISOString()
     });
 
     onAssessmentCompleted?.();
-  };
-
-  const currentQ = questions[currentIndex];
-  const answeredCount = Object.keys(answers).length;
-  const isAllAnswered = questions.length > 0 && answeredCount === questions.length;
-
-  // Format timer display mm:ss
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -498,11 +549,11 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
           {/* ============================================================== */}
           {phase === 'exam' && currentQ && (
             <div className="space-y-4">
-              {/* Top Exam Navigation Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                    問題 {currentIndex + 1} / {questions.length}
+              {/* Top Exam Navigation Bar with Progress Indicator */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-stone-50 dark:bg-stone-850 border border-stone-200 dark:border-stone-800">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                    Question {currentIndex + 1} of {questions.length}
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
                     {currentQ.questionTypeLabel}
@@ -550,129 +601,94 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                 </div>
               </div>
 
-              {/* Question Navigation Grid (1..N) */}
-              <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-stone-50/60 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-800">
-                {questions.map((q, idx) => {
-                  const isAnswered = Boolean(answers[q.id]);
-                  const isCurrent = idx === currentIndex;
-
-                  return (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => setCurrentIndex(idx)}
-                      className={`w-7 h-7 rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
-                        isCurrent
-                          ? 'bg-red-600 text-white shadow-xs ring-2 ring-red-400'
-                          : isAnswered
-                          ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900'
-                          : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700'
-                      }`}
-                      title={`Question ${idx + 1} (${isAnswered ? 'Answered' : 'Unanswered'})`}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
+              {/* Sleek Progress Bar */}
+              <div className="w-full bg-stone-100 dark:bg-stone-800 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-red-600 to-rose-500 transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+                />
               </div>
 
-              {/* Main Question Card (JLPT Exam Presentation) */}
-              <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-850/50 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 flex-1">
+              {/* Main Question Card (Authentic JLPT / NAT-TEST Exam Presentation: NO Furigana, NO Hints) */}
+              <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-850 space-y-4 shadow-xs">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                       問題 {currentIndex + 1}
                     </span>
-                    <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 font-japanese leading-relaxed">
-                      <FuriganaText text={currentQ.prompt} />
-                    </h3>
-                    {currentQ.subPrompt && (
-                      <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
-                        {currentQ.subPrompt}
-                      </p>
-                    )}
+                    <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                      Tap an option to answer & auto-advance
+                    </span>
                   </div>
-                  {currentQ.audioTarget && (
-                    <AudioButton text={currentQ.audioTarget} size="md" />
+
+                  {/* Clean Question Prompt without Furigana or Reading Hints */}
+                  <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 font-japanese leading-relaxed">
+                    {stripFurigana(currentQ.prompt)}
+                  </h3>
+
+                  {currentQ.subPrompt && (
+                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                      {stripFurigana(currentQ.subPrompt)}
+                    </p>
                   )}
                 </div>
 
-                {/* Optional Context Sentence */}
+                {/* Optional Context Sentence without Furigana */}
                 {currentQ.contextSentence && (
-                  <div className="p-3 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 font-japanese text-sm sm:text-base font-semibold text-stone-800 dark:text-stone-200">
-                    <FuriganaText text={currentQ.contextSentence} />
+                  <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 font-japanese text-base sm:text-lg font-semibold text-stone-800 dark:text-stone-200 leading-relaxed">
+                    {stripFurigana(currentQ.contextSentence)}
                   </div>
                 )}
               </div>
 
-              {/* 4 Options Grid (Authentic Exam Choices) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* 4 Options Grid (A, B, C, D) - Selecting Option Automatically Navigates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {currentQ.options.map((opt, idx) => {
                   const isSelected = answers[currentQ.id] === opt;
+                  const label = OPTION_LABELS[idx] || String(idx + 1);
 
                   return (
                     <button
                       key={idx}
                       type="button"
+                      disabled={isAdvancing}
                       onClick={() => handleSelectOption(opt)}
-                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 text-sm font-semibold font-japanese ${
+                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 text-base font-semibold font-japanese active:scale-98 disabled:pointer-events-none ${
                         isSelected
-                          ? 'border-red-600 bg-red-50/80 dark:bg-red-950/40 text-red-900 dark:text-red-100 shadow-sm ring-2 ring-red-500/20'
-                          : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 hover:border-red-300 dark:hover:border-red-700 text-stone-800 dark:text-stone-200'
+                          ? 'border-red-600 bg-red-50/90 dark:bg-red-950/50 text-red-950 dark:text-red-100 shadow-sm ring-2 ring-red-500/30'
+                          : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 hover:border-red-300 dark:hover:border-red-700 hover:bg-stone-50/50 dark:hover:bg-stone-750 text-stone-800 dark:text-stone-200'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 transition ${
                           isSelected
-                            ? 'bg-red-600 text-white'
-                            : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300'
+                            ? 'bg-red-600 text-white shadow-xs'
+                            : 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-300'
                         }`}>
-                          {idx + 1}
+                          {label}
                         </span>
-                        <span>{opt}</span>
+                        <span className="truncate">{stripFurigana(opt)}</span>
                       </div>
-
-                      {isSelected && (
-                        <CheckCircle2 size={17} className="text-red-600 shrink-0" />
-                      )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Bottom Examination Navigation Bar */}
-              <div className="flex items-center justify-between gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
+              {/* Bottom Subtle Navigation Bar: Previous Question Only (No separate Next button) */}
+              <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  disabled={currentIndex === 0}
+                  disabled={currentIndex === 0 || isAdvancing}
                   onClick={() => setCurrentIndex(prev => prev - 1)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-100 dark:hover:bg-stone-800"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200 text-xs font-semibold transition cursor-pointer disabled:opacity-0 disabled:pointer-events-none"
                 >
                   <ArrowLeft size={14} />
-                  <span>Previous</span>
+                  <span>Previous Question</span>
                 </button>
 
-                <div className="flex items-center gap-2">
-                  {currentIndex < questions.length - 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => setCurrentIndex(prev => prev + 1)}
-                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-bold transition shadow-xs cursor-pointer"
-                    >
-                      <span>Next</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPhase('review_sheet')}
-                      className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-md cursor-pointer"
-                    >
-                      <Send size={14} />
-                      <span>Review & Submit</span>
-                    </button>
-                  )}
-                </div>
+                <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                  Select A, B, C, or D (or press keys A/B/C/D)
+                </span>
               </div>
             </div>
           )}
@@ -727,8 +743,8 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                           {idx + 1}
                         </span>
                         <div>
-                          <p className="font-semibold text-stone-800 dark:text-stone-200 line-clamp-1">
-                            {q.prompt}
+                          <p className="font-semibold text-stone-800 dark:text-stone-200 line-clamp-1 font-japanese">
+                            {stripFurigana(q.prompt)}
                           </p>
                           <p className="text-[11px] text-stone-500 dark:text-stone-400">
                             {ans ? `Selected: ${ans}` : '⚠️ Unanswered – Click to answer'}
@@ -754,7 +770,7 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
 
                 <button
                   type="button"
-                  onClick={handleFinalSubmit}
+                  onClick={() => handleFinalSubmit()}
                   className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-md cursor-pointer flex items-center gap-1.5"
                 >
                   <Send size={14} />
@@ -967,12 +983,17 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                               <XCircle size={16} className="text-rose-600 shrink-0" />
                             )}
                             <span className="font-bold text-stone-800 dark:text-stone-200">
-                              問題 {idx + 1}: {q.prompt}
+                              問題 {idx + 1}: <FuriganaText text={q.prompt} />
                             </span>
                           </div>
-                          <span className="text-[10px] font-semibold text-stone-500">
-                            {q.questionTypeLabel}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold text-stone-500">
+                              {q.questionTypeLabel}
+                            </span>
+                            {q.audioTarget && (
+                              <AudioButton text={q.audioTarget} size="sm" />
+                            )}
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -984,9 +1005,9 @@ export const AiKanjiLevelAssessmentModal: React.FC<AiKanjiLevelAssessmentModalPr
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-stone-600 dark:text-stone-400 pt-0.5 border-t border-stone-200/60 dark:border-stone-800">
-                          {q.explanation}
-                        </p>
+                        <div className="text-[11px] text-stone-600 dark:text-stone-400 pt-0.5 border-t border-stone-200/60 dark:border-stone-800">
+                          <FuriganaText text={q.explanation} />
+                        </div>
                       </div>
                     );
                   })}
